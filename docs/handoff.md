@@ -29,7 +29,7 @@ Read `README.md`, `AGENTS.md`, `GLOSSARY.md`, ADR-0001, the prototype spec, and 
 
 ### Compass: `codex/issue-13-compass`
 
-Commit `e2b76ec` preserves QMC5883P I²C/configuration and calibration scaffolding, a compass bench guide, and passing host-side calibration tests. It is unmerged WIP: it still needs real-board I²C detection, raw readings, calibration capture/storage, and integration with the wearable runtime.
+Commit `e2b76ec` preserved QMC5883P I²C/configuration and calibration scaffolding, a compass bench guide, and host-side calibration tests. The resumed implementation adds persistence, runtime integration, read validation, and filtered gravity; physical I²C detection and enclosure calibration are still pending.
 
 ### Expressions/settings: `codex/issue-14-expressions-settings`
 
