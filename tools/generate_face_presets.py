@@ -24,7 +24,7 @@ def render(presets: list[dict]) -> str:
     for preset in presets:
         name = preset["name"]
         enum_name = name.title()
-        colors = ", ".join(color(preset[key]) for key in (
+        colors = ", ".join("{" + color(preset[key]) + "}" for key in (
             "background", "face", "eye", "eyelid", "pupil", "mouth", "effect"
         ))
         metrics = ", ".join(str(int(preset[key])) for key in (
@@ -33,11 +33,24 @@ def render(presets: list[dict]) -> str:
         ))
         rows.extend((
             f"constexpr ExpressionPreset k{enum_name}Preset = {{",
-            f"    ExpressionName::{enum_name}, {{{colors}}}, {{{metrics}}}",
+            f"    ExpressionName::{enum_name},",
+            f"    {{{colors}}},",
+            f"    {{{metrics}}}",
             "};",
             "",
         ))
     rows.extend((
+        "inline const ExpressionPreset& expressionPreset(ExpressionName name) {",
+        "  switch (name) {",
+    ))
+    for preset in presets:
+        enum_name = preset["name"].title()
+        rows.append(f"    case ExpressionName::{enum_name}: return k{enum_name}Preset;")
+    rows.extend((
+        "  }",
+        "  return kIdlePreset;",
+        "}",
+        "",
         "inline const ExpressionPreset& idlePreset() { return kIdlePreset; }",
         "",
         "}  // namespace nina",
@@ -52,7 +65,12 @@ def main() -> int:
     args = parser.parse_args()
 
     payload = json.loads(SOURCE.read_text())
-    expected = render(payload["presets"])
+    presets = payload["presets"]
+    names = [preset.get("name") for preset in presets]
+    required_names = ["idle", "curious", "happy", "surprised", "excited"]
+    if names != required_names:
+        raise ValueError(f"expected presets in order {required_names}, got {names}")
+    expected = render(presets)
     if args.check:
         return 0 if OUTPUT.exists() and OUTPUT.read_text() == expected else 1
 

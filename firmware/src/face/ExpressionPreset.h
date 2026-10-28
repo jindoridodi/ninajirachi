@@ -4,7 +4,7 @@
 
 namespace nina {
 
-enum class ExpressionName { Idle };
+enum class ExpressionName { Idle, Curious, Happy, Surprised, Excited };
 
 struct Color {
   uint32_t rgb;
