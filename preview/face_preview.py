@@ -3,8 +3,6 @@
 
 import json
 from pathlib import Path
-import tkinter as tk
-from tkinter import filedialog, messagebox
 import os
 import sys
 import tempfile
@@ -32,7 +30,7 @@ def export_presets(presets: list[dict], path: Path) -> None:
         OUTPUT.write_text(header)
 
 
-def draw(canvas: tk.Canvas, preset: dict) -> None:
+def draw(canvas, preset: dict) -> None:
     canvas.delete("all")
     canvas.create_rectangle(0, 0, 240, 240, fill=preset["background"], outline="")
     canvas.create_oval(120 - preset["faceRadius"], 120 - preset["faceRadius"],
@@ -74,6 +72,9 @@ def draw(canvas: tk.Canvas, preset: dict) -> None:
 
 
 def main() -> None:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox
+
     root = tk.Tk()
     root.title("Ninajirachi face preview")
     canvas = tk.Canvas(root, width=240, height=240, highlightthickness=0)
