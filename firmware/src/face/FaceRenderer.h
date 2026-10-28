@@ -39,10 +39,12 @@ class FaceRenderer {
     surface.fillEllipse(rightEyeX, eyeY, metrics.eyeWidth, metrics.eyeOpen, colors.eye);
 
     surface.beginLayer(FaceLayer::Eyelids);
+    if (metrics.eyelidHeight > 0) {
     surface.fillRect(leftEyeX - metrics.eyeWidth / 2, eyeY - metrics.eyeOpen / 2,
                      metrics.eyeWidth, metrics.eyelidHeight, colors.eyelid);
     surface.fillRect(rightEyeX - metrics.eyeWidth / 2, eyeY - metrics.eyeOpen / 2,
                      metrics.eyeWidth, metrics.eyelidHeight, colors.eyelid);
+    }
 
     surface.beginLayer(FaceLayer::Pupils);
     if (metrics.pupilRadius > 0 && metrics.eyeWidth > 0 && metrics.eyeOpen > 3) {
