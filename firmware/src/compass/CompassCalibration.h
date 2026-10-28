@@ -21,7 +21,9 @@ struct MagneticVector {
 struct CompassCalibrationData {
   MagneticSample minimum;
   MagneticSample maximum;
-  float headingOffsetDegrees = 0;
+  float headingOffsetDegrees;
+  CompassCalibrationData(MagneticSample low = {}, MagneticSample high = {}, float offset = 0)
+      : minimum(low), maximum(high), headingOffsetDegrees(offset) {}
 };
 
 class CompassCalibration {
@@ -40,7 +42,8 @@ class CompassCalibration {
   }
 
   bool ready() const {
-    return maximum_.x > minimum_.x && maximum_.y > minimum_.y && maximum_.z > minimum_.z;
+    return std::isfinite(headingOffsetDegrees_) && std::fabs(headingOffsetDegrees_) <= 360 &&
+           maximum_.x > minimum_.x && maximum_.y > minimum_.y && maximum_.z > minimum_.z;
   }
 
   CompassCalibrationData data() const { return {minimum_, maximum_, headingOffsetDegrees_}; }
@@ -50,10 +53,24 @@ class CompassCalibration {
             center(sample.z, minimum_.z, maximum_.z)};
   }
 
-  float headingDegrees(MagneticSample sample) const {
+  float headingDegrees(MagneticSample sample, MagneticVector gravity = {0, 0, 1}) const {
+    const float invalid = std::numeric_limits<float>::quiet_NaN();
+    if (!ready()) return invalid;
+    const float magnitude = std::sqrt(gravity.x * gravity.x + gravity.y * gravity.y + gravity.z * gravity.z);
+    // Gravity is in g, aligned to the magnetometer; acceleration during jumps is unreliable.
+    if (!std::isfinite(magnitude) || magnitude < 0.8f || magnitude > 1.2f) return invalid;
+    gravity = {gravity.x / magnitude, gravity.y / magnitude, gravity.z / magnitude};
+    const float forwardLength = std::sqrt(gravity.y * gravity.y + gravity.z * gravity.z);
+    if (forwardLength < 0.1f) return invalid;
+    const MagneticVector forward{forwardLength, -gravity.x * gravity.y / forwardLength,
+                                 -gravity.x * gravity.z / forwardLength};
+    const MagneticVector right{0, gravity.z / forwardLength, -gravity.y / forwardLength};
     const MagneticVector field = apply(sample);
+    const float x = field.x * forward.x + field.y * forward.y + field.z * forward.z;
+    const float y = field.y * right.y + field.z * right.z;
+    if (!std::isfinite(x) || !std::isfinite(y) || x * x + y * y < 1e-8f) return invalid;
     constexpr float kRadiansToDegrees = 57.2957795131f;
-    return normalizeDegrees(std::atan2(field.y, field.x) * kRadiansToDegrees + headingOffsetDegrees_);
+    return normalizeDegrees(std::atan2(y, x) * kRadiansToDegrees + headingOffsetDegrees_);
   }
 
  private:
@@ -61,8 +78,9 @@ class CompassCalibration {
   static int16_t max(int16_t left, int16_t right) { return left > right ? left : right; }
 
   static float center(int16_t value, int16_t minimum, int16_t maximum) {
-    // shortcut: axis-aligned min/max compensation, upgrade to an ellipsoid fit if enclosure tests warp headings.
-    return static_cast<float>(value) - (static_cast<float>(minimum) + maximum) / 2.0f;
+    // shortcut: diagonal soft-iron correction; use an ellipsoid fit if enclosure tests show cross-axis distortion.
+    return (static_cast<float>(value) - (static_cast<float>(minimum) + maximum) / 2.0f) /
+           ((static_cast<float>(maximum) - minimum) / 2.0f);
   }
 
   static float normalizeDegrees(float heading) {

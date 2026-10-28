@@ -8,7 +8,7 @@ The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_m
 
 ## Compass bench setup
 
-`src/compass/Qmc5883p.h` uses Arduino's built-in `Wire` API and has no external driver dependency. It deliberately requires a caller-configured `TwoWire` bus and an address found by an I²C scanner; it does not choose final GPIO pins or assume `0x2C`. Follow [the QMC5883P bench procedure](../docs/compass-bench.md) before connecting it to the wearable interaction loop.
+`src/compass/CompassService.h` provides the C++11 Arduino API for verified QMC5883P setup, raw updates, tilt-compensated heading, and calibration stored through ESP32 Preferences. It is disabled by default and requires a caller-configured `TwoWire` bus plus explicit user verification of the chip and scanned address. Main owns serial commands. Follow [the QMC5883P API and bench procedure](../docs/compass-bench.md) before enabling it.
 
 `shared/expression_presets.json` is the source of truth for expression presets. Run this from the repository root after changing it:
 
