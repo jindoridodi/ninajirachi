@@ -25,6 +25,10 @@ The external compass starts disabled. At 115200 baud, send `s` to scan I²C. Aft
 
 The IMU and magnetometer gravity vectors must use the same axes. Confirm the external module mounting before enabling; a rotated mounting needs an explicit axis transform. Invalid or stale headings stay unavailable. See `../docs/compass-bench.md` for the calibration limits and acceptance checklist.
 
+## Compass bench setup
+
+`src/compass/CompassService.h` provides the C++11 Arduino API for verified QMC5883P setup, raw updates, tilt-compensated heading, and calibration stored through ESP32 Preferences. It is disabled by default and requires a caller-configured `TwoWire` bus plus explicit user verification of the chip and scanned address. Main owns serial commands. Follow [the QMC5883P API and bench procedure](../docs/compass-bench.md) before enabling it.
+
 `shared/expression_presets.json` is the source of truth for expression presets. Run this from the repository root after changing it:
 
 ```sh
