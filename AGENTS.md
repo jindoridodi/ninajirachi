@@ -2,6 +2,8 @@
 
 When changing the Ninajirachi wearable firmware, read [README.md](./README.md) for the current hardware contract, interaction behavior, wiring constraints, and implementation order. Read [GLOSSARY.md](./GLOSSARY.md) when changing domain terms such as `nearby`, `peer`, `direction evidence`, or `transient overlay`.
 
+For board-specific display, touch, QMI8658, battery, or flashing work, consult the [official Waveshare ESP32-S3-Touch-LCD-1.28 documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) before changing firmware configuration.
+
 ## QMC5883P work
 
 When adding or changing magnetometer code:
