@@ -17,6 +17,14 @@ Installed vendor files are ignored by Git; the script retains their original cop
 
 Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC millivolts. Charging state is reported as unknown because no verified software-readable charging-status signal has been established. Percentage stays unavailable until a battery-specific calibration is supplied. Confirm readings against a meter before relying on them.
 
+## Runtime controls
+
+Hold the face for 5 seconds to open battery/settings. Release, then hold for 3 seconds to return. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Serial commands `0`–`4` select idle, curious, happy, surprised, and excited presets for testing.
+
+The external compass starts disabled. At 115200 baud, send `s` to scan I²C. After checking the physical QMC5883P marking, 3.3 V wiring, and sensor-axis alignment, send `v` to enable the detected `0x2C` device. The adapter also verifies chip identity. Send `c` to collect calibration while rotating the assembled wearable through all axes, `w` to save, `x` to cancel, and `r` to toggle raw/heading logs. Calibration is stored per board in NVS and reloaded when enabled after reboot.
+
+The IMU and magnetometer gravity vectors must use the same axes. Confirm the external module mounting before enabling; a rotated mounting needs an explicit axis transform. Invalid or stale headings stay unavailable. See `../docs/compass-bench.md` for the calibration limits and acceptance checklist.
+
 `shared/expression_presets.json` is the source of truth for expression presets. Run this from the repository root after changing it:
 
 ```sh
