@@ -3,9 +3,11 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from preview.face_preview import PRESETS, export_presets
+with patch.dict(sys.modules, {"tkinter": None, "_tkinter": None}):
+    from preview.face_preview import PRESETS, export_presets
 from tools.generate_face_presets import render
 
 

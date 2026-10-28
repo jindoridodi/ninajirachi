@@ -64,6 +64,8 @@ An expression preset supplies values such as eye openness, pupil offset, mouth s
 
 Use a desktop GUI preview/editor to tune expression presets at 240×240. It should show the same parameterized face model as the wearable and export preset values, not a collection of raster expression files. The desktop preview is an authoring tool only; it does not run on the wearable.
 
+Launch the editor with `python3 preview/face_preview.py`. Tk (`tkinter`) is required only to launch the GUI; preset export and headless tests (`python3 tests/preview_editor_test.py`) do not require it.
+
 Reserve bitmap assets for occasional decorative effects that are substantially harder to draw procedurally. Test their flash and RAM cost early.
 
 The animation loop should keep input sampling, peer tracking, state selection, and rendering separate. A small expression state machine is sufficient:
