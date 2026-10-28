@@ -71,6 +71,9 @@ int main() {
   RecordingSurface closed;
   renderer.render(closed, blink, 240, 240);
   if (!expect(closed.pupilCount == 0, "closed eyes hide pupils")) return 1;
+  RecordingSurface surprised;
+  renderer.render(surprised, nina::expressionPreset(nina::ExpressionName::Surprised), 240, 240);
+  if (!expect(surprised.eyelidCount == 0, "wide surprised eyes have no eyelid rectangle")) return 1;
 
   return !(expect(idle.name == nina::ExpressionName::Idle, "idle preset is named") &&
            expect(surface.backgroundCount == 1, "renders a background") &&

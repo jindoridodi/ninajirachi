@@ -10,6 +10,13 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "shared" / "expression_presets.json"
 OUTPUT = ROOT / "firmware" / "src" / "face" / "ExpressionPresets.generated.h"
+COLOR_KEYS = ("background", "face", "eye", "eyelid", "pupil", "mouth", "effect")
+METRIC_BOUNDS = {
+    "faceRadius": (1, 120), "eyeWidth": (1, 100), "eyeOpen": (1, 100),
+    "eyelidHeight": (0, 100), "pupilRadius": (0, 40),
+    "pupilOffsetX": (-60, 60), "pupilOffsetY": (-60, 60),
+    "mouthWidth": (1, 100), "mouthHeight": (1, 100), "effectRadius": (0, 24),
+}
 
 
 def color(value: str) -> str:
@@ -20,6 +27,14 @@ def color(value: str) -> str:
 
 
 def render(presets: list[dict]) -> str:
+    names = [preset.get("name") for preset in presets]
+    if names != ["idle", "curious", "happy", "surprised", "excited"]:
+        raise ValueError("expected idle, curious, happy, surprised, excited in order")
+    for preset in presets:
+        for key, (low, high) in METRIC_BOUNDS.items():
+            value = preset[key]
+            if type(value) is not int or not low <= value <= high:
+                raise ValueError(f"{key} must be an integer from {low} to {high}")
     rows = ["#pragma once", "", "namespace nina {", ""]
     for preset in presets:
         name = preset["name"]
