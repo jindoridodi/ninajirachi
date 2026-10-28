@@ -15,13 +15,14 @@ bool keepsIdleFaceAlive() {
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
 
   const nina::WearableOutput start = behavior.update({0, false, nina::ExpressionName::Idle, battery});
-  const nina::WearableOutput blink = behavior.update({4000, false, nina::ExpressionName::Idle, battery});
+  const nina::WearableOutput blink = behavior.update({3900, false, nina::ExpressionName::Idle, battery});
   const nina::WearableOutput later = behavior.update({4200, false, nina::ExpressionName::Idle, battery});
 
   return expect(start.screen == nina::ScreenName::Face, "starts on the face screen") &&
          expect(start.face.name == nina::ExpressionName::Idle, "renders the requested idle preset") &&
          expect(blink.face.metrics.eyeOpen < start.face.metrics.eyeOpen,
                 "idle face closes its eyes during a blink") &&
+         expect(blink.face.metrics.pupilRadius == 0, "blink hides pupils") &&
          expect(later.face.metrics.eyeOpen == start.face.metrics.eyeOpen,
                 "idle face reopens its eyes after a blink") &&
          expect(later.face.metrics.pupilOffsetX != start.face.metrics.pupilOffsetX,
@@ -30,12 +31,13 @@ bool keepsIdleFaceAlive() {
 
 bool rendersNamedExpressions() {
   nina::WearableBehavior behavior;
+  nina::WearableBehavior happyBehavior, surprisedBehavior, excitedBehavior;
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
 
   const nina::WearableOutput curious = behavior.update({1000, false, nina::ExpressionName::Curious, battery});
-  const nina::WearableOutput happy = behavior.update({1000, false, nina::ExpressionName::Happy, battery});
-  const nina::WearableOutput surprised = behavior.update({1000, false, nina::ExpressionName::Surprised, battery});
-  const nina::WearableOutput excited = behavior.update({1000, false, nina::ExpressionName::Excited, battery});
+  const nina::WearableOutput happy = happyBehavior.update({1000, false, nina::ExpressionName::Happy, battery});
+  const nina::WearableOutput surprised = surprisedBehavior.update({1000, false, nina::ExpressionName::Surprised, battery});
+  const nina::WearableOutput excited = excitedBehavior.update({1000, false, nina::ExpressionName::Excited, battery});
 
   return expect(curious.face.name == nina::ExpressionName::Curious, "renders curious") &&
          expect(happy.face.name == nina::ExpressionName::Happy, "renders happy") &&
@@ -81,9 +83,39 @@ bool returnsToFaceAfterSettingsInactivity() {
                 "seven seconds without touch returns settings to face");
 }
 
+bool requiresReleaseAndExactTimeouts() {
+  nina::WearableBehavior behavior;
+  nina::BatterySnapshot battery;
+  behavior.update({100, true, nina::ExpressionName::Idle, battery});
+  if (!expect(behavior.update({5099, true, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::Face, "settings requires full five-second hold")) return false;
+  behavior.update({5100, true, nina::ExpressionName::Idle, battery});
+  if (!expect(behavior.update({15100, true, nina::ExpressionName::Happy, battery}).screen ==
+              nina::ScreenName::SettingsBattery, "continuing entry hold cannot exit settings")) return false;
+  behavior.update({15200, false, nina::ExpressionName::Happy, battery});
+  if (!expect(behavior.update({22199, false, nina::ExpressionName::Happy, battery}).screen ==
+              nina::ScreenName::SettingsBattery, "idle timeout starts at touch release")) return false;
+  return expect(behavior.update({22200, false, nina::ExpressionName::Happy, battery}).screen ==
+                nina::ScreenName::Face, "settings times out at seven seconds");
+}
+
 }  // namespace
 
 int main() {
+  nina::WearableBehavior transition;
+  const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
+  transition.update({0, false, nina::ExpressionName::Idle, battery});
+  const auto before = transition.update({100, false, nina::ExpressionName::Idle, battery});
+  const auto changed = transition.update({100, false, nina::ExpressionName::Surprised, battery});
+  if (!expect(changed.face.metrics.eyeOpen == before.face.metrics.eyeOpen,
+              "expression change starts at the visible face")) return 1;
+  const auto halfway = transition.update({250, false, nina::ExpressionName::Surprised, battery});
+  if (!expect(halfway.face.metrics.eyeOpen > before.face.metrics.eyeOpen &&
+              halfway.face.metrics.eyeOpen < nina::expressionPreset(nina::ExpressionName::Surprised).metrics.eyeOpen,
+              "expression passes through intermediate geometry")) return 1;
+  const auto finished = transition.update({400, false, nina::ExpressionName::Surprised, battery});
+  if (!expect(finished.face.metrics.eyeOpen == 58, "transition reaches requested expression")) return 1;
   return !(keepsIdleFaceAlive() && rendersNamedExpressions() &&
-           opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity());
+           opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
+           requiresReleaseAndExactTimeouts());
 }
