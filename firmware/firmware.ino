@@ -1,0 +1,119 @@
+#include "src/board/WaveshareSurface.h"
+#include "src/board/BoardInputs.h"
+#include "src/behavior/WearableBehavior.h"
+#include "src/face/SettingsBatteryRenderer.h"
+#include "src/compass/CompassService.h"
+#include "src/compass/GravityEstimator.h"
+
+namespace {
+
+nina::WaveshareSurface surface;
+nina::FaceRenderer renderer;
+nina::WearableBehavior behavior;
+nina::CompassService compass;
+nina::GravityEstimator gravityEstimator;
+nina::ExpressionName expression = nina::ExpressionName::Idle;
+bool displayReady = false;
+bool imuReady = false;
+bool compassReady = false;
+bool showRaw = false;
+bool scanned = false;
+uint32_t lastFrameMs = 0;
+uint32_t lastLogMs = 0;
+char deviceId[13];
+constexpr uint32_t kFramePeriodMs = 33;
+constexpr uint8_t kCompassAddress = 0x2C;
+
+void renderSettings(const nina::SettingsBatteryDisplay& settings) {
+  const auto text = nina::settingsBatteryLines(settings);
+  surface.fillRect(0, 0, 240, 240, {0});
+  for (int line = 0; line < 7; ++line)
+    Paint_DrawString_EN(32, 50 + line * 20, text.lines[line], &Font12, WHITE, BLACK);
+}
+
+void serialCommands() {
+  if (!Serial.available()) return;
+  const char command = Serial.read();
+  if (command == 's') {
+    scanned = false;
+    for (uint8_t address = 1; address < 127; ++address) {
+      Wire.beginTransmission(address);
+      if (Wire.endTransmission() == 0) {
+        Serial.printf("I2C 0x%02X\n", address);
+        if (address == kCompassAddress) scanned = true;
+      }
+    }
+  } else if (command == 'v') {
+    // User confirms physical QMC5883P marking, wiring, and aligned IMU/compass axes.
+    compassReady = scanned && compass.begin(Wire, nina::CompassConfig(true, kCompassAddress));
+    Serial.println(compassReady ? "Compass enabled" : "Scan/verify QMC5883P first");
+  } else if (command == 'c') {
+    Serial.println(compass.startCalibration() ? "Rotate through all axes; w saves" : "Enable compass first");
+  } else if (command == 'w') {
+    Serial.println(compass.saveCalibration() ? "Calibration saved" : "Not enough coverage/samples or storage failed");
+  } else if (command == 'x') {
+    compass.cancelCalibration();
+  } else if (command == 'r') {
+    showRaw = !showRaw;
+  } else if (command >= '0' && command <= '4') {
+    const nina::ExpressionName names[] = {nina::ExpressionName::Idle, nina::ExpressionName::Curious,
+      nina::ExpressionName::Happy, nina::ExpressionName::Surprised, nina::ExpressionName::Excited};
+    expression = names[command - '0'];
+  }
+}
+
+}  // namespace
+
+void setup() {
+  Serial.begin(115200);
+  if (!surface.begin()) {
+    Serial.println("Display initialization failed");
+    return;
+  }
+  displayReady = true;
+  nina::resetTouch();
+  analogReadResolution(12);
+  analogSetPinAttenuation(1, ADC_11db);
+  imuReady = QMI8658_init() != 0;
+  const uint64_t identity = ESP.getEfuseMac();
+  snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
+           unsigned(identity));
+  Serial.println("s scan; v verify/enable compass; c calibrate; w save; x cancel; r raw; 0-4 expressions");
+  renderer.render(surface, nina::idlePreset(), 240, 240);
+  surface.present();
+}
+
+void loop() {
+  serialCommands();
+  const uint32_t now = millis();
+  if (now - lastFrameMs < kFramePeriodMs) { delay(1); return; }
+  lastFrameMs = now;
+  nina::MagneticVector gravity{0, 0, 0};
+  if (imuReady) {
+    float acceleration[3], gyro[3];
+    // Read the raw timestamp: the vendor tim_count helper rewrites duplicate values.
+    unsigned char stamp[3] = {};
+    QMI8658_read_reg(QMI8658Register_Timestamp_L, stamp, 3);
+    QMI8658_read_xyz(acceleration, gyro, nullptr);
+    const uint32_t timestamp = uint32_t(stamp[0]) | (uint32_t(stamp[1]) << 8) |
+                               (uint32_t(stamp[2]) << 16);
+    gravity = gravityEstimator.update(timestamp, {acceleration[0], acceleration[1], acceleration[2]},
+                                      {gyro[0], gyro[1], gyro[2]}, now);
+  }
+  const bool sampled = compassReady && compass.update(now, gravity);
+  if (sampled && showRaw && now - lastLogMs >= 250) {
+    lastLogMs = now;
+    const auto raw = compass.raw();
+    const auto heading = compass.heading(now);
+    Serial.printf("mag %d %d %d heading %s %.1f samples %u\n", raw.x, raw.y, raw.z,
+                  heading.valid ? "valid" : "unavailable", heading.degrees,
+                  unsigned(compass.calibrationSamples()));
+  }
+  const auto output = behavior.update({now, nina::touchIsDown(), expression,
+      nina::BatterySnapshot(nina::batteryMillivolts(), false, false, 0, deviceId,
+                            true, false, "prototype-13-14")});
+  if (!displayReady) return;
+  if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
+  else renderSettings(output.settings);
+  surface.present();
+}

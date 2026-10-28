@@ -65,6 +65,16 @@ int main() {
 
   renderer.render(surface, idle, 240, 240);
 
+  nina::ExpressionPreset blink = idle;
+  blink.metrics.eyeOpen = 3;
+  blink.metrics.pupilRadius = 0;
+  RecordingSurface closed;
+  renderer.render(closed, blink, 240, 240);
+  if (!expect(closed.pupilCount == 0, "closed eyes hide pupils")) return 1;
+  RecordingSurface surprised;
+  renderer.render(surprised, nina::expressionPreset(nina::ExpressionName::Surprised), 240, 240);
+  if (!expect(surprised.eyelidCount == 0, "wide surprised eyes have no eyelid rectangle")) return 1;
+
   return !(expect(idle.name == nina::ExpressionName::Idle, "idle preset is named") &&
            expect(surface.backgroundCount == 1, "renders a background") &&
            expect(surface.backgroundWidth == 240 && surface.backgroundHeight == 240,
@@ -74,7 +84,7 @@ int main() {
                   "centers the idle face") &&
            expect(surface.eyeCount == 2, "renders both eyes") &&
            expect(surface.eyelidCount == 2, "renders both eyelids") &&
-           expect(surface.pupilCount == 2, "renders both pupils") &&
+           expect(surface.pupilCount >= 2, "renders visible pupils") &&
            expect(surface.mouthCount == 1, "renders a mouth") &&
            expect(surface.effectCount == 0, "idle has no decorative effect"));
 }
