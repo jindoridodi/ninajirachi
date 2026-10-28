@@ -66,3 +66,7 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+__pycache__/
+# Installed unmodified from Waveshare's official ZIP by tools/prepare_waveshare.py.
+firmware/src/waveshare/*.cpp
+firmware/src/waveshare/*.h
