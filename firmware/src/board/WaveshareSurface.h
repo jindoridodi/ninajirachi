@@ -53,8 +53,8 @@ class WaveshareSurface final : public DrawSurface {
     x = max(0, x);
     y = max(0, y);
     if (endX < x || endY < y) return;
-    Paint_DrawRectangle(x, y, endX, endY, rgb565(color), DOT_PIXEL_1X1,
-                        DRAW_FILL_FULL);
+    // ClearWindows uses exclusive endpoints and avoids DrawPoint's one-pixel offset.
+    Paint_ClearWindows(x, y, endX + 1, endY + 1, rgb565(color));
   }
 
  private:

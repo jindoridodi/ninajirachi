@@ -55,21 +55,21 @@ class WearableBehavior {
   WearableOutput update(const WearableInput& input) {
     updateScreen(input.elapsedMs, input.touchDown);
     if (!initialized_) {
-      base_ = from_ = expressionPreset(input.expression);
+      face_ = from_ = expressionPreset(input.expression);
+      transitionStartMs_ = input.elapsedMs - kExpressionTransitionMs;
       initialized_ = true;
     }
-    if (input.expression != base_.name) {
-      from_ = base_;
-      base_.name = input.expression;
+    if (input.expression != face_.name) {
+      from_ = face_;
       transitionStartMs_ = input.elapsedMs;
     }
     const uint32_t age = input.elapsedMs - transitionStartMs_;
     float t = age >= kExpressionTransitionMs ? 1.0f : float(age) / kExpressionTransitionMs;
     t = t * t * (3 - 2 * t);
-    base_ = blend(from_, expressionPreset(input.expression), t);
-    ExpressionPreset face = base_;
+    ExpressionPreset face = expressionPreset(input.expression);
     animate(face, input.elapsedMs);
-    return {screen_, face, {input.battery}};
+    face_ = blend(from_, face, t);
+    return {screen_, face_, {input.battery}};
   }
 
  private:
@@ -139,6 +139,9 @@ class WearableBehavior {
 
     const int16_t pupilMotion = lroundf(2 * sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
     face.metrics.pupilOffsetX += pupilMotion;
+    if (face.name == ExpressionName::Idle) {
+      face.metrics.mouthHeight += lroundf(sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
+    }
     if (face.name == ExpressionName::Happy || face.name == ExpressionName::Excited) {
       face.metrics.mouthHeight += lroundf(2 * sinf(float(elapsedMs % 1000) * 6.2831853f / 1000));
     }
@@ -152,7 +155,7 @@ class WearableBehavior {
   bool awaitTouchRelease_ = false;
   bool initialized_ = false;
   uint32_t transitionStartMs_ = 0;
-  ExpressionPreset base_ = idlePreset();
+  ExpressionPreset face_ = idlePreset();
   ExpressionPreset from_ = idlePreset();
 };
 
