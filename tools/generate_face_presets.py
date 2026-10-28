@@ -20,9 +20,9 @@ METRIC_BOUNDS = {
 
 
 def color(value: str) -> str:
-    if not isinstance(value, str) or len(value) != 7 or not value.startswith("#"):
+    if (not isinstance(value, str) or len(value) != 7 or not value.startswith("#") or
+            any(digit not in "0123456789abcdefABCDEF" for digit in value[1:])):
         raise ValueError(f"expected #RRGGBB color, got {value!r}")
-    int(value[1:], 16)
     return f"0x{value[1:].upper()}"
 
 
@@ -81,10 +81,6 @@ def main() -> int:
 
     payload = json.loads(SOURCE.read_text())
     presets = payload["presets"]
-    names = [preset.get("name") for preset in presets]
-    required_names = ["idle", "curious", "happy", "surprised", "excited"]
-    if names != required_names:
-        raise ValueError(f"expected presets in order {required_names}, got {names}")
     expected = render(presets)
     if args.check:
         return 0 if OUTPUT.exists() and OUTPUT.read_text() == expected else 1

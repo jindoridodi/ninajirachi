@@ -3,6 +3,7 @@
 #include "src/behavior/WearableBehavior.h"
 #include "src/face/SettingsBatteryRenderer.h"
 #include "src/compass/CompassService.h"
+#include "src/compass/GravityEstimator.h"
 
 namespace {
 
@@ -10,6 +11,7 @@ nina::WaveshareSurface surface;
 nina::FaceRenderer renderer;
 nina::WearableBehavior behavior;
 nina::CompassService compass;
+nina::GravityEstimator gravityEstimator;
 nina::ExpressionName expression = nina::ExpressionName::Idle;
 bool displayReady = false;
 bool imuReady = false;
@@ -89,10 +91,14 @@ void loop() {
   nina::MagneticVector gravity{0, 0, 0};
   if (imuReady) {
     float acceleration[3], gyro[3];
-    unsigned int stamp;
-    QMI8658_read_xyz(acceleration, gyro, &stamp);
-    // The unmodified official driver returns acceleration in mg.
-    gravity = {acceleration[0] / 1000, acceleration[1] / 1000, acceleration[2] / 1000};
+    // Read the raw timestamp: the vendor tim_count helper rewrites duplicate values.
+    unsigned char stamp[3] = {};
+    QMI8658_read_reg(QMI8658Register_Timestamp_L, stamp, 3);
+    QMI8658_read_xyz(acceleration, gyro, nullptr);
+    const uint32_t timestamp = uint32_t(stamp[0]) | (uint32_t(stamp[1]) << 8) |
+                               (uint32_t(stamp[2]) << 16);
+    gravity = gravityEstimator.update(timestamp, {acceleration[0], acceleration[1], acceleration[2]},
+                                      {gyro[0], gyro[1], gyro[2]}, now);
   }
   const bool sampled = compassReady && compass.update(now, gravity);
   if (sampled && showRaw && now - lastLogMs >= 250) {
