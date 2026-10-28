@@ -35,6 +35,8 @@ The expected QMC5883P I²C address is `0x2C` ([Adafruit reference](https://learn
 
 Use Arduino C++ and upload through USB-C.
 
+The [official Waveshare ESP32-S3-Touch-LCD-1.28 documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) is the source of truth for the board schematic, Arduino examples, pinout, display/touch/IMU details, battery measurement, and flashing procedure. Check it before changing board-specific code.
+
 1. Install the ESP32 Arduino board package.
 2. Select `ESP32S3 Dev Module` as the board target.
 3. Select the connected USB-C port.
