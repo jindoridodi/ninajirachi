@@ -10,7 +10,6 @@ nina::WaveshareSurface surface;
 nina::FaceRenderer renderer;
 nina::WearableBehavior behavior;
 nina::CompassService compass;
-nina::SettingsBatteryRenderer settingsRenderer;
 nina::ExpressionName expression = nina::ExpressionName::Idle;
 bool displayReady = false;
 bool imuReady = false;
@@ -23,17 +22,12 @@ char deviceId[13];
 constexpr uint32_t kFramePeriodMs = 33;
 constexpr uint8_t kCompassAddress = 0x2C;
 
-class SettingsSurface : public nina::SettingsDrawSurface {
- public:
-  void fillRect(int x, int y, int w, int h, nina::Color color) override {
-    surface.fillRect(x, y, w, h, color);
-  }
-  void drawText(int x, int y, const char* text, nina::Color color) override {
-    uint16_t rgb = ((color.rgb >> 8) & 0xf800) | ((color.rgb >> 5) & 0x07e0) |
-                   ((color.rgb >> 3) & 0x001f);
-    Paint_DrawString_EN(x, y, text, &Font12, rgb, BLACK);
-  }
-} settingsSurface;
+void renderSettings(const nina::SettingsBatteryDisplay& settings) {
+  const auto text = nina::settingsBatteryLines(settings);
+  surface.fillRect(0, 0, 240, 240, {0});
+  for (int line = 0; line < 7; ++line)
+    Paint_DrawString_EN(32, 50 + line * 20, text.lines[line], &Font12, WHITE, BLACK);
+}
 
 void serialCommands() {
   if (!Serial.available()) return;
@@ -114,6 +108,6 @@ void loop() {
                             true, false, "prototype-13-14")});
   if (!displayReady) return;
   if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
-  else settingsRenderer.render(settingsSurface, output.settings, 240, 240);
+  else renderSettings(output.settings);
   surface.present();
 }
