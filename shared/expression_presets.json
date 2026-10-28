@@ -1,0 +1,24 @@
+{
+  "presets": [
+    {
+      "name": "idle",
+      "background": "#21325E",
+      "face": "#F6B3D1",
+      "eye": "#FFF8FC",
+      "eyelid": "#F6B3D1",
+      "pupil": "#1D1630",
+      "mouth": "#7B3157",
+      "effect": "#FFD45C",
+      "faceRadius": 112,
+      "eyeWidth": 36,
+      "eyeOpen": 42,
+      "eyelidHeight": 3,
+      "pupilRadius": 10,
+      "pupilOffsetX": 0,
+      "pupilOffsetY": 0,
+      "mouthWidth": 42,
+      "mouthHeight": 14,
+      "effectRadius": 0
+    }
+  ]
+}
