@@ -6,6 +6,10 @@ The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` d
 
 The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up.
 
+## Compass bench setup
+
+`src/compass/Qmc5883p.h` uses Arduino's built-in `Wire` API and has no external driver dependency. It deliberately requires a caller-configured `TwoWire` bus and an address found by an I²C scanner; it does not choose final GPIO pins or assume `0x2C`. Follow [the QMC5883P bench procedure](../docs/compass-bench.md) before connecting it to the wearable interaction loop.
+
 `shared/expression_presets.json` is the source of truth for expression presets. Run this from the repository root after changing it:
 
 ```sh
