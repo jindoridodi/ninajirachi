@@ -15,16 +15,22 @@ class Qmc5883p {
   }
 
   bool begin(TwoWire& bus, uint8_t address) {
+    initialized_ = false;
+    if (address < 0x08 || address > 0x77) return false;
     bus_ = &bus;
     address_ = address;
 
     uint8_t chipId = 0;
     if (!readRegister(kChipIdRegister, chipId) || chipId != kExpectedChipId) return false;
 
-    return writeRegister(kControl1Register, kNormalMode);
+    // QST Rev E section 7.1: axis signs, set/reset on + 8 G, normal 200 Hz.
+    initialized_ = writeVerified(0x29, 0x06) && writeVerified(0x0B, 0x08) &&
+                   writeVerified(kControl1Register, 0xCD);
+    return initialized_;
   }
 
   bool read(MagneticSample& sample) {
+    if (!initialized_) return false;
     uint8_t status = 0;
     if (!readRegister(kStatusRegister, status) || (status & kOverflowMask) != 0 ||
         (status & kDataReadyMask) == 0) {
@@ -34,8 +40,11 @@ class Qmc5883p {
     uint8_t bytes[6] = {};
     if (!readRegisters(kDataRegister, bytes, sizeof(bytes))) return false;
 
-    sample = {toInt16(bytes[0], bytes[1]), toInt16(bytes[2], bytes[3]),
-              toInt16(bytes[4], bytes[5])};
+    const MagneticSample next{toInt16(bytes[0], bytes[1]), toInt16(bytes[2], bytes[3]),
+                              toInt16(bytes[4], bytes[5])};
+    if ((next.x == 0 && next.y == 0 && next.z == 0) ||
+        saturated(next.x) || saturated(next.y) || saturated(next.z)) return false;
+    sample = next;
     return true;
   }
 
@@ -45,9 +54,15 @@ class Qmc5883p {
   static constexpr uint8_t kDataRegister = 0x01;
   static constexpr uint8_t kStatusRegister = 0x09;
   static constexpr uint8_t kControl1Register = 0x0A;
-  static constexpr uint8_t kNormalMode = 0x01;
   static constexpr uint8_t kDataReadyMask = 0x01;
   static constexpr uint8_t kOverflowMask = 0x02;
+
+  static bool saturated(int16_t value) { return value == -32768 || value == 32767; }
+
+  bool writeVerified(uint8_t reg, uint8_t value) {
+    uint8_t actual = 0;
+    return writeRegister(reg, value) && readRegister(reg, actual) && actual == value;
+  }
 
   static int16_t toInt16(uint8_t low, uint8_t high) {
     return static_cast<int16_t>(static_cast<uint16_t>(low) | (static_cast<uint16_t>(high) << 8));
@@ -64,7 +79,11 @@ class Qmc5883p {
     bus_->write(registerAddress);
     if (bus_->endTransmission(false) != 0 || bus_->requestFrom(address_, count) != count) return false;
 
-    for (size_t index = 0; index < count; ++index) values[index] = bus_->read();
+    for (size_t index = 0; index < count; ++index) {
+      const int byte = bus_->read();
+      if (byte < 0) return false;
+      values[index] = static_cast<uint8_t>(byte);
+    }
     return true;
   }
 
@@ -79,6 +98,7 @@ class Qmc5883p {
 
   TwoWire* bus_ = nullptr;
   uint8_t address_ = 0;
+  bool initialized_ = false;
 };
 
 }  // namespace nina

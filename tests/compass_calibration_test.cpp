@@ -26,6 +26,15 @@ int main() {
   const nina::MagneticVector centered = calibration.apply({20, 40, -10});
   const nina::CompassCalibration restored(calibration.data());
 
+  // The tilted field projects to equal forward/right components (45 degrees).
+  nina::CompassCalibration unit({{-1000, -1000, -1000}, {1000, 1000, 1000}, 0});
+  if (!expect(near(unit.headingDegrees({500, 707, -500}, {0.70710678f, 0, 0.70710678f}),
+                        45, 0.02f), "pitch compensation preserves heading") ||
+      !expect(std::isnan(unit.headingDegrees({1000, 0, 0}, {0, 0, 0})),
+              "missing gravity invalidates heading") ||
+      !expect(std::isnan(nina::CompassCalibration{}.headingDegrees({1, 2, 3})),
+              "uncalibrated heading is invalid")) return 1;
+
   return !(expect(calibration.ready(), "calibration becomes usable after all axes vary") &&
            expect(near(centered.x, 0) && near(centered.y, 0) && near(centered.z, 0),
                   "calibration removes the measured hard-iron center") &&
