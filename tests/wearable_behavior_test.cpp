@@ -132,13 +132,41 @@ bool requiresReleaseAndExactTimeouts() {
                 nina::ScreenName::Face, "settings times out at seven seconds");
 }
 
+bool delayedObservationsExpireFromReceiveTime() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(3000, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  if (!expect(b.update(in).peerCount == 0, "stale queued observation is ignored")) return false;
+  in.elapsedMs = 4000; in.discovery.receivedMs = 2000;
+  if (!expect(b.update(in).peerCount == 1, "recent queued observation is accepted")) return false;
+  in.discovery = {}; in.elapsedMs = 5000;
+  return expect(b.update(in).peerCount == 0, "peer expires from receive time");
+}
+
+bool olderObservationsDoNotReplaceNewerOnes() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 90});
+  b.update(in);
+  in.discovery.rssi = -90; in.discovery.receivedMs = 0xfffffff0u;
+  b.update(in);
+  p[11] = 3; in.discovery.rssi = -50; in.discovery.receivedMs = 100;
+  if (!expect(b.update(in).targetId == 2, "older pre-wrap RSSI cannot replace newer RSSI")) return false;
+  in.discovery = {}; in.elapsedMs = 3000;
+  if (!expect(b.update(in).targetId == 2, "older pre-wrap timestamp cannot shorten peer lifetime")) return false;
+  in.elapsedMs = 3090;
+  return expect(b.update(in).targetId == 3, "newer post-wrap observation expires at its deadline");
+}
+
 bool discoversPeer() {
   nina::WearableBehavior behavior;
   nina::BatterySnapshot battery;
   const uint8_t packet[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
   nina::WearableInput input = {100, false, nina::ExpressionName::Idle, battery};
   input.localId = 1;
-  input.discovery = {packet, sizeof(packet), -45};
+  input.discovery = {packet, sizeof(packet), -45, 100};
   const auto found = behavior.update(input);
   input.discovery = {};
   const auto stale = behavior.update({3100, false, nina::ExpressionName::Idle, battery});
@@ -152,7 +180,7 @@ bool selectsStableTargetsAndIgnoresInvalidPackets() {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
   uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,1};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -50});
+  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -50, 0});
   if (!expect(b.update(in).peerCount == 0, "own identity ignored")) return false;
   p[11] = 2; p[4] = 2;
   if (!expect(b.update(in).peerCount == 0, "unknown protocol ignored")) return false;
@@ -160,11 +188,11 @@ bool selectsStableTargetsAndIgnoresInvalidPackets() {
   if (!expect(b.update(in).peerCount == 0, "truncated protocol ignored")) return false;
   in.discovery.size = 12;
   if (!expect(b.update(in).targetId == 2, "first peer selected")) return false;
-  p[11] = 3; in.elapsedMs = 100; in.discovery.rssi = -47;
+  p[11] = 3; in.elapsedMs = 100; in.discovery.receivedMs = 100; in.discovery.rssi = -47;
   if (!expect(b.update(in).targetId == 2, "small RSSI difference preserves target")) return false;
-  in.elapsedMs = 200; in.discovery.rssi = -44;
+  in.elapsedMs = 200; in.discovery.receivedMs = 200; in.discovery.rssi = -44;
   if (!expect(b.update(in).targetId == 3, "clearly stronger peer selected")) return false;
-  p[11] = 2; in.elapsedMs = 3000; in.discovery.rssi = -50;
+  p[11] = 2; in.elapsedMs = 3000; in.discovery.receivedMs = 3000; in.discovery.rssi = -50;
   if (!expect(b.update(in).targetId == 3, "selected peer remains while recent")) return false;
   in.elapsedMs = 3200; in.discovery = {};
   return expect(b.update(in).targetId == 2, "expired target replaced by recent peer");
@@ -174,10 +202,10 @@ bool sustainedProximityAndCapacity() {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
   uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40});
+  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
   b.update(in);
   for (int t = 2000; t <= 10000; t += 2000) {
-    in.elapsedMs = t;
+    in.elapsedMs = t; in.discovery.receivedMs = t;
     const auto output = b.update(in);
     if (t == 8000 && !expect(output.face.name == nina::ExpressionName::Curious,
                              "focused until sustained proximity")) return false;
@@ -187,7 +215,7 @@ bool sustainedProximityAndCapacity() {
   for (int id = 3; id <= 6; ++id) { p[11] = id; b.update(in); }
   if (!expect(b.update(in).peerCount == 4, "peer list has bounded capacity")) return false;
   in.discovery = {};
-  in.elapsedMs = 13000;
+  in.elapsedMs = 13000; in.discovery.receivedMs = 13000;
   return expect(b.update(in).face.name == nina::ExpressionName::Idle, "expiry returns to idle");
 }
 
@@ -195,9 +223,9 @@ bool returningPeerStartsFocusedAgain() {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40});
-  for (int t = 0; t <= 10000; t += 2000) { in.elapsedMs = t; b.update(in); }
-  in.elapsedMs = 13000;
+  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  for (int t = 0; t <= 10000; t += 2000) { in.elapsedMs = t; in.discovery.receivedMs = t; b.update(in); }
+  in.elapsedMs = 13000; in.discovery.receivedMs = 13000;
   return expect(b.update(in).face.name == nina::ExpressionName::Curious,
                 "peer returning after expiry starts focused again");
 }
@@ -206,15 +234,15 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, true, nina::ExpressionName::Idle, battery, 1, {p, 12, -50});
+  nina::WearableInput in(0, true, nina::ExpressionName::Idle, battery, 1, {p, 12, -50, 0});
   b.update(in);
-  in.elapsedMs = 5000;
+  in.elapsedMs = 5000; in.discovery.receivedMs = 5000;
   const auto settings = b.update(in);
   if (!expect(settings.screen == nina::ScreenName::SettingsBattery && settings.peerCount == 1,
               "discovery remains active on settings screen")) return false;
   nina::WearableBehavior wrapped;
   in.touchDown = false;
-  in.elapsedMs = 0xfffffff0u;
+  in.elapsedMs = 0xfffffff0u; in.discovery.receivedMs = in.elapsedMs;
   wrapped.update(in);
   in.discovery = {};
   in.elapsedMs = 100;
@@ -239,7 +267,7 @@ int main() {
               "expression passes through intermediate geometry")) return 1;
   const auto finished = transition.update({400, false, nina::ExpressionName::Surprised, battery});
   if (!expect(finished.face.metrics.eyeOpen == 58, "transition reaches requested expression")) return 1;
-  return !(discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
+  return !(olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
            opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
            requiresReleaseAndExactTimeouts());

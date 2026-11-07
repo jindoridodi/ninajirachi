@@ -47,6 +47,7 @@ struct DiscoveryObservation {
   const uint8_t* data;
   size_t size;
   int rssi;
+  uint32_t receivedMs;
 };
 
 struct WearableInput {
@@ -107,7 +108,8 @@ class WearableBehavior {
         peers_[i].id = 0;
       }
     const auto& observation = input.discovery;
-    if (observation.data && observation.size == 12 && observation.rssi < 0 &&
+    if (observation.data && now - observation.receivedMs < kPeerGraceMs &&
+        observation.size == 12 && observation.rssi < 0 &&
         observation.rssi >= -127 && observation.data[0] == 'N' && observation.data[1] == 'I' &&
         observation.data[2] == 'N' && observation.data[3] == 'A' &&
         observation.data[4] == 1 && observation.data[5] == 1) {
@@ -119,7 +121,8 @@ class WearableBehavior {
           if (peers_[i].id == id) { slot = &peers_[i]; break; }
           if (!peers_[i].id && !slot) slot = &peers_[i];
         }
-        if (slot) *slot = {id, now, observation.rssi};
+        if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen))
+          *slot = {id, observation.receivedMs, observation.rssi};
       }
     }
     Peer* current = nullptr;
