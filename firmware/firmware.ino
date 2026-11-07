@@ -4,12 +4,15 @@
 #include "src/face/SettingsBatteryRenderer.h"
 #include "src/compass/CompassService.h"
 #include "src/compass/GravityEstimator.h"
+#include "src/discovery/BleDiscovery.h"
 
 namespace {
 
 nina::WaveshareSurface surface;
 nina::FaceRenderer renderer;
 nina::WearableBehavior behavior;
+nina::BleDiscovery discovery;
+uint64_t localIdentity = 0;
 nina::CompassService compass;
 nina::GravityEstimator gravityEstimator;
 nina::ExpressionName expression = nina::ExpressionName::Idle;
@@ -76,6 +79,8 @@ void setup() {
   analogSetPinAttenuation(1, ADC_11db);
   imuReady = QMI8658_init() != 0;
   const uint64_t identity = ESP.getEfuseMac();
+  localIdentity = identity & 0xffffffffffffULL;
+  if (!discovery.begin(localIdentity)) Serial.println("BLE discovery initialization failed");
   snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
            unsigned(identity));
   Serial.println("s scan; v verify/enable compass; c calibrate; w save; x cancel; r raw; 0-4 expressions");
@@ -109,9 +114,16 @@ void loop() {
                   heading.valid ? "valid" : "unavailable", heading.degrees,
                   unsigned(compass.calibrationSamples()));
   }
-  const auto output = behavior.update({now, nina::touchIsDown(), expression,
+  nina::WearableInput input(now, nina::touchIsDown(), expression,
       nina::BatterySnapshot(nina::batteryMillivolts(), false, false, 0, deviceId,
-                            true, false, "prototype-13-14")});
+                            true, false, "prototype-13-14"), localIdentity);
+  nina::BlePacket packet;
+  for (int i = 0; i < 8 && discovery.receive(packet); ++i) {
+    input.discovery = {packet.data, sizeof(packet.data), packet.rssi};
+    behavior.update(input);
+  }
+  input.discovery = {};
+  const auto output = behavior.update(input);
   if (!displayReady) return;
   if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
   else renderSettings(output.settings);

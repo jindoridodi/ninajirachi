@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "../face/ExpressionPreset.h"
@@ -37,42 +38,106 @@ struct SettingsBatteryDisplay {
   BatterySnapshot battery;
 };
 
+constexpr uint32_t kPeerGraceMs = 3000;
+constexpr uint32_t kSustainedProximityMs = 10000;
+constexpr int kTargetSwitchMarginDb = 6;
+constexpr size_t kMaxPeers = 4;
+
+struct DiscoveryObservation {
+  const uint8_t* data;
+  size_t size;
+  int rssi;
+};
+
 struct WearableInput {
+  WearableInput(uint32_t time, bool touch, ExpressionName requested, BatterySnapshot power,
+                uint64_t identity = 0, DiscoveryObservation observation = {})
+      : elapsedMs(time), touchDown(touch), expression(requested), battery(power),
+        localId(identity), discovery(observation) {}
   uint32_t elapsedMs;
   bool touchDown;
   ExpressionName expression;
   BatterySnapshot battery;
+  uint64_t localId;
+  DiscoveryObservation discovery;
 };
 
 struct WearableOutput {
   ScreenName screen;
   ExpressionPreset face;
   SettingsBatteryDisplay settings;
+  size_t peerCount;
+  uint64_t targetId;
 };
 
 class WearableBehavior {
  public:
   WearableOutput update(const WearableInput& input) {
     updateScreen(input.elapsedMs, input.touchDown);
+    updatePeers(input);
+    ExpressionName requested = input.expression;
+    if (targetId_) requested = input.elapsedMs - targetSinceMs_ >= kSustainedProximityMs
+        ? ExpressionName::Excited : ExpressionName::Curious;
     if (!initialized_) {
-      face_ = from_ = expressionPreset(input.expression);
+      face_ = from_ = expressionPreset(requested);
       transitionStartMs_ = input.elapsedMs - kExpressionTransitionMs;
       initialized_ = true;
     }
-    if (input.expression != face_.name) {
+    if (requested != face_.name) {
       from_ = face_;
       transitionStartMs_ = input.elapsedMs;
     }
     const uint32_t age = input.elapsedMs - transitionStartMs_;
     float t = age >= kExpressionTransitionMs ? 1.0f : float(age) / kExpressionTransitionMs;
     t = t * t * (3 - 2 * t);
-    ExpressionPreset face = expressionPreset(input.expression);
+    ExpressionPreset face = expressionPreset(requested);
     animate(face, input.elapsedMs);
     face_ = blend(from_, face, t);
-    return {screen_, face_, {input.battery}};
+    return {screen_, face_, {input.battery}, peerCount_, targetId_};
   }
 
  private:
+  struct Peer { uint64_t id; uint32_t seen; int rssi; };
+
+  void updatePeers(const WearableInput& input) {
+    const uint32_t now = input.elapsedMs;
+    for (size_t i = 0; i < kMaxPeers; ++i)
+      if (peers_[i].id && now - peers_[i].seen >= kPeerGraceMs) {
+        if (peers_[i].id == targetId_) targetId_ = 0;
+        peers_[i].id = 0;
+      }
+    const auto& observation = input.discovery;
+    if (observation.data && observation.size == 12 && observation.rssi < 0 &&
+        observation.rssi >= -127 && observation.data[0] == 'N' && observation.data[1] == 'I' &&
+        observation.data[2] == 'N' && observation.data[3] == 'A' &&
+        observation.data[4] == 1 && observation.data[5] == 1) {
+      uint64_t id = 0;
+      for (size_t i = 6; i < 12; ++i) id = (id << 8) | observation.data[i];
+      if (id && id != input.localId) {
+        Peer* slot = nullptr;
+        for (size_t i = 0; i < kMaxPeers; ++i) {
+          if (peers_[i].id == id) { slot = &peers_[i]; break; }
+          if (!peers_[i].id && !slot) slot = &peers_[i];
+        }
+        if (slot) *slot = {id, now, observation.rssi};
+      }
+    }
+    Peer* current = nullptr;
+    Peer* strongest = nullptr;
+    peerCount_ = 0;
+    for (size_t i = 0; i < kMaxPeers; ++i) {
+      Peer& peer = peers_[i];
+      if (!peer.id) continue;
+      ++peerCount_;
+      if (peer.id == targetId_) current = &peer;
+      if (!strongest || peer.rssi > strongest->rssi) strongest = &peer;
+    }
+    if (!current || (strongest && strongest->rssi >= current->rssi + kTargetSwitchMarginDb)) {
+      targetId_ = strongest ? strongest->id : 0;
+      targetSinceMs_ = now;
+    }
+  }
+
   static ExpressionPreset blend(const ExpressionPreset& a, const ExpressionPreset& b, float t) {
     auto value = [t](int x, int y) { return static_cast<int16_t>(lroundf(x + (y - x) * t)); };
     auto color = [value](Color x, Color y) {
@@ -147,6 +212,10 @@ class WearableBehavior {
     }
   }
 
+  Peer peers_[kMaxPeers] = {};
+  size_t peerCount_ = 0;
+  uint64_t targetId_ = 0;
+  uint32_t targetSinceMs_ = 0;
   ScreenName screen_ = ScreenName::Face;
   ScreenName gestureScreen_ = ScreenName::Face;
   uint32_t touchStartMs_ = 0;
