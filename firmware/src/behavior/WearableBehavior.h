@@ -106,7 +106,7 @@ class WearableBehavior {
 
   static uint64_t observationId(const DiscoveryObservation& observation, uint32_t now, uint64_t localId) {
     uint64_t id = 0;
-    if (observation.data && now - observation.receivedMs < kPeerGraceMs &&
+    if (observation.data && now - observation.receivedMs < 0x80000000u &&
         observation.size == 12 && observation.rssi < 0 &&
         observation.rssi >= -127 && observation.data[0] == 'N' && observation.data[1] == 'I' &&
         observation.data[2] == 'N' && observation.data[3] == 'A' &&
@@ -120,16 +120,16 @@ class WearableBehavior {
   void updatePeers(uint32_t now, uint64_t localId, const DiscoveryObservation* observations, size_t count) {
     for (size_t i = 0; i < kMaxPeers; ++i) {
       Peer& peer = peers_[i];
-      bool bridgesExpiry = false;
+      bool hasRecentObservation = false;
       for (size_t j = 0; peer.id && j < count; ++j) {
         const auto& observation = observations[j];
-        if (observationId(observation, now, localId) == peer.id &&
-            now - observation.receivedMs <= now - peer.seen) {
-          bridgesExpiry = observation.receivedMs - peer.seen < kPeerGraceMs;
+        if (now - observation.receivedMs < kPeerGraceMs &&
+            observationId(observation, now, localId) == peer.id) {
+          hasRecentObservation = true;
           break;
         }
       }
-      if (peer.id && now - peer.seen >= kPeerGraceMs && !bridgesExpiry) {
+      if (peer.id && now - peer.seen >= kPeerGraceMs && !hasRecentObservation) {
         if (peer.id == targetId_) targetId_ = 0;
         peer.id = 0;
       }
@@ -143,10 +143,18 @@ class WearableBehavior {
         if (peers_[i].id == id) { slot = &peers_[i]; break; }
         if (!peers_[i].id && !slot) slot = &peers_[i];
       }
+      if (slot && !slot->id && now - observation.receivedMs >= kPeerGraceMs) continue;
       if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen)) {
         if (slot->id && observation.receivedMs - slot->seen >= kPeerGraceMs && id == targetId_)
           targetId_ = 0;
         *slot = {id, observation.receivedMs, observation.rssi};
+      }
+    }
+    for (size_t i = 0; i < kMaxPeers; ++i) {
+      Peer& peer = peers_[i];
+      if (peer.id && now - peer.seen >= kPeerGraceMs) {
+        if (peer.id == targetId_) targetId_ = 0;
+        peer.id = 0;
       }
     }
     Peer* current = nullptr;
