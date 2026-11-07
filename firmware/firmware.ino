@@ -138,7 +138,11 @@ void loop() {
     radio.update(input.elapsedMs);
     nina::RadioPacket packet;
     while (radio.receive(packet)) {
+      input.elapsedMs = millis();
       if (input.elapsedMs - packet.receivedMs > 250) continue;
+      const auto currentHeading = compass.heading(input.elapsedMs);
+      input.headingValid = currentHeading.valid;
+      input.headingDegrees = currentHeading.degrees;
       input.radioPeerId = packet.peer;
       input.radioRssi = packet.rssi;
       output = behavior.update(input, nullptr, 0);

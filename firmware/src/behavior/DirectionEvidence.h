@@ -26,13 +26,9 @@ class DirectionEvidence {
     if (!target_ || peer != target_ || !isfinite(heading) || rssi < -127 || rssi >= 0) return;
     int index = int(normalize(heading + 22.5f) / 45.0f);
     auto& bucket = buckets_[index];
-    if (!bucket.count || now - bucket.lastMs >= kDirectionSampleMaxAgeMs) bucket = {};
-    if (!bucket.count) bucket.minimum = bucket.maximum = rssi;
-    if (rssi < bucket.minimum) bucket.minimum = rssi;
-    if (rssi > bucket.maximum) bucket.maximum = rssi;
-    if (bucket.count < 8) { bucket.total += rssi; ++bucket.count; }
-    else bucket.total = (bucket.total * 7) / 8 + rssi;
-    bucket.lastMs = now;
+    bucket.samples[bucket.next] = {rssi, now};
+    bucket.next = (bucket.next + 1) % 8;
+    if (bucket.count < 8) ++bucket.count;
     if (hasHeading_ && fabsf(normalize(heading - lastHeading_ + 180) - 180) >= 15) {
       turned_ = true;
       lastHeading_ = heading;
@@ -61,16 +57,29 @@ class DirectionEvidence {
     bestIndex = 0;
     for (int i = 0; i < 8; ++i) {
       const auto& b = buckets_[i];
-      if (b.count < 2 || b.maximum - b.minimum > 15 ||
-          now - b.lastMs >= kDirectionSampleMaxAgeMs) continue;
-      const int average = b.total / b.count;
+      int total = 0, sampleCount = 0, minimum = 0, maximum = -128;
+      for (int j = 0; j < b.count; ++j) {
+        const auto& sample = b.samples[j];
+        if (now - sample.time >= kDirectionSampleMaxAgeMs) continue;
+        if (sample.rssi < minimum) minimum = sample.rssi;
+        if (sample.rssi > maximum) maximum = sample.rssi;
+        total += sample.rssi;
+        ++sampleCount;
+      }
+      if (sampleCount < 2 || maximum - minimum > 15) continue;
+      const int average = total / sampleCount;
       ++count;
       if (average > best) { best = average; bestIndex = i; }
       if (average < worst) worst = average;
     }
     return count >= 3 && best >= kDirectionMinRssi && best - worst >= kDirectionMinContrastDb;
   }
-  struct Bucket { int total = 0; int minimum = 0; int maximum = 0; uint8_t count = 0; uint32_t lastMs = 0; };
+  struct Sample {
+    Sample(int value = 0, uint32_t at = 0) : rssi(value), time(at) {}
+    int rssi;
+    uint32_t time;
+  };
+  struct Bucket { Sample samples[8]; uint8_t count = 0; uint8_t next = 0; };
   static float normalize(float value) {
     value = fmodf(value, 360.0f);
     return value < 0 ? value + 360.0f : value;

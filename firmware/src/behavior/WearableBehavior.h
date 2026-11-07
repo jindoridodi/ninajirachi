@@ -85,7 +85,9 @@ class WearableBehavior {
 
   WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count) {
     updateScreen(input.elapsedMs, input.touchDown);
+    targetReset_ = false;
     updatePeers(input.elapsedMs, input.localId, observations, count);
+    if (targetReset_) direction_.select(0);
     direction_.select(targetId_);
     if (input.headingValid) direction_.observe(input.radioPeerId, input.headingDegrees,
                                               input.radioRssi, input.elapsedMs);
@@ -141,7 +143,7 @@ class WearableBehavior {
         }
       }
       if (peer.id && now - peer.seen >= kPeerGraceMs && !hasRecentObservation) {
-        if (peer.id == targetId_) targetId_ = 0;
+        if (peer.id == targetId_) { targetId_ = 0; targetReset_ = true; }
         peer.id = 0;
       }
     }
@@ -156,15 +158,16 @@ class WearableBehavior {
       }
       if (slot && !slot->id && now - observation.receivedMs >= kPeerGraceMs) continue;
       if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen)) {
-        if (slot->id && observation.receivedMs - slot->seen >= kPeerGraceMs && id == targetId_)
-          targetId_ = 0;
+        if (slot->id && observation.receivedMs - slot->seen >= kPeerGraceMs && id == targetId_) {
+          targetId_ = 0; targetReset_ = true;
+        }
         *slot = {id, observation.receivedMs, observation.rssi};
       }
     }
     for (size_t i = 0; i < kMaxPeers; ++i) {
       Peer& peer = peers_[i];
       if (peer.id && now - peer.seen >= kPeerGraceMs) {
-        if (peer.id == targetId_) targetId_ = 0;
+        if (peer.id == targetId_) { targetId_ = 0; targetReset_ = true; }
         peer.id = 0;
       }
     }
@@ -262,6 +265,7 @@ class WearableBehavior {
   DirectionEvidence direction_;
   size_t peerCount_ = 0;
   uint64_t targetId_ = 0;
+  bool targetReset_ = false;
   uint32_t targetSinceMs_ = 0;
   ScreenName screen_ = ScreenName::Face;
   ScreenName gestureScreen_ = ScreenName::Face;
