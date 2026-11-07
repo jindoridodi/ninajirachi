@@ -102,28 +102,34 @@ class WearableBehavior {
 
   void updatePeers(const WearableInput& input) {
     const uint32_t now = input.elapsedMs;
-    for (size_t i = 0; i < kMaxPeers; ++i)
-      if (peers_[i].id && now - peers_[i].seen >= kPeerGraceMs) {
-        if (peers_[i].id == targetId_) targetId_ = 0;
-        peers_[i].id = 0;
-      }
     const auto& observation = input.discovery;
+    uint64_t id = 0;
     if (observation.data && now - observation.receivedMs < kPeerGraceMs &&
         observation.size == 12 && observation.rssi < 0 &&
         observation.rssi >= -127 && observation.data[0] == 'N' && observation.data[1] == 'I' &&
         observation.data[2] == 'N' && observation.data[3] == 'A' &&
         observation.data[4] == 1 && observation.data[5] == 1) {
-      uint64_t id = 0;
       for (size_t i = 6; i < 12; ++i) id = (id << 8) | observation.data[i];
-      if (id && id != input.localId) {
-        Peer* slot = nullptr;
-        for (size_t i = 0; i < kMaxPeers; ++i) {
-          if (peers_[i].id == id) { slot = &peers_[i]; break; }
-          if (!peers_[i].id && !slot) slot = &peers_[i];
-        }
-        if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen))
-          *slot = {id, observation.receivedMs, observation.rssi};
+      if (id == input.localId) id = 0;
+    }
+    for (size_t i = 0; i < kMaxPeers; ++i) {
+      Peer& peer = peers_[i];
+      const bool bridgesExpiry = id && peer.id == id &&
+          now - observation.receivedMs <= now - peer.seen &&
+          observation.receivedMs - peer.seen < kPeerGraceMs;
+      if (peer.id && now - peer.seen >= kPeerGraceMs && !bridgesExpiry) {
+        if (peer.id == targetId_) targetId_ = 0;
+        peer.id = 0;
       }
+    }
+    if (id) {
+      Peer* slot = nullptr;
+      for (size_t i = 0; i < kMaxPeers; ++i) {
+        if (peers_[i].id == id) { slot = &peers_[i]; break; }
+        if (!peers_[i].id && !slot) slot = &peers_[i];
+      }
+      if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen))
+        *slot = {id, observation.receivedMs, observation.rssi};
     }
     Peer* current = nullptr;
     Peer* strongest = nullptr;
