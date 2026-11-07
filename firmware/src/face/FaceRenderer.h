@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ExpressionPreset.h"
+#include <math.h>
+#include <algorithm>
 
 namespace nina {
 
@@ -37,16 +39,29 @@ class FaceRenderer {
     surface.fillEllipse(rightEyeX, eyeY, metrics.eyeWidth, metrics.eyeOpen, colors.eye);
 
     surface.beginLayer(FaceLayer::Eyelids);
+    if (metrics.eyelidHeight > 0) {
     surface.fillRect(leftEyeX - metrics.eyeWidth / 2, eyeY - metrics.eyeOpen / 2,
                      metrics.eyeWidth, metrics.eyelidHeight, colors.eyelid);
     surface.fillRect(rightEyeX - metrics.eyeWidth / 2, eyeY - metrics.eyeOpen / 2,
                      metrics.eyeWidth, metrics.eyelidHeight, colors.eyelid);
+    }
 
     surface.beginLayer(FaceLayer::Pupils);
-    surface.fillCircle(leftEyeX + metrics.pupilOffsetX, eyeY + metrics.pupilOffsetY,
-                       metrics.pupilRadius, colors.pupil);
-    surface.fillCircle(rightEyeX + metrics.pupilOffsetX, eyeY + metrics.pupilOffsetY,
-                       metrics.pupilRadius, colors.pupil);
+    if (metrics.pupilRadius > 0 && metrics.eyeWidth > 0 && metrics.eyeOpen > 3) {
+      for (int eyeX = leftEyeX; eyeX <= rightEyeX; eyeX += rightEyeX - leftEyeX) {
+        for (int row = -metrics.pupilRadius; row <= metrics.pupilRadius; ++row) {
+          const int y = eyeY + metrics.pupilOffsetY + row;
+          if (y < eyeY - metrics.eyeOpen / 2 + metrics.eyelidHeight) continue;
+          const float ratio = float(y - eyeY) / (metrics.eyeOpen / 2.0f);
+          if (fabsf(ratio) > 1) continue;
+          const int eyeSpan = int(metrics.eyeWidth / 2.0f * sqrtf(1 - ratio * ratio));
+          const int pupilSpan = int(sqrtf(float(metrics.pupilRadius * metrics.pupilRadius - row * row)));
+          const int left = std::max(eyeX - eyeSpan, eyeX + metrics.pupilOffsetX - pupilSpan);
+          const int right = std::min(eyeX + eyeSpan, eyeX + metrics.pupilOffsetX + pupilSpan);
+          if (left <= right) surface.fillRect(left, y, right - left + 1, 1, colors.pupil);
+        }
+      }
+    }
 
     surface.beginLayer(FaceLayer::Mouth);
     surface.fillEllipse(centerX, centerY + 54, metrics.mouthWidth, metrics.mouthHeight,
