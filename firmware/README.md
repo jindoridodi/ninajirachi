@@ -36,3 +36,13 @@ python3 tools/generate_face_presets.py
 ```
 
 This regenerates the header consumed by Arduino firmware. Run `python3 tools/generate_face_presets.py --check` before committing preset changes.
+
+## BLE discovery
+
+Each wearable advertises and passively scans at the same time; there is no leader or access point. The 48-bit ID is derived from `ESP.getEfuseMac()`, also shown on the settings screen. Manufacturer data uses the experimental `FF FF` company identifier followed by `NINA`, protocol version `01`, discovery type `01`, and the six ID bytes in big-endian order. This prototype identifier is not an assigned Bluetooth company ID and must be replaced before a product release. Other lengths, versions, types, invalid RSSI and the local ID are ignored.
+
+The behavior retains up to four peers; additional new IDs are ignored until a slot expires. A peer expires after 3 seconds without a valid observation. The strongest recent BLE RSSI becomes the target, and a different peer must be at least 6 dB stronger to switch. A selected peer produces curious/focused interaction, changing to excited after 10 seconds of uninterrupted selection. Expiry returns to the manually selected expression (idle by default). All durations and the switching margin are named constants in `WearableBehavior.h` for worn tuning. Discovery continues on the settings screen. The callback queue holds eight observations; excess observations are dropped rather than blocking the radio task.
+
+The BLE protocol is unauthenticated and is for prototype discovery only. Physical identity uniqueness, two-way discovery, radio coexistence, packet loss, and worn timing need the two-wearable checks in issue #15. ESP-NOW direction evidence remains separate work.
+
+Observations carry their callback receive time through the queue, so delayed or older packets cannot extend a peer's lifetime or replace newer signal evidence. Each drained batch is considered together before peer selection, preserving continuity when a later queued observation bridges the grace period. Advertising configuration and start complete asynchronously: immediate request failures and completion failures are printed to serial, while `begin()` reports queue, configuration-request, and scan-start failures. A successful return does not guarantee advertising has started; missing completion events and actual over-the-air operation require hardware verification.
