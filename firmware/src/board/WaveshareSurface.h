@@ -14,6 +14,8 @@ class WaveshareSurface final : public DrawSurface {
   bool begin() {
     if (DEV_Module_Init() != 0) return false;
 
+    if (!psramInit()) return false;
+
     image_ = static_cast<UWORD*>(ps_malloc(LCD_1IN28_HEIGHT * LCD_1IN28_WIDTH * sizeof(UWORD)));
     if (image_ == nullptr) return false;
 
@@ -29,23 +31,30 @@ class WaveshareSurface final : public DrawSurface {
   void beginLayer(FaceLayer) override {}
 
   void fillCircle(int x, int y, int radius, Color color) override {
+    if (radius <= 0) return;
     Paint_DrawCircle(x, y, radius, rgb565(color), DOT_PIXEL_1X1, DRAW_FILL_FULL);
   }
 
   void fillEllipse(int x, int y, int width, int height, Color color) override {
+    if (width <= 0 || height <= 0) return;
     const float radiusX = width / 2.0f;
     const float radiusY = height / 2.0f;
     for (int row = -height / 2; row <= height / 2; ++row) {
       const float ratio = row / radiusY;
-      const int span = static_cast<int>(radiusX * sqrtf(1.0f - ratio * ratio));
-      Paint_DrawRectangle(x - span, y + row, x + span, y + row, rgb565(color), DOT_PIXEL_1X1,
-                          DRAW_FILL_FULL);
+      const int span = static_cast<int>(radiusX * sqrtf(fmaxf(0.0f, 1.0f - ratio * ratio)));
+      fillRect(x - span, y + row, span * 2 + 1, 1, color);
     }
   }
 
   void fillRect(int x, int y, int width, int height, Color color) override {
-    Paint_DrawRectangle(x, y, x + width - 1, y + height - 1, rgb565(color), DOT_PIXEL_1X1,
-                        DRAW_FILL_FULL);
+    if (width <= 0 || height <= 0 || x >= 240 || y >= 240) return;
+    const int endX = min(239, x + width - 1);
+    const int endY = min(239, y + height - 1);
+    x = max(0, x);
+    y = max(0, y);
+    if (endX < x || endY < y) return;
+    // ClearWindows uses exclusive endpoints and avoids DrawPoint's one-pixel offset.
+    Paint_ClearWindows(x, y, endX + 1, endY + 1, rgb565(color));
   }
 
  private:

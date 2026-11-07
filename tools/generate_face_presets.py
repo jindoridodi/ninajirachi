@@ -10,21 +10,36 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "shared" / "expression_presets.json"
 OUTPUT = ROOT / "firmware" / "src" / "face" / "ExpressionPresets.generated.h"
+COLOR_KEYS = ("background", "face", "eye", "eyelid", "pupil", "mouth", "effect")
+METRIC_BOUNDS = {
+    "faceRadius": (1, 120), "eyeWidth": (1, 100), "eyeOpen": (1, 100),
+    "eyelidHeight": (0, 100), "pupilRadius": (0, 40),
+    "pupilOffsetX": (-60, 60), "pupilOffsetY": (-60, 60),
+    "mouthWidth": (1, 100), "mouthHeight": (1, 100), "effectRadius": (0, 24),
+}
 
 
 def color(value: str) -> str:
-    if not isinstance(value, str) or len(value) != 7 or not value.startswith("#"):
+    if (not isinstance(value, str) or len(value) != 7 or not value.startswith("#") or
+            any(digit not in "0123456789abcdefABCDEF" for digit in value[1:])):
         raise ValueError(f"expected #RRGGBB color, got {value!r}")
-    int(value[1:], 16)
     return f"0x{value[1:].upper()}"
 
 
 def render(presets: list[dict]) -> str:
+    names = [preset.get("name") for preset in presets]
+    if names != ["idle", "curious", "happy", "surprised", "excited"]:
+        raise ValueError("expected idle, curious, happy, surprised, excited in order")
+    for preset in presets:
+        for key, (low, high) in METRIC_BOUNDS.items():
+            value = preset[key]
+            if type(value) is not int or not low <= value <= high:
+                raise ValueError(f"{key} must be an integer from {low} to {high}")
     rows = ["#pragma once", "", "namespace nina {", ""]
     for preset in presets:
         name = preset["name"]
         enum_name = name.title()
-        colors = ", ".join(color(preset[key]) for key in (
+        colors = ", ".join("{" + color(preset[key]) + "}" for key in (
             "background", "face", "eye", "eyelid", "pupil", "mouth", "effect"
         ))
         metrics = ", ".join(str(int(preset[key])) for key in (
@@ -33,11 +48,24 @@ def render(presets: list[dict]) -> str:
         ))
         rows.extend((
             f"constexpr ExpressionPreset k{enum_name}Preset = {{",
-            f"    ExpressionName::{enum_name}, {{{colors}}}, {{{metrics}}}",
+            f"    ExpressionName::{enum_name},",
+            f"    {{{colors}}},",
+            f"    {{{metrics}}}",
             "};",
             "",
         ))
     rows.extend((
+        "inline const ExpressionPreset& expressionPreset(ExpressionName name) {",
+        "  switch (name) {",
+    ))
+    for preset in presets:
+        enum_name = preset["name"].title()
+        rows.append(f"    case ExpressionName::{enum_name}: return k{enum_name}Preset;")
+    rows.extend((
+        "  }",
+        "  return kIdlePreset;",
+        "}",
+        "",
         "inline const ExpressionPreset& idlePreset() { return kIdlePreset; }",
         "",
         "}  // namespace nina",
@@ -52,7 +80,8 @@ def main() -> int:
     args = parser.parse_args()
 
     payload = json.loads(SOURCE.read_text())
-    expected = render(payload["presets"])
+    presets = payload["presets"]
+    expected = render(presets)
     if args.check:
         return 0 if OUTPUT.exists() and OUTPUT.read_text() == expected else 1
 
