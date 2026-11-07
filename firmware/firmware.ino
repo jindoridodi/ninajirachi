@@ -119,10 +119,12 @@ void loop() {
                             true, false, "prototype-13-14"), localIdentity);
   nina::BlePacket packet;
   for (int i = 0; i < 8 && discovery.receive(packet); ++i) {
-    input.discovery = {packet.data, sizeof(packet.data), packet.rssi};
+    input.elapsedMs = millis();
+    input.discovery = {packet.data, sizeof(packet.data), packet.rssi, packet.receivedMs};
     behavior.update(input);
   }
   input.discovery = {};
+  input.elapsedMs = millis();
   const auto output = behavior.update(input);
   if (!displayReady) return;
   if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
