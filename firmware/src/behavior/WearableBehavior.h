@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "../face/ExpressionPreset.h"
+#include "DirectionEvidence.h"
 
 namespace nina {
 
@@ -61,6 +62,10 @@ struct WearableInput {
   BatterySnapshot battery;
   uint64_t localId;
   DiscoveryObservation discovery;
+  uint64_t radioPeerId = 0;
+  int radioRssi = 0;
+  float headingDegrees = 0;
+  bool headingValid = false;
 };
 
 struct WearableOutput {
@@ -69,6 +74,7 @@ struct WearableOutput {
   SettingsBatteryDisplay settings;
   size_t peerCount;
   uint64_t targetId;
+  Gaze gaze;
 };
 
 class WearableBehavior {
@@ -80,6 +86,10 @@ class WearableBehavior {
   WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count) {
     updateScreen(input.elapsedMs, input.touchDown);
     updatePeers(input.elapsedMs, input.localId, observations, count);
+    direction_.select(targetId_);
+    if (input.headingValid) direction_.observe(input.radioPeerId, input.headingDegrees,
+                                              input.radioRssi, input.elapsedMs);
+    const Gaze gaze = direction_.gaze(input.elapsedMs, input.headingValid, input.headingDegrees);
     ExpressionName requested = input.expression;
     if (targetId_) requested = input.elapsedMs - targetSinceMs_ >= kSustainedProximityMs
         ? ExpressionName::Excited : ExpressionName::Curious;
@@ -98,7 +108,8 @@ class WearableBehavior {
     ExpressionPreset face = expressionPreset(requested);
     animate(face, input.elapsedMs);
     face_ = blend(from_, face, t);
-    return {screen_, face_, {input.battery}, peerCount_, targetId_};
+    if (targetId_) face_.metrics.pupilOffsetX = gaze == Gaze::Left ? -8 : gaze == Gaze::Right ? 8 : 0;
+    return {screen_, face_, {input.battery}, peerCount_, targetId_, gaze};
   }
 
  private:
@@ -248,6 +259,7 @@ class WearableBehavior {
   }
 
   Peer peers_[kMaxPeers] = {};
+  DirectionEvidence direction_;
   size_t peerCount_ = 0;
   uint64_t targetId_ = 0;
   uint32_t targetSinceMs_ = 0;
