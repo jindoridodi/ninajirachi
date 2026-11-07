@@ -117,15 +117,15 @@ void loop() {
   nina::WearableInput input(now, nina::touchIsDown(), expression,
       nina::BatterySnapshot(nina::batteryMillivolts(), false, false, 0, deviceId,
                             true, false, "prototype-13-14"), localIdentity);
-  nina::BlePacket packet;
-  for (int i = 0; i < 8 && discovery.receive(packet); ++i) {
-    input.elapsedMs = millis();
-    input.discovery = {packet.data, sizeof(packet.data), packet.rssi, packet.receivedMs};
-    behavior.update(input);
+  nina::BlePacket packets[8];
+  nina::DiscoveryObservation observations[8];
+  size_t count = 0;
+  while (count < 8 && discovery.receive(packets[count])) {
+    const auto& packet = packets[count];
+    observations[count++] = {packet.data, sizeof(packet.data), packet.rssi, packet.receivedMs};
   }
-  input.discovery = {};
   input.elapsedMs = millis();
-  const auto output = behavior.update(input);
+  const auto output = behavior.update(input, observations, count);
   if (!displayReady) return;
   if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
   else renderSettings(output.settings);

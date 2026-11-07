@@ -132,6 +132,69 @@ bool requiresReleaseAndExactTimeouts() {
                 nina::ScreenName::Face, "settings times out at seven seconds");
 }
 
+bool batchedDelayedContinuity(bool otherPeerFirst, uint32_t start) {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  const uint8_t other[] = {'N','I','N','A',1,1,0,0,0,0,0,3};
+  nina::WearableInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
+  b.update(in);
+  const nina::DiscoveryObservation batch[] = {
+      {otherPeerFirst ? other : p, 12, otherPeerFirst ? -80 : -40, start + (otherPeerFirst ? 3000u : 100u)},
+      {p, 12, -40, start + 2900}};
+  in.elapsedMs = start + 3100; in.discovery = {};
+  const auto result = b.update(in, batch, 2);
+  if (!expect(result.targetId == 2 && result.peerCount == (otherPeerFirst ? 2u : 1u),
+              "batch retains target and ignores stale packet")) return false;
+  in.discovery = {p, 12, -40, start + 5800}; in.elapsedMs = start + 5800; b.update(in);
+  in.discovery.receivedMs = start + 8700; in.elapsedMs = start + 8700; b.update(in);
+  in.discovery.receivedMs = start + 10000; in.elapsedMs = start + 10000;
+  return expect(b.update(in).face.name == nina::ExpressionName::Excited,
+                "batch preserves uninterrupted sustained proximity");
+}
+
+bool batchDoesNotReviveStalePeers() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  b.update(in);
+  const nina::DiscoveryObservation batch[] = {{p, 12, -40, 100}, {p, 12, -40, 200}};
+  in.elapsedMs = 3200; in.discovery = {};
+  const auto result = b.update(in, batch, 2);
+  return expect(result.peerCount == 0 && result.targetId == 0 && result.face.name == nina::ExpressionName::Idle,
+                "stale batch cannot revive an expired peer");
+}
+
+bool batchKeepsNewestSignal() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  const uint8_t other[] = {'N','I','N','A',1,1,0,0,0,0,0,3};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 90});
+  b.update(in);
+  const nina::DiscoveryObservation batch[] = {{p, 12, -40, 200}, {p, 12, -90, 150},
+                                                {other, 12, -50, 200}};
+  in.elapsedMs = 200; in.discovery = {};
+  return expect(b.update(in, batch, 3).targetId == 2,
+                "older packet later in batch cannot replace newer signal");
+}
+
+bool batchDoesNotBridgeAGapOutOfOrder() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  b.update(in);
+  const nina::DiscoveryObservation batch[] = {{p, 12, -40, 3100}, {p, 12, -40, 2900}};
+  in.elapsedMs = 3200; in.discovery = {}; b.update(in, batch, 2);
+  in.elapsedMs = 6000; in.discovery = {p, 12, -40, 6000}; b.update(in);
+  in.elapsedMs = 8000; in.discovery.receivedMs = 8000; b.update(in);
+  in.elapsedMs = 10000; in.discovery.receivedMs = 10000;
+  return expect(b.update(in).face.name == nina::ExpressionName::Curious,
+                "older packet cannot undo a genuine gap in a batch");
+}
+
 bool delayedContinuousProximity(uint32_t start) {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
@@ -284,7 +347,7 @@ int main() {
               "expression passes through intermediate geometry")) return 1;
   const auto finished = transition.update({400, false, nina::ExpressionName::Surprised, battery});
   if (!expect(finished.face.metrics.eyeOpen == 58, "transition reaches requested expression")) return 1;
-  return !(delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
+  return !(batchDoesNotBridgeAGapOutOfOrder() && batchKeepsNewestSignal() && batchDoesNotReviveStalePeers() && batchedDelayedContinuity(false, 0) && batchedDelayedContinuity(true, 0) && batchedDelayedContinuity(false, 0xfffff800u) && delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
            opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
            requiresReleaseAndExactTimeouts());

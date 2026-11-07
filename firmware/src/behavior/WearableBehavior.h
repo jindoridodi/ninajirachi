@@ -74,8 +74,12 @@ struct WearableOutput {
 class WearableBehavior {
  public:
   WearableOutput update(const WearableInput& input) {
+    return update(input, &input.discovery, 1);
+  }
+
+  WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count) {
     updateScreen(input.elapsedMs, input.touchDown);
-    updatePeers(input);
+    updatePeers(input.elapsedMs, input.localId, observations, count);
     ExpressionName requested = input.expression;
     if (targetId_) requested = input.elapsedMs - targetSinceMs_ >= kSustainedProximityMs
         ? ExpressionName::Excited : ExpressionName::Curious;
@@ -100,9 +104,7 @@ class WearableBehavior {
  private:
   struct Peer { uint64_t id; uint32_t seen; int rssi; };
 
-  void updatePeers(const WearableInput& input) {
-    const uint32_t now = input.elapsedMs;
-    const auto& observation = input.discovery;
+  static uint64_t observationId(const DiscoveryObservation& observation, uint32_t now, uint64_t localId) {
     uint64_t id = 0;
     if (observation.data && now - observation.receivedMs < kPeerGraceMs &&
         observation.size == 12 && observation.rssi < 0 &&
@@ -110,26 +112,42 @@ class WearableBehavior {
         observation.data[2] == 'N' && observation.data[3] == 'A' &&
         observation.data[4] == 1 && observation.data[5] == 1) {
       for (size_t i = 6; i < 12; ++i) id = (id << 8) | observation.data[i];
-      if (id == input.localId) id = 0;
+      if (id == localId) id = 0;
     }
+    return id;
+  }
+
+  void updatePeers(uint32_t now, uint64_t localId, const DiscoveryObservation* observations, size_t count) {
     for (size_t i = 0; i < kMaxPeers; ++i) {
       Peer& peer = peers_[i];
-      const bool bridgesExpiry = id && peer.id == id &&
-          now - observation.receivedMs <= now - peer.seen &&
-          observation.receivedMs - peer.seen < kPeerGraceMs;
+      bool bridgesExpiry = false;
+      for (size_t j = 0; peer.id && j < count; ++j) {
+        const auto& observation = observations[j];
+        if (observationId(observation, now, localId) == peer.id &&
+            now - observation.receivedMs <= now - peer.seen) {
+          bridgesExpiry = observation.receivedMs - peer.seen < kPeerGraceMs;
+          break;
+        }
+      }
       if (peer.id && now - peer.seen >= kPeerGraceMs && !bridgesExpiry) {
         if (peer.id == targetId_) targetId_ = 0;
         peer.id = 0;
       }
     }
-    if (id) {
+    for (size_t j = 0; j < count; ++j) {
+      const auto& observation = observations[j];
+      const uint64_t id = observationId(observation, now, localId);
+      if (!id) continue;
       Peer* slot = nullptr;
       for (size_t i = 0; i < kMaxPeers; ++i) {
         if (peers_[i].id == id) { slot = &peers_[i]; break; }
         if (!peers_[i].id && !slot) slot = &peers_[i];
       }
-      if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen))
+      if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen)) {
+        if (slot->id && observation.receivedMs - slot->seen >= kPeerGraceMs && id == targetId_)
+          targetId_ = 0;
         *slot = {id, observation.receivedMs, observation.rssi};
+      }
     }
     Peer* current = nullptr;
     Peer* strongest = nullptr;
