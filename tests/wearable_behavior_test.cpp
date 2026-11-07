@@ -132,6 +132,35 @@ bool requiresReleaseAndExactTimeouts() {
                 nina::ScreenName::Face, "settings times out at seven seconds");
 }
 
+bool multiHopQueuedContinuity(uint32_t start) {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
+  b.update(in);
+  const nina::DiscoveryObservation batch[] = {{p, 12, -40, start + 2900},
+                                                {p, 12, -40, start + 5800}};
+  in.elapsedMs = start + 6000; in.discovery = {}; b.update(in, batch, 2);
+  in.elapsedMs = start + 8700; in.discovery = {p, 12, -40, start + 8700}; b.update(in);
+  in.elapsedMs = start + 10000; in.discovery.receivedMs = start + 10000;
+  return expect(b.update(in).face.name == nina::ExpressionName::Excited,
+                "stale intermediate observation bridges a continuous queued chain");
+}
+
+bool multiHopGapResetsContinuity() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  b.update(in);
+  const nina::DiscoveryObservation batch[] = {{p, 12, -40, 2900}, {p, 12, -40, 5900}};
+  in.elapsedMs = 6000; in.discovery = {}; b.update(in, batch, 2);
+  in.elapsedMs = 8700; in.discovery = {p, 12, -40, 8700}; b.update(in);
+  in.elapsedMs = 10000; in.discovery.receivedMs = 10000;
+  return expect(b.update(in).face.name == nina::ExpressionName::Curious,
+                "a grace-period gap within a queued chain resets continuity");
+}
+
 bool batchedDelayedContinuity(bool otherPeerFirst, uint32_t start) {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
@@ -347,7 +376,7 @@ int main() {
               "expression passes through intermediate geometry")) return 1;
   const auto finished = transition.update({400, false, nina::ExpressionName::Surprised, battery});
   if (!expect(finished.face.metrics.eyeOpen == 58, "transition reaches requested expression")) return 1;
-  return !(batchDoesNotBridgeAGapOutOfOrder() && batchKeepsNewestSignal() && batchDoesNotReviveStalePeers() && batchedDelayedContinuity(false, 0) && batchedDelayedContinuity(true, 0) && batchedDelayedContinuity(false, 0xfffff800u) && delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
+  return !(multiHopGapResetsContinuity() && multiHopQueuedContinuity(0) && multiHopQueuedContinuity(0xfffff800u) && batchDoesNotBridgeAGapOutOfOrder() && batchKeepsNewestSignal() && batchDoesNotReviveStalePeers() && batchedDelayedContinuity(false, 0) && batchedDelayedContinuity(true, 0) && batchedDelayedContinuity(false, 0xfffff800u) && delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
            opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
            requiresReleaseAndExactTimeouts());
