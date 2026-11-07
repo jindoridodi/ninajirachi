@@ -132,6 +132,23 @@ bool requiresReleaseAndExactTimeouts() {
                 nina::ScreenName::Face, "settings times out at seven seconds");
 }
 
+bool delayedContinuousProximity(uint32_t start) {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
+  b.update(in);
+  in.elapsedMs = start + 3100; in.discovery.receivedMs = start + 2900; b.update(in);
+  in.elapsedMs = start + 5800; in.discovery.receivedMs = start + 5800; b.update(in);
+  in.elapsedMs = start + 8700; in.discovery.receivedMs = start + 8700; b.update(in);
+  in.elapsedMs = start + 10000; in.discovery.receivedMs = start + 10000;
+  if (!expect(b.update(in).face.name == nina::ExpressionName::Excited,
+              "delayed observation within grace preserves sustained proximity")) return false;
+  in.elapsedMs = start + 13100; in.discovery.receivedMs = start + 13000;
+  return expect(b.update(in).face.name == nina::ExpressionName::Curious,
+                "a full grace period between observations resets sustained proximity");
+}
+
 bool delayedObservationsExpireFromReceiveTime() {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
@@ -267,7 +284,7 @@ int main() {
               "expression passes through intermediate geometry")) return 1;
   const auto finished = transition.update({400, false, nina::ExpressionName::Surprised, battery});
   if (!expect(finished.face.metrics.eyeOpen == 58, "transition reaches requested expression")) return 1;
-  return !(olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
+  return !(delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
            opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
            requiresReleaseAndExactTimeouts());
