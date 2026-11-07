@@ -5,6 +5,7 @@
 #include "src/compass/CompassService.h"
 #include "src/compass/GravityEstimator.h"
 #include "src/discovery/BleDiscovery.h"
+#include "src/discovery/EspNowDiscovery.h"
 
 namespace {
 
@@ -12,6 +13,8 @@ nina::WaveshareSurface surface;
 nina::FaceRenderer renderer;
 nina::WearableBehavior behavior;
 nina::BleDiscovery discovery;
+nina::EspNowDiscovery radio;
+bool radioReady = false;
 uint64_t localIdentity = 0;
 nina::CompassService compass;
 nina::GravityEstimator gravityEstimator;
@@ -81,6 +84,8 @@ void setup() {
   const uint64_t identity = ESP.getEfuseMac();
   localIdentity = identity & 0xffffffffffffULL;
   if (!discovery.begin(localIdentity)) Serial.println("BLE discovery initialization failed");
+  radioReady = radio.begin(localIdentity);
+  if (!radioReady) Serial.println("ESP-NOW initialization failed");
   snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
            unsigned(identity));
   Serial.println("s scan; v verify/enable compass; c calibrate; w save; x cancel; r raw; 0-4 expressions");
@@ -125,7 +130,24 @@ void loop() {
     observations[count++] = {packet.data, sizeof(packet.data), packet.rssi, packet.receivedMs};
   }
   input.elapsedMs = millis();
-  const auto output = behavior.update(input, observations, count);
+  const auto heading = compass.heading(input.elapsedMs);
+  input.headingValid = heading.valid;
+  input.headingDegrees = heading.degrees;
+  auto output = behavior.update(input, observations, count);
+  if (radioReady) {
+    radio.update(input.elapsedMs);
+    nina::RadioPacket packet;
+    while (radio.receive(packet)) {
+      input.elapsedMs = millis();
+      if (input.elapsedMs - packet.receivedMs > 250) continue;
+      const auto currentHeading = compass.heading(input.elapsedMs);
+      input.headingValid = currentHeading.valid;
+      input.headingDegrees = currentHeading.degrees;
+      input.radioPeerId = packet.peer;
+      input.radioRssi = packet.rssi;
+      output = behavior.update(input, nullptr, 0);
+    }
+  }
   if (!displayReady) return;
   if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
   else renderSettings(output.settings);

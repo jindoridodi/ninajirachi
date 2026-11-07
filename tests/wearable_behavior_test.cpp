@@ -285,6 +285,131 @@ bool discoversPeer() {
                 "peer expires after grace period");
 }
 
+bool gazeUsesTargetEvidence() {
+  nina::WearableBehavior behavior;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  in.radioPeerId = 2; in.radioRssi = -45; in.headingValid = true; in.headingDegrees = 0;
+  behavior.update(in);
+  in.elapsedMs = 110; behavior.update(in);
+  in.elapsedMs = 200; in.radioRssi = -70; in.headingDegrees = 90; behavior.update(in);
+  in.elapsedMs = 210; behavior.update(in);
+  in.elapsedMs = 300; in.radioRssi = -80; in.headingDegrees = 180; behavior.update(in);
+  in.elapsedMs = 310; behavior.update(in);
+  in.elapsedMs = 400; in.radioPeerId = 0; in.headingDegrees = 90;
+  if (!expect(behavior.update(in).gaze == nina::Gaze::Left, "strongest heading is left")) return false;
+  in.headingDegrees = 270;
+  if (!expect(behavior.update(in).gaze == nina::Gaze::Right, "strongest heading is right")) return false;
+  in.headingDegrees = 350;
+  if (!expect(behavior.update(in).gaze == nina::Gaze::Center, "angle wraps through north")) return false;
+  in.headingDegrees = 90;
+  in.headingValid = false; in.elapsedMs = 450;
+  if (!expect(behavior.update(in).gaze == nina::Gaze::Center, "unavailable heading centers gaze")) return false;
+  const uint8_t other[] = {'N','I','N','A',1,1,0,0,0,0,0,3};
+  in.elapsedMs = 500; in.headingValid = true; in.discovery = {other,12,-20,500};
+  const auto switched = behavior.update(in);
+  return expect(switched.targetId == 3 && switched.gaze == nina::Gaze::Center,
+                "target change clears evidence");
+}
+
+bool gazeRejectsWeakAndUnstableEvidence() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  in.radioPeerId = 2; in.headingValid = true;
+  for (int i = 0; i < 6; ++i) {
+    in.elapsedMs = 100 + i * 100; in.headingDegrees = (i / 2) * 90;
+    in.radioRssi = -90 - (i / 2) * 3; b.update(in);
+  }
+  in.radioPeerId = 0; in.headingDegrees = 90;
+  if (!expect(b.update(in).gaze == nina::Gaze::Center, "weak evidence rejected")) return false;
+  nina::WearableBehavior unstable;
+  for (int i = 0; i < 6; ++i) {
+    in.elapsedMs = 100 + i * 100; in.headingDegrees = (i / 2) * 90;
+    in.radioPeerId = 2; in.radioRssi = i % 2 ? -80 : -40; unstable.update(in);
+  }
+  in.radioPeerId = 0; in.headingDegrees = 90;
+  return expect(unstable.update(in).gaze == nina::Gaze::Center, "unstable evidence rejected");
+}
+
+bool gazeUsesAveragesAndStopsWhenStill() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  const float headings[] = {0,0,90,90,180,180};
+  const int signals[] = {-42,-56,-46,-46,-70,-70};
+  in.radioPeerId = 2; in.headingValid = true;
+  for (int i = 0; i < 6; ++i) {
+    in.elapsedMs = 100 + i * 100; in.headingDegrees = headings[i]; in.radioRssi = signals[i];
+    b.update(in);
+  }
+  in.radioPeerId = 0; in.headingDegrees = 0;
+  if (!expect(b.update(in).gaze == nina::Gaze::Right, "bucket averages select heading 90")) return false;
+  in.radioPeerId = 2; in.headingDegrees = 180; in.radioRssi = -70;
+  in.elapsedMs = 2600; in.discovery.receivedMs = 2600;
+  return expect(b.update(in).gaze == nina::Gaze::Center, "still samples do not renew gaze");
+}
+
+bool samePeerReturnClearsGaze() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  b.update(in);
+  in.radioPeerId = 2; in.headingValid = true;
+  for (int i = 0; i < 6; ++i) {
+    in.elapsedMs = 2500 + 100 * i; in.headingDegrees = (i / 2) * 90;
+    in.radioRssi = -40 - (i / 2) * 15; b.update(in);
+  }
+  in.radioPeerId = 0; in.headingDegrees = 90;
+  if (!expect(b.update(in).gaze == nina::Gaze::Left, "gaze confident before peer expiry")) return false;
+  in.elapsedMs = 3100; in.discovery.receivedMs = 3100;
+  const auto result = b.update(in);
+  return expect(result.targetId == 2 && result.gaze == nina::Gaze::Center,
+                "same peer returning after expiry clears gaze");
+}
+
+bool gazeAgesIndividualSamples() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  in.radioPeerId = 2; in.headingValid = true; in.headingDegrees = 0; in.radioRssi = -80;
+  b.update(in);
+  for (int i = 0; i < 18; ++i) {
+    in.elapsedMs = 200 + i * 400; in.discovery.receivedMs = in.elapsedMs;
+    in.headingDegrees = (i % 3) * 90; in.radioRssi = -40 - (i % 3) * 15;
+    b.update(in);
+  }
+  in.radioPeerId = 0; in.headingDegrees = 90;
+  return expect(b.update(in).gaze == nina::Gaze::Left,
+                "expired outlier stops poisoning heading bucket");
+}
+
+bool gazeRejectsOtherPeerAndInsufficientCoverage() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  in.headingValid = true; in.radioPeerId = 3;
+  for (int i = 0; i < 6; ++i) {
+    in.elapsedMs = 100 + i * 100; in.headingDegrees = (i / 2) * 90;
+    in.radioRssi = -40 - (i / 2) * 15; b.update(in);
+  }
+  in.radioPeerId = 0; in.headingDegrees = 90;
+  if (!expect(b.update(in).gaze == nina::Gaze::Center, "other peer cannot provide evidence")) return false;
+  in.radioPeerId = 2;
+  for (int i = 0; i < 4; ++i) {
+    in.elapsedMs = 700 + i * 100; in.headingDegrees = (i / 2) * 90;
+    in.radioRssi = -40 - (i / 2) * 20; b.update(in);
+  }
+  in.radioPeerId = 0; in.headingDegrees = 90;
+  return expect(b.update(in).gaze == nina::Gaze::Center, "two headings are insufficient coverage");
+}
+
 bool selectsStableTargetsAndIgnoresInvalidPackets() {
   nina::WearableBehavior b;
   nina::BatterySnapshot battery;
@@ -376,7 +501,7 @@ int main() {
               "expression passes through intermediate geometry")) return 1;
   const auto finished = transition.update({400, false, nina::ExpressionName::Surprised, battery});
   if (!expect(finished.face.metrics.eyeOpen == 58, "transition reaches requested expression")) return 1;
-  return !(multiHopGapResetsContinuity() && multiHopQueuedContinuity(0) && multiHopQueuedContinuity(0xfffff800u) && batchDoesNotBridgeAGapOutOfOrder() && batchKeepsNewestSignal() && batchDoesNotReviveStalePeers() && batchedDelayedContinuity(false, 0) && batchedDelayedContinuity(true, 0) && batchedDelayedContinuity(false, 0xfffff800u) && delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
+  return !(gazeRejectsOtherPeerAndInsufficientCoverage() && samePeerReturnClearsGaze() && gazeAgesIndividualSamples() && gazeUsesAveragesAndStopsWhenStill() && gazeRejectsWeakAndUnstableEvidence() && gazeUsesTargetEvidence() && multiHopGapResetsContinuity() && multiHopQueuedContinuity(0) && multiHopQueuedContinuity(0xfffff800u) && batchDoesNotBridgeAGapOutOfOrder() && batchKeepsNewestSignal() && batchDoesNotReviveStalePeers() && batchedDelayedContinuity(false, 0) && batchedDelayedContinuity(true, 0) && batchedDelayedContinuity(false, 0xfffff800u) && delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
            opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
            requiresReleaseAndExactTimeouts());
