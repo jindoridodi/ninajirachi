@@ -6,6 +6,7 @@
 
 #include "../face/ExpressionPreset.h"
 #include "DirectionEvidence.h"
+#include "MovementBehavior.h"
 
 namespace nina {
 
@@ -66,6 +67,9 @@ struct WearableInput {
   int radioRssi = 0;
   float headingDegrees = 0;
   bool headingValid = false;
+  bool motionValid = false;
+  float rollDegrees = 0;
+  float verticalAccelerationG = 0;
 };
 
 struct WearableOutput {
@@ -75,6 +79,7 @@ struct WearableOutput {
   size_t peerCount;
   uint64_t targetId;
   Gaze gaze;
+  bool jumpOverlayActive;
 };
 
 class WearableBehavior {
@@ -110,8 +115,20 @@ class WearableBehavior {
     ExpressionPreset face = expressionPreset(requested);
     animate(face, input.elapsedMs);
     face_ = blend(from_, face, t);
-    if (targetId_) face_.metrics.pupilOffsetX = gaze == Gaze::Left ? -8 : gaze == Gaze::Right ? 8 : 0;
-    return {screen_, face_, {input.battery}, peerCount_, targetId_, gaze};
+    const float desiredGaze = targetId_ && gaze == Gaze::Left ? -8 :
+                              targetId_ && gaze == Gaze::Right ? 8 : 0;
+    const float step = float(input.elapsedMs - gazeUpdatedMs_) * (16.0f / kExpressionTransitionMs);
+    if (desiredGaze > gazeOffset_) gazeOffset_ = fminf(desiredGaze, gazeOffset_ + step);
+    else gazeOffset_ = fmaxf(desiredGaze, gazeOffset_ - step);
+    gazeUpdatedMs_ = input.elapsedMs;
+    ExpressionPreset visible = face_;
+    if (targetId_) {
+      const int16_t motion = lroundf(2 * sinf(float(input.elapsedMs % 5600) * 6.2831853f / 5600));
+      visible.metrics.pupilOffsetX = lroundf(gazeOffset_) + motion;
+    } else visible.metrics.pupilOffsetX += lroundf(gazeOffset_);
+    const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
+        input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid);
+    return {screen_, motion.preset, {input.battery}, peerCount_, targetId_, gaze, motion.jumpOverlayActive};
   }
 
  private:
@@ -253,7 +270,7 @@ class WearableBehavior {
 
     const int16_t pupilMotion = lroundf(2 * sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
     face.metrics.pupilOffsetX += pupilMotion;
-    if (face.name == ExpressionName::Idle) {
+    if (face.name == ExpressionName::Idle || face.name == ExpressionName::Curious) {
       face.metrics.mouthHeight += lroundf(sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
     }
     if (face.name == ExpressionName::Happy || face.name == ExpressionName::Excited) {
@@ -263,6 +280,9 @@ class WearableBehavior {
 
   Peer peers_[kMaxPeers] = {};
   DirectionEvidence direction_;
+  MovementBehavior movement_;
+  float gazeOffset_ = 0;
+  uint32_t gazeUpdatedMs_ = 0;
   size_t peerCount_ = 0;
   uint64_t targetId_ = 0;
   bool targetReset_ = false;

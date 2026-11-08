@@ -285,6 +285,54 @@ bool discoversPeer() {
                 "peer expires after grace period");
 }
 
+bool movementOverlaysFocusedInteraction() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  in.motionValid = true; in.verticalAccelerationG = 1.0f;
+  b.update(in);
+  in.elapsedMs = 500; in.discovery.receivedMs = 500;
+  const auto normal = b.update(in);
+  in.elapsedMs = 550; in.verticalAccelerationG = 0; b.update(in);
+  in.elapsedMs = 600; in.verticalAccelerationG = 2.1f;
+  const auto jump = b.update(in);
+  in.elapsedMs = 1000; in.verticalAccelerationG = 1.0f;
+  const auto resumed = b.update(in);
+  return expect(jump.jumpOverlayActive && jump.face.metrics.eyeOpen > normal.face.metrics.eyeOpen,
+                "jump overlays focused expression") &&
+         expect(!resumed.jumpOverlayActive && resumed.targetId == 2 && resumed.face.name == nina::ExpressionName::Curious,
+                "focused interaction resumes after jump");
+}
+
+bool tiltAndFocusedAnimation() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,0});
+  in.motionValid = true; in.verticalAccelerationG = 1;
+  const auto start = b.update(in);
+  in.elapsedMs = 1400; in.discovery.receivedMs = 1400;
+  const auto animated = b.update(in);
+  in.rollDegrees = 20; in.elapsedMs = 1800; in.discovery.receivedMs = 1800;
+  const auto tilted = b.update(in);
+  return expect(animated.face.metrics.mouthHeight != start.face.metrics.mouthHeight,
+                "focused mouth animates") &&
+         expect(tilted.face.metrics.pupilOffsetX > animated.face.metrics.pupilOffsetX,
+                "tilt offsets the focused pupil");
+}
+
+bool jumpOverridesBlink() {
+  nina::WearableBehavior b;
+  nina::BatterySnapshot battery;
+  nina::WearableInput in(3800, false, nina::ExpressionName::Idle, battery);
+  in.motionValid = true; in.verticalAccelerationG = 0.4f; b.update(in);
+  in.elapsedMs = 3900; in.verticalAccelerationG = 2.1f;
+  const auto jump = b.update(in);
+  return expect(jump.jumpOverlayActive && jump.face.metrics.pupilRadius > 0,
+                "jump overrides a closed blink");
+}
+
 bool gazeUsesTargetEvidence() {
   nina::WearableBehavior behavior;
   nina::BatterySnapshot battery;
@@ -298,16 +346,21 @@ bool gazeUsesTargetEvidence() {
   in.elapsedMs = 300; in.radioRssi = -80; in.headingDegrees = 180; behavior.update(in);
   in.elapsedMs = 310; behavior.update(in);
   in.elapsedMs = 400; in.radioPeerId = 0; in.headingDegrees = 90;
-  if (!expect(behavior.update(in).gaze == nina::Gaze::Left, "strongest heading is left")) return false;
+  const auto firstGaze = behavior.update(in);
+  if (!expect(firstGaze.gaze == nina::Gaze::Left, "strongest heading is left")) return false;
+  in.elapsedMs = 700;
+  const auto settledGaze = behavior.update(in);
+  if (!expect(settledGaze.face.metrics.pupilOffsetX < firstGaze.face.metrics.pupilOffsetX,
+              "pupil moves smoothly toward gaze")) return false;
   in.headingDegrees = 270;
   if (!expect(behavior.update(in).gaze == nina::Gaze::Right, "strongest heading is right")) return false;
   in.headingDegrees = 350;
   if (!expect(behavior.update(in).gaze == nina::Gaze::Center, "angle wraps through north")) return false;
   in.headingDegrees = 90;
-  in.headingValid = false; in.elapsedMs = 450;
+  in.headingValid = false; in.elapsedMs = 750;
   if (!expect(behavior.update(in).gaze == nina::Gaze::Center, "unavailable heading centers gaze")) return false;
   const uint8_t other[] = {'N','I','N','A',1,1,0,0,0,0,0,3};
-  in.elapsedMs = 500; in.headingValid = true; in.discovery = {other,12,-20,500};
+  in.elapsedMs = 800; in.headingValid = true; in.discovery = {other,12,-20,800};
   const auto switched = behavior.update(in);
   return expect(switched.targetId == 3 && switched.gaze == nina::Gaze::Center,
                 "target change clears evidence");
@@ -488,6 +541,9 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
 }  // namespace
 
 int main() {
+  if (!jumpOverridesBlink()) return 1;
+  if (!tiltAndFocusedAnimation()) return 1;
+  if (!movementOverlaysFocusedInteraction()) return 1;
   nina::WearableBehavior transition;
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
   transition.update({0, false, nina::ExpressionName::Idle, battery});

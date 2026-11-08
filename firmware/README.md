@@ -6,6 +6,8 @@ The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` d
 
 The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up.
 
+Movement uses the driver's configured ±8 g and ±512°/s IMU scales. Tilt follows a settled gravity estimate and holds its last value while movement prevents a reliable estimate. A low-acceleration phase followed by a vertical impact triggers a jump overlay; tune the thresholds on the assembled wearable in #15.
+
 Download the [official demo ZIP](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Demo.zip), then install the required unmodified drivers from the repository root:
 
 ```sh
@@ -15,13 +17,13 @@ arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled firmw
 
 Installed vendor files are ignored by Git; the script retains their original copyright/license headers. It also installs the QMI8658 driver used to provide gravity measurements for compass tilt compensation.
 
-Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC millivolts. Charging state is reported as unknown because no verified software-readable charging-status signal has been established. Percentage stays unavailable until a battery-specific calibration is supplied. Confirm readings against a meter before relying on them.
+Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC millivolts. Charging state remains unknown: the [board documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) documents battery voltage on GPIO1 but does not identify a software-readable charger status GPIO; the [schematic](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Sch.pdf) labels the charger STAT pin but does not establish a documented firmware input. Confirm the actual board revision and wiring before adding charge detection. Percentage stays unavailable until a battery-specific calibration is supplied. Confirm readings against a meter before relying on them.
 
 ## Runtime controls
 
 Hold the face for 5 seconds to open battery/settings. Release, then hold for 3 seconds to return. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Serial commands `0`–`4` select idle, curious, happy, surprised, and excited presets for testing.
 
-The external compass starts disabled. At 115200 baud, send `s` to scan I²C. After checking the physical QMC5883P marking, 3.3 V wiring, and sensor-axis alignment, send `v` to enable the detected `0x2C` device. The adapter also verifies chip identity. Send `c` to collect calibration while rotating the assembled wearable through all axes, `w` to save, `x` to cancel, and `r` to toggle raw/heading logs. Calibration is stored per board in NVS and reloaded when enabled after reboot.
+The external compass starts disabled until verified. At 115200 baud, send `s` to scan I²C. After checking the physical QMC5883P marking, 3.3 V wiring, and sensor-axis alignment, send `v` to enable the detected `0x2C` device. The adapter also verifies chip identity. Successful verification is saved in NVS; on later boots the firmware probes the address and checks the chip again before enabling it. Send `u` to forget verification and calibration before replacing or remounting the sensor, then physically inspect, scan, and verify again. If storage reports a failure, do not replace the sensor until forgetting verification succeeds. Send `c` to collect calibration while rotating the assembled wearable through all axes, `w` to save, `x` to cancel, and `r` to toggle raw/heading logs. Calibration is stored per board in NVS. Recalibrate after changing the sensor, mounting, or enclosure.
 
 The IMU and magnetometer gravity vectors must use the same axes. Confirm the external module mounting before enabling; a rotated mounting needs an explicit axis transform. Invalid or stale headings stay unavailable. See `../docs/compass-bench.md` for the calibration limits and acceptance checklist.
 
@@ -43,7 +45,7 @@ Each wearable advertises and passively scans at the same time; there is no leade
 
 The behavior retains up to four peers; additional new IDs are ignored until a slot expires. A peer expires after 3 seconds without a valid observation. The strongest recent BLE RSSI becomes the target, and a different peer must be at least 6 dB stronger to switch. A selected peer produces curious/focused interaction, changing to excited after 10 seconds of uninterrupted selection. Expiry returns to the manually selected expression (idle by default). All durations and the switching margin are named constants in `WearableBehavior.h` for worn tuning. Discovery continues on the settings screen. The callback queue holds eight observations; excess observations are dropped rather than blocking the radio task.
 
-The BLE protocol is unauthenticated and is for prototype discovery only. Physical identity uniqueness, two-way discovery, radio coexistence, packet loss, and worn timing need the two-wearable checks in issue #15. ESP-NOW direction evidence remains separate work.
+The BLE protocol is unauthenticated and is for prototype discovery only. Physical identity uniqueness, two-way discovery, radio coexistence, packet loss, and worn timing need the two-wearable checks in issue #15.
 
 Observations carry their callback receive time through the queue, so delayed or older packets cannot extend a peer's lifetime or replace newer signal evidence. Each drained batch is considered together before peer selection, preserving continuity when a later queued observation bridges the grace period. Advertising configuration and start complete asynchronously: immediate request failures and completion failures are printed to serial, while `begin()` reports queue, configuration-request, and scan-start failures. A successful return does not guarantee advertising has started; missing completion events and actual over-the-air operation require hardware verification.
 # Approximate gaze radio
