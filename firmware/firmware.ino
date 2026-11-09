@@ -3,7 +3,7 @@
 #include "src/behavior/WearableBehavior.h"
 #include "src/face/SettingsBatteryRenderer.h"
 #include "src/compass/CompassService.h"
-#include "src/compass/GravityEstimator.h"
+#include "src/board/MotionSampler.h"
 #include "src/discovery/BleDiscovery.h"
 #include "src/discovery/EspNowDiscovery.h"
 
@@ -17,18 +17,10 @@ nina::EspNowDiscovery radio;
 bool radioReady = false;
 uint64_t localIdentity = 0;
 nina::CompassService compass;
-nina::GravityEstimator gravityEstimator;
+nina::MotionSampler motionSampler(Wire);
 TwoWire compassBus(1);
-nina::MagneticVector movementGravity{0, 0, 0};
-uint32_t movementGravityAtMs = 0;
-bool haveMovementGravity = false;
 nina::ExpressionName expression = nina::ExpressionName::Idle;
 bool displayReady = false;
-bool imuReady = false;
-uint8_t imuAddress = 0;
-uint32_t lastImuTimestamp = 0;
-bool haveImuTimestamp = false;
-uint32_t lastImuSuccessAtMs = 0;
 bool compassReady = false;
 bool showRaw = false;
 bool showJumpDebug = false;
@@ -44,26 +36,6 @@ constexpr uint8_t kCompassSclPin = 16;
 bool compassAddressPresent() {
   compassBus.beginTransmission(kCompassAddress);
   return compassBus.endTransmission() == 0;
-}
-
-bool readImuRegisters(uint8_t address, uint8_t reg, uint8_t* data, size_t size) {
-  Wire.beginTransmission(address);
-  Wire.write(reg);
-  if (Wire.endTransmission(false) != 0 || Wire.requestFrom(address, size) != size) return false;
-  for (size_t i = 0; i < size; ++i) {
-    const int value = Wire.read();
-    if (value < 0) return false;
-    data[i] = static_cast<uint8_t>(value);
-  }
-  return true;
-}
-
-uint8_t findImu() {
-  for (uint8_t address = 0x6a; address <= 0x6b; ++address) {
-    uint8_t id = 0;
-    if (readImuRegisters(address, QMI8658Register_WhoAmI, &id, 1) && id == 0x05) return address;
-  }
-  return 0;
 }
 
 void restoreCompass() {
@@ -176,8 +148,7 @@ void setup() {
   nina::resetTouch();
   analogReadResolution(12);
   analogSetPinAttenuation(1, ADC_11db);
-  imuReady = QMI8658_init() != 0;
-  if (imuReady) { imuAddress = findImu(); imuReady = imuAddress != 0; }
+  motionSampler.begin();
   restoreCompass();
   const uint64_t identity = ESP.getEfuseMac();
   localIdentity = identity & 0xffffffffffffULL;
@@ -196,47 +167,12 @@ void loop() {
   const uint32_t now = millis();
   if (now - lastFrameMs < kFramePeriodMs) { delay(1); return; }
   lastFrameMs = now;
-  nina::MagneticVector gravity{0, 0, 0};
-  float rollDegrees = 0, accelerationG = 0;
-  bool motionValid = false;
-  float acceleration[3] = {}, gyro[3] = {};
-  uint32_t timestamp = 0;
-  bool fresh = false;
-  if (imuReady) {
-    uint8_t stamp[3] = {}, raw[12] = {};
-    const bool readOk = readImuRegisters(imuAddress, QMI8658Register_Timestamp_L, stamp, sizeof(stamp)) &&
-                        readImuRegisters(imuAddress, QMI8658Register_Ax_L, raw, sizeof(raw));
-    timestamp = uint32_t(stamp[0]) | (uint32_t(stamp[1]) << 8) |
-                (uint32_t(stamp[2]) << 16);
-    fresh = readOk && (!haveImuTimestamp || timestamp != lastImuTimestamp);
-    if (haveImuTimestamp && now - lastImuSuccessAtMs > nina::GravityEstimator::kMaxSampleAgeMs)
-      haveMovementGravity = false;
-    if (!fresh && now - lastImuSuccessAtMs > 100) haveMovementGravity = false;
-    if (fresh) {
-      haveImuTimestamp = true;
-      lastImuTimestamp = timestamp;
-      lastImuSuccessAtMs = now;
-      for (int i = 0; i < 3; ++i) {
-        const int16_t acc = int16_t(uint16_t(raw[2*i]) | (uint16_t(raw[2*i+1]) << 8));
-        const int16_t gyr = int16_t(uint16_t(raw[6+2*i]) | (uint16_t(raw[7+2*i]) << 8));
-        acceleration[i] = acc * (1000.0f / 4096.0f);
-        gyro[i] = gyr / 64.0f;
-      }
-      gravity = gravityEstimator.update(timestamp, {acceleration[0], acceleration[1], acceleration[2]},
-                                        {gyro[0], gyro[1], gyro[2]}, now);
-    }
-    if (gravity.x != 0 || gravity.y != 0 || gravity.z != 0) {
-      movementGravity = gravity;
-      movementGravityAtMs = now;
-      haveMovementGravity = true;
-    }
-    if (fresh && haveMovementGravity && now - movementGravityAtMs < 2000) {
-      accelerationG = (acceleration[0] * movementGravity.x + acceleration[1] * movementGravity.y +
-                       acceleration[2] * movementGravity.z) / 1000.0f;
-      motionValid = isfinite(accelerationG);
-      rollDegrees = atan2f(movementGravity.x, movementGravity.z) * 57.2957795f;
-    }
-  }
+  const auto motion = motionSampler.update(now);
+  const auto& gravity = motion.gravity;
+  const auto& acceleration = motion.acceleration;
+  const auto& gyro = motion.gyro;
+  const auto timestamp = motion.timestamp;
+  const auto fresh = motion.fresh;
   const bool sampled = compassReady && compass.update(now, gravity);
   if (sampled && showRaw && now - lastLogMs >= 250) {
     lastLogMs = now;
@@ -249,12 +185,12 @@ void loop() {
   nina::WearableInput input(now, nina::touchIsDown(), expression,
       nina::BatterySnapshot(nina::batteryMillivolts(), false, false, 0, deviceId,
                             true, false, "prototype-13-14"), localIdentity);
-  input.motionValid = motionValid;
+  input.motionValid = motion.motionValid;
   input.accelerationValid = fresh;
   input.accelerationMagnitudeG = sqrtf(acceleration[0] * acceleration[0] +
       acceleration[1] * acceleration[1] + acceleration[2] * acceleration[2]) / 1000.0f;
-  input.rollDegrees = rollDegrees;
-  input.verticalAccelerationG = accelerationG;
+  input.rollDegrees = motion.rollDegrees;
+  input.verticalAccelerationG = motion.verticalAccelerationG;
   nina::BlePacket packets[8];
   nina::DiscoveryObservation observations[8];
   size_t count = 0;
