@@ -4,6 +4,21 @@ Open `firmware.ino` in Arduino IDE and target `ESP32S3 Dev Module` with `esp32 b
 
 The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` driver, not LVGL or TFT_eSPI. Copy the driver files listed in `src/waveshare/README.md` from the official demo package before compiling. Those files provide the verified GC9A01A display definition: SPI GPIO 8/9/10/11/12/14 with active-high backlight GPIO 2. The runtime also reads the touch count for hold gestures and uses the QMI8658 driver for gravity measurements in compass tilt compensation.
 
+## LVGL face authoring
+
+`src/face/LvglFace.h` is the LVGL v8 version of the reference icon: a transparent rounded square rotated 45 degrees, two vertical rounded-rectangle eyes, and two bottom-facing arc segments for the mouth. It intentionally uses LVGL objects rather than image assets so geometry can be tuned at 240x240.
+
+```cpp
+#include "src/face/LvglFace.h"
+
+nina::LvglFace face;
+face.create(lv_scr_act(), nina::idlePreset());
+// Later, from the animation loop:
+face.render(nina::expressionPreset(nina::ExpressionName::Happy));
+```
+
+The current Arduino sketch remains on the verified direct Waveshare path. Use this component when switching the display integration to LVGL; keep `LvglFaceLayout` as the single place to tune the reference geometry.
+
 The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up.
 
 Movement uses the driver's configured ±8 g and ±512°/s IMU scales. Tilt follows a settled gravity estimate and holds its last value while movement prevents a reliable estimate. A low-acceleration phase followed by a vertical impact triggers a jump overlay; tune the thresholds on the assembled wearable in #15.
