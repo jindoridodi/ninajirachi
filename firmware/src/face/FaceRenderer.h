@@ -7,14 +7,13 @@
 
 namespace nina {
 
-enum class FaceLayer { Background, Face, Eyes, Eyelids, Pupils, Mouth, Effects };
+enum class FaceLayer { Background, Face, Eyes, Mouth, Effects };
 
 class DrawSurface {
  public:
   virtual ~DrawSurface() = default;
   virtual void beginLayer(FaceLayer layer) = 0;
   virtual void fillCircle(int x, int y, int radius, Color color) = 0;
-  virtual void fillEllipse(int x, int y, int width, int height, Color color) = 0;
   virtual void fillRect(int x, int y, int width, int height, Color color) = 0;
 };
 
@@ -34,8 +33,8 @@ class FaceRenderer {
     for (const auto& eye : kFaceEyes) {
       const int w = std::max(1, eye[2] * m.eyeWidth / 36);
       const int h = std::max(1, eye[3] * m.eyeOpen / 42);
-      const int x = ox + eye[0] + (eye[2]-w)/2 + m.pupilOffsetX;
-      const int y = oy + eye[1] + (eye[3]-h)/2 + m.pupilOffsetY;
+      const int x = ox + eye[0] + (eye[2]-w)/2 + m.eyeOffsetX;
+      const int y = oy + eye[1] + (eye[3]-h)/2 + m.eyeOffsetY;
       roundedRect(surface, x, y, w, h, kFaceEyeRadius, c.eye);
     }
     surface.beginLayer(FaceLayer::Mouth);

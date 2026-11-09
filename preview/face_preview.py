@@ -57,8 +57,8 @@ def draw(canvas, preset: dict) -> None:
     for x, y, base_width, base_height in geometry["eyes"]:
         width = max(1, base_width * preset["eyeWidth"] // 36)
         height = max(1, base_height * preset["eyeOpen"] // 42)
-        rounded_rect(x + int((base_width-width)/2) + preset["pupilOffsetX"],
-                     y + int((base_height-height)/2) + preset["pupilOffsetY"],
+        rounded_rect(x + int((base_width-width)/2) + preset["eyeOffsetX"],
+                     y + int((base_height-height)/2) + preset["eyeOffsetY"],
                      width, height, geometry["eyeRadius"], preset["eye"])
     mouth_y = geometry["mouth"][0][1]
     mouth = [(120 + int((x-120)*preset["mouthWidth"]/42),
@@ -121,14 +121,11 @@ def main() -> None:
                 messagebox.showerror("Export failed", str(error))
 
     tk.OptionMenu(root, selected, *preset_by_name, command=select).pack()
-    editable_metrics = ("eyeWidth", "eyeOpen", "pupilOffsetX", "pupilOffsetY",
-                        "mouthWidth", "mouthHeight", "effectRadius")
-    for index, key in enumerate(editable_metrics):
-        bounds = METRIC_BOUNDS[key]
+    for index, (key, bounds) in enumerate(METRIC_BOUNDS.items()):
         tk.Label(fields, text=key).grid(row=index, column=0, sticky="w")
         tk.Spinbox(fields, from_=bounds[0], to=bounds[1], textvariable=variables[key],
                    width=8, command=apply).grid(row=index, column=1)
-    for index, key in enumerate(("background", "face", "eye", "mouth", "effect")):
+    for index, key in enumerate(COLOR_KEYS):
         tk.Label(fields, text=key).grid(row=index, column=2, sticky="w")
         tk.Entry(fields, textvariable=variables[key], width=10).grid(row=index, column=3)
     fields.bind_all("<Return>", apply)

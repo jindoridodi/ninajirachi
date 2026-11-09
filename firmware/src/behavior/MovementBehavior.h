@@ -13,8 +13,8 @@ struct MovementSnapshot {
 };
 
 struct MovementTuning {
-  float tiltDegreesForFullPupilShift;
-  int16_t maximumTiltPupilShift;
+  float tiltDegreesForFullEyeShift;
+  int16_t maximumTiltEyeShift;
   float jumpAccelerationThresholdG;
   uint32_t jumpOverlayDurationMs;
   uint32_t jumpCooldownMs;
@@ -66,19 +66,16 @@ class MovementBehavior {
  private:
   ExpressionPreset withTilt(const MovementSnapshot& motion, const ExpressionPreset& underlying) const {
     ExpressionPreset adjusted = underlying;
-    float ratio = motion.rollDegrees / tuning_.tiltDegreesForFullPupilShift;
+    float ratio = motion.rollDegrees / tuning_.tiltDegreesForFullEyeShift;
     if (ratio > 1.0f) ratio = 1.0f;
     if (ratio < -1.0f) ratio = -1.0f;
-    adjusted.metrics.pupilOffsetX += static_cast<int16_t>(ratio * tuning_.maximumTiltPupilShift);
+    adjusted.metrics.eyeOffsetX += static_cast<int16_t>(ratio * tuning_.maximumTiltEyeShift);
     return adjusted;
   }
 
   static ExpressionPreset surprisedOverlay(ExpressionPreset preset) {
     preset.colors.background = preset.colors.effect;
     preset.metrics.eyeOpen += 24;
-    preset.metrics.eyelidHeight = 0;
-    if (preset.metrics.pupilRadius < expressionPreset(ExpressionName::Surprised).metrics.pupilRadius)
-      preset.metrics.pupilRadius = expressionPreset(ExpressionName::Surprised).metrics.pupilRadius;
     preset.metrics.mouthHeight += 26;
     if (preset.metrics.effectRadius < 12) preset.metrics.effectRadius = 12;
     return preset;

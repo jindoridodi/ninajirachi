@@ -25,9 +25,8 @@ int main() {
 
   nina::FaceRenderer renderer;
   auto preset = nina::idlePreset();
-  preset.colors.background = preset.colors.face = preset.colors.eyelid = {0};
+  preset.colors.background = preset.colors.face = {0};
   preset.colors.eye = {0xFFFFFF};
-  preset.colors.pupil = {0xFF0000};
   preset.colors.mouth = {0x00FF00};
   renderer.render(surface, preset, 240, 240);
   assert(pixel(69, 95) == WHITE && pixel(171, 95) == WHITE);

@@ -25,25 +25,26 @@ int main() {
   movement.update({0.0f, 0.4f}, focused, 75);
   const nina::MovementRenderState jumped = movement.update({0.0f, 2.1f}, focused, 100);
   const nina::MovementRenderState heldJump = movement.update({0.0f, 2.1f}, focused, 150);
-  const nina::MovementRenderState resumed = movement.update({0.0f, 1.0f}, focused, 500);
+  const uint32_t overlayEnd = 100 + nina::kDefaultMovementTuning.jumpOverlayDurationMs;
+  const nina::MovementRenderState resumed = movement.update({0.0f, 1.0f}, focused, overlayEnd);
 
-  movement.update({0.0f, 1.0f}, focused, 600);
-  const nina::MovementRenderState debounced = movement.update({0.0f, 2.1f}, focused, 700);
-  movement.update({0.0f, 1.0f}, focused, 900);
-  movement.update({0.0f, 0.4f}, focused, 950);
-  const nina::MovementRenderState nextJump = movement.update({0.0f, 2.1f}, focused, 1000);
+  movement.update({0.0f, 1.0f}, focused, overlayEnd + 100);
+  const nina::MovementRenderState debounced = movement.update({0.0f, 2.1f}, focused, overlayEnd + 200);
+  movement.update({0.0f, 1.0f}, focused, overlayEnd + 400);
+  movement.update({0.0f, 0.4f}, focused, overlayEnd + 450);
+  const nina::MovementRenderState nextJump = movement.update({0.0f, 2.1f}, focused, overlayEnd + 500);
   nina::MovementBehavior wrapped;
   const auto idleLate = wrapped.update({0, 1}, idle, 0xfffffff0u);
   wrapped.update({0, 0}, idle, 0xfffffff5u);
   const auto wrappedJump = wrapped.update({0, 2.1f}, idle, 10);
-  const auto wrappedEnd = wrapped.update({0, 1}, idle, 400);
+  const auto wrappedEnd = wrapped.update({0, 1}, idle, 10 + nina::kDefaultMovementTuning.jumpOverlayDurationMs);
 
   return !(expect(!idleLate.jumpOverlayActive && wrappedJump.jumpOverlayActive && !wrappedEnd.jumpOverlayActive,
                   "jump timing remains valid after long idle and clock wrap") &&
            expect(!bump.jumpOverlayActive, "single impact is not a jump") &&
            expect(tilted.preset.name == idle.name, "tilt preserves the underlying expression") &&
-           expect(tilted.preset.metrics.pupilOffsetX > idle.metrics.pupilOffsetX,
-                  "tilt subtly shifts pupils") &&
+           expect(tilted.preset.metrics.eyeOffsetX > idle.metrics.eyeOffsetX,
+                  "tilt subtly shifts eyes") &&
            expect(jumped.jumpOverlayActive, "jump starts a transient overlay") &&
            expect(jumped.preset.colors.background.rgb == focused.colors.effect.rgb,
                   "jump flashes the background") &&

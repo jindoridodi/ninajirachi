@@ -15,6 +15,8 @@ sh tests/run_compass_service_test.sh
 sh tests/run_gravity_estimator_test.sh
 sh tests/run_movement_behavior_test.sh
 python3 tests/preview_editor_test.py
+python3 tests/face_geometry_test.py
+python3 tools/face_geometry.py --check
 python3 tools/generate_face_presets.py --check
 arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled firmware
 ```
@@ -26,7 +28,7 @@ Host tests verify behavior and persistence using synthetic input. The compile ch
 - Record the QMC5883P chip marking, wiring, detected I²C address, and raw readings on the actual board.
 - Confirm sensor axes, calibrate in the final enclosure, reboot, and compare headings during rotation. Use the procedure in `compass-bench.md`.
 - Confirm five-second entry, release, three-second return, and seven-second inactivity on the physical touchscreen.
-- Check all five expression presets and blink/eyelid appearance on the round display.
+- Check all five expression presets, eye offsets, and blink appearance on the round display.
 - Compare displayed voltage with a meter. Charging state remains unknown; percentage remains uncalibrated until supported by actual measurements.
 
 No connected ESP32 was available during this run. These physical results are unverified and the tickets must not be closed solely on the basis of software checks.

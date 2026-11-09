@@ -1,7 +1,5 @@
 #pragma once
 
-#include <math.h>
-
 #include "../face/FaceRenderer.h"
 #include "../waveshare/DEV_Config.h"
 #include "../waveshare/GUI_Paint.h"
@@ -33,17 +31,6 @@ class WaveshareSurface final : public DrawSurface {
   void fillCircle(int x, int y, int radius, Color color) override {
     if (radius <= 0) return;
     Paint_DrawCircle(x, y, radius, rgb565(color), DOT_PIXEL_1X1, DRAW_FILL_FULL);
-  }
-
-  void fillEllipse(int x, int y, int width, int height, Color color) override {
-    if (width <= 0 || height <= 0) return;
-    const float radiusX = width / 2.0f;
-    const float radiusY = height / 2.0f;
-    for (int row = -height / 2; row <= height / 2; ++row) {
-      const float ratio = row / radiusY;
-      const int span = static_cast<int>(radiusX * sqrtf(fmaxf(0.0f, 1.0f - ratio * ratio)));
-      fillRect(x - span, y + row, span * 2 + 1, 1, color);
-    }
   }
 
   void fillRect(int x, int y, int width, int height, Color color) override {
