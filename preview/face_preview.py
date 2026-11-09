@@ -31,44 +31,45 @@ def export_presets(presets: list[dict], path: Path) -> None:
 
 
 def draw(canvas, preset: dict) -> None:
+    import math
+
     canvas.delete("all")
     canvas.create_rectangle(0, 0, 240, 240, fill=preset["background"], outline="")
-    canvas.create_oval(120 - preset["faceRadius"], 120 - preset["faceRadius"],
-                       120 + preset["faceRadius"], 120 + preset["faceRadius"],
-                       fill=preset["face"], outline="")
-    for x in (72, 168):
-        canvas.create_oval(x - preset["eyeWidth"] // 2, 92 - preset["eyeOpen"] // 2,
-                           x + preset["eyeWidth"] // 2, 92 + preset["eyeOpen"] // 2,
-                           fill=preset["eye"], outline="")
-        canvas.create_rectangle(x - preset["eyeWidth"] // 2, 92 - preset["eyeOpen"] // 2,
-                                x + preset["eyeWidth"] // 2,
-                                92 - preset["eyeOpen"] // 2 + preset["eyelidHeight"],
-                                fill=preset["eyelid"], outline="")
-        px = x + preset["pupilOffsetX"]
-        py = 92 + preset["pupilOffsetY"]
-        radius = preset["pupilRadius"]
-        if radius > 0 and preset["eyeOpen"] > 3:
-            import math
-            for row in range(-radius, radius + 1):
-                y = py + row
-                if y < 92 - preset["eyeOpen"] // 2 + preset["eyelidHeight"]:
-                    continue
-                ratio = (y - 92) / (preset["eyeOpen"] / 2)
-                if abs(ratio) > 1:
-                    continue
-                eye_span = int(preset["eyeWidth"] / 2 * math.sqrt(1 - ratio * ratio))
-                pupil_span = int(math.sqrt(radius * radius - row * row))
-                left, right = max(x - eye_span, px - pupil_span), min(x + eye_span, px + pupil_span)
-                if left <= right:
-                    canvas.create_rectangle(left, y, right + 1, y + 1,
-                                            fill=preset["pupil"], outline="")
-    canvas.create_oval(120 - preset["mouthWidth"] // 2, 174 - preset["mouthHeight"] // 2,
-                       120 + preset["mouthWidth"] // 2, 174 + preset["mouthHeight"] // 2,
-                       fill=preset["mouth"], outline="")
+
+    # Same geometry as LvglFace: rotated rounded-square outline, vertical eyes,
+    # and two bottom-facing arcs. Legacy expression fields remain available for
+    # animation, but the reference icon does not use pupils or a filled mouth.
+    half, corner = 85, 28
+    points = []
+    for cx, cy, start in ((half - corner, half - corner, -90),
+                          (-half + corner, half - corner, 0),
+                          (-half + corner, -half + corner, 90),
+                          (half - corner, -half + corner, 180)):
+        for step in range(7):
+            angle = math.radians(start + step * 90 / 6)
+            x, y = cx + corner * math.cos(angle), cy + corner * math.sin(angle)
+            points.extend((120 + (x - y) / math.sqrt(2),
+                           120 + (x + y) / math.sqrt(2)))
+    canvas.create_line(*points, points[0], points[1], fill=preset["face"], width=4,
+                       joinstyle="curve")
+    def rounded_rect(x, y, width, height, radius, fill):
+        canvas.create_rectangle(x + radius, y, x + width - radius, y + height,
+                                fill=fill, outline="")
+        canvas.create_rectangle(x, y + radius, x + width, y + height - radius,
+                                fill=fill, outline="")
+        for cx, cy in ((x, y), (x + width - 2 * radius, y),
+                       (x, y + height - 2 * radius),
+                       (x + width - 2 * radius, y + height - 2 * radius)):
+            canvas.create_arc(cx, cy, cx + 2 * radius, cy + 2 * radius,
+                              start=0, extent=360, fill=fill, outline="")
+
+    for x in (48, 152):
+        rounded_rect(x, 43, 28, 86, 16, preset["face"])
+    for x in (62, 114):
+        canvas.create_arc(x, 104, x + 64, 168, start=200, extent=140,
+                          style="arc", outline=preset["face"], width=11)
     if preset["effectRadius"]:
-        radius = preset["effectRadius"]
-        canvas.create_oval(120 - radius, 32 - radius, 120 + radius, 32 + radius,
-                           fill=preset["effect"], outline="")
+        canvas.create_oval(120 - 3, 29, 120 + 3, 35, fill=preset["effect"], outline="")
 
 
 def main() -> None:
