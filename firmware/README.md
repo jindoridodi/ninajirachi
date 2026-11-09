@@ -6,7 +6,7 @@ The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` d
 
 ## LVGL face authoring
 
-`src/face/LvglFace.h` is the LVGL v8 version of the reference icon: a transparent rounded square rotated 45 degrees, two vertical rounded-rectangle eyes, and two bottom-facing arc segments for the mouth. It intentionally uses LVGL objects rather than image assets so geometry can be tuned at 240x240.
+`src/face/LvglFace.h` renders the reference icon in LVGL v8: a wide rounded triangle with a flat top, short vertical rounded-rectangle eyes, and a continuous double-U mouth with rounded ends. The reference aspect ratio is preserved inside the 240x240 screen.
 
 ```cpp
 #include "src/face/LvglFace.h"
@@ -17,7 +17,11 @@ face.create(lv_scr_act(), nina::idlePreset());
 face.render(nina::expressionPreset(nina::ExpressionName::Happy));
 ```
 
-The current Arduino sketch remains on the verified direct Waveshare path. Use this component when switching the display integration to LVGL; keep `LvglFaceLayout` as the single place to tune the reference geometry.
+The current Arduino sketch remains on the verified direct Waveshare path. Use this component when switching the display integration to LVGL. `shared/face_geometry.json` contains the outline and mouth cubic control points in reference-image coordinates, eye rectangles, corner radius, and stroke widths. The Tk preview reads this same geometry; after editing it, run `python3 tools/face_geometry.py` to regenerate `src/face/FaceGeometry.generated.h` (`--check` verifies it). LVGL draws the sampled curves with rounded line segments. Objects and point buffers persist across expression updates.
+
+Run `python3 preview/face_preview.py` to tune eye width/openness, eye offsets, mouth width/depth, and colors. In this icon, gaze shifts the solid eyes. Export writes expression values as before. The reference idle values are eyeWidth=36, eyeOpen=42, mouthWidth=42, mouthHeight=14; these scale the traced geometry. Legacy face-radius, eyelid, pupil-radius, and effect controls are hidden because this component does not render them.
+
+For a headless visual check, `python3 tools/render_face_preview.py /tmp/face.png` draws the same preview to PNG (requires Pillow). Use `--preset happy` to inspect another preset. Run `python3 tests/face_geometry_test.py` to check the reference proportions, valid canvas options, and generated geometry.
 
 The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up.
 

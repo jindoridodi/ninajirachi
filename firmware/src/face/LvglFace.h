@@ -1,109 +1,77 @@
 #pragma once
 
-// LVGL v8 face primitive for the Ninajirachi icon.  This is deliberately
-// separate from the direct Waveshare surface used by the first bring-up.
 #include <lvgl.h>
-
 #include "ExpressionPreset.h"
+#include "FaceGeometry.generated.h"
 
 namespace nina {
 
-struct LvglFaceLayout {
-  lv_coord_t width = 240;
-  lv_coord_t height = 240;
-  lv_coord_t bodySize = 170;
-  lv_coord_t bodyRadius = 28;
-  lv_coord_t bodyBorder = 4;
-  lv_coord_t eyeWidth = 28;
-  lv_coord_t eyeHeight = 86;
-  lv_coord_t eyeRadius = 16;
-  lv_coord_t eyeY = 43;
-  lv_coord_t leftEyeX = 48;
-  lv_coord_t rightEyeX = 152;
-  lv_coord_t mouthSize = 64;
-  lv_coord_t mouthStroke = 11;
-  lv_coord_t leftMouthX = 62;
-  lv_coord_t rightMouthX = 114;
-  lv_coord_t mouthY = 104;
-};
-
 class LvglFace {
  public:
-  explicit LvglFace(LvglFaceLayout layout = {}) : layout_(layout) {}
-
   void create(lv_obj_t* parent, const ExpressionPreset& preset) {
     root_ = lv_obj_create(parent);
     lv_obj_remove_style_all(root_);
-    lv_obj_set_size(root_, layout_.width, layout_.height);
+    lv_obj_clear_flag(root_, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(root_, 240, 240);
     lv_obj_center(root_);
+    outline_ = line(kFaceOutline, sizeof(kFaceOutline) / sizeof(kFaceOutline[0]),
+                    kFaceOutlineWidth);
+    for (int i = 0; i < 2; ++i) {
+      eyes_[i] = lv_obj_create(root_);
+      lv_obj_remove_style_all(eyes_[i]);
+      lv_obj_clear_flag(eyes_[i], LV_OBJ_FLAG_SCROLLABLE);
+      lv_obj_set_style_bg_opa(eyes_[i], LV_OPA_COVER, 0);
+    }
+    mouth_ = line(mouthPoints_, sizeof(mouthPoints_) / sizeof(mouthPoints_[0]),
+                  kFaceMouthWidth);
     render(preset);
   }
 
   void render(const ExpressionPreset& preset) {
-    if (root_ == nullptr) return;
-    clear();
-    lv_obj_set_style_bg_color(root_, color(preset.colors.background), 0);
+    if (!root_) return;
+    lv_obj_set_style_bg_color(root_, lv_color_hex(preset.colors.background.rgb), 0);
     lv_obj_set_style_bg_opa(root_, LV_OPA_COVER, 0);
-
-    body_ = lv_obj_create(root_);
-    lv_obj_remove_style_all(body_);
-    lv_obj_set_size(body_, layout_.bodySize, layout_.bodySize);
-    lv_obj_center(body_);
-    lv_obj_set_style_radius(body_, layout_.bodyRadius, 0);
-    lv_obj_set_style_bg_opa(body_, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(body_, layout_.bodyBorder, 0);
-    lv_obj_set_style_border_color(body_, color(preset.colors.face), 0);
-    lv_obj_set_style_border_opa(body_, LV_OPA_COVER, 0);
-    lv_obj_set_style_transform_pivot_x(body_, layout_.bodySize / 2, 0);
-    lv_obj_set_style_transform_pivot_y(body_, layout_.bodySize / 2, 0);
-    lv_obj_set_style_transform_angle(body_, 450, 0);  // 45 degrees, 0.1 degree units.
-
-    addEye(layout_.leftEyeX, layout_.eyeY, preset.colors.face);
-    addEye(layout_.rightEyeX, layout_.eyeY, preset.colors.face);
-    addMouth(layout_.leftMouthX, preset.colors.face);
-    addMouth(layout_.rightMouthX, preset.colors.face);
+    lv_obj_set_style_line_color(outline_, lv_color_hex(preset.colors.face.rgb), 0);
+    const auto& m = preset.metrics;
+    for (int i = 0; i < 2; ++i) {
+      const auto& eye = kFaceEyes[i];
+      const int width = eye[2] * m.eyeWidth / 36;
+      const int height = eye[3] * m.eyeOpen / 42;
+      lv_obj_set_pos(eyes_[i], eye[0] + (eye[2]-width)/2 + m.pupilOffsetX,
+                     eye[1] + (eye[3]-height)/2 + m.pupilOffsetY);
+      lv_obj_set_size(eyes_[i], width, height);
+      lv_obj_set_style_radius(eyes_[i], kFaceEyeRadius, 0);
+      lv_obj_set_style_bg_color(eyes_[i], lv_color_hex(preset.colors.eye.rgb), 0);
+    }
+    for (unsigned i = 0; i < sizeof(mouthPoints_) / sizeof(mouthPoints_[0]); ++i) {
+      mouthPoints_[i].x = 120 + (kFaceMouth[i].x - 120) * m.mouthWidth / 42;
+      mouthPoints_[i].y = kFaceMouth[0].y +
+          (kFaceMouth[i].y - kFaceMouth[0].y) * m.mouthHeight / 14;
+    }
+    lv_line_set_points(mouth_, mouthPoints_, sizeof(mouthPoints_) / sizeof(mouthPoints_[0]));
+    lv_obj_set_style_line_color(mouth_, lv_color_hex(preset.colors.mouth.rgb), 0);
+    lv_obj_invalidate(mouth_);
   }
 
   lv_obj_t* object() const { return root_; }
 
  private:
-  static lv_color_t color(Color value) { return lv_color_hex(value.rgb); }
-
-  void addEye(lv_coord_t x, lv_coord_t y, Color value) {
-    lv_obj_t* eye = lv_obj_create(root_);
-    lv_obj_remove_style_all(eye);
-    lv_obj_set_pos(eye, x, y);
-    lv_obj_set_size(eye, layout_.eyeWidth, layout_.eyeHeight);
-    lv_obj_set_style_radius(eye, layout_.eyeRadius, 0);
-    lv_obj_set_style_bg_color(eye, color(value), 0);
-    lv_obj_set_style_bg_opa(eye, LV_OPA_COVER, 0);
+  lv_obj_t* line(const lv_point_t* points, uint16_t count, int width) {
+    lv_obj_t* obj = lv_line_create(root_);
+    lv_obj_remove_style_all(obj);
+    lv_obj_set_pos(obj, 0, 0);
+    lv_line_set_points(obj, points, count);
+    lv_obj_set_style_line_width(obj, width, 0);
+    lv_obj_set_style_line_rounded(obj, true, 0);
+    lv_obj_set_style_line_opa(obj, LV_OPA_COVER, 0);
+    return obj;
   }
 
-  void addMouth(lv_coord_t x, Color value) {
-    lv_obj_t* mouth = lv_arc_create(root_);
-    lv_obj_remove_style_all(mouth);
-    lv_obj_set_pos(mouth, x, layout_.mouthY);
-    lv_obj_set_size(mouth, layout_.mouthSize, layout_.mouthSize);
-    lv_arc_set_bg_angles(mouth, 0, 0);
-    lv_arc_set_angles(mouth, 200, 340);
-    lv_obj_set_style_arc_width(mouth, layout_.mouthStroke, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(mouth, color(value), LV_PART_INDICATOR);
-    lv_obj_set_style_arc_opa(mouth, LV_OPA_COVER, LV_PART_INDICATOR);
-  }
-
-  void clear() {
-    if (body_ != nullptr) {
-      lv_obj_del(body_);
-      body_ = nullptr;
-    }
-    // Eyes and mouth are children of root_; deleting the body does not clear them.
-    while (lv_obj_get_child_cnt(root_) > 0)
-      lv_obj_del(lv_obj_get_child(root_, 0));
-  }
-
-  LvglFaceLayout layout_;
   lv_obj_t* root_ = nullptr;
-  lv_obj_t* body_ = nullptr;
+  lv_obj_t* outline_ = nullptr;
+  lv_obj_t* eyes_[2] = {};
+  lv_obj_t* mouth_ = nullptr;
+  lv_point_t mouthPoints_[sizeof(kFaceMouth) / sizeof(kFaceMouth[0])] = {};
 };
 
 }  // namespace nina

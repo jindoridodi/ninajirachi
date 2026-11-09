@@ -9,6 +9,7 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.generate_face_presets import COLOR_KEYS, METRIC_BOUNDS, SOURCE, OUTPUT, render
+from tools.face_geometry import display_geometry
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,28 +32,18 @@ def export_presets(presets: list[dict], path: Path) -> None:
 
 
 def draw(canvas, preset: dict) -> None:
-    import math
-
     canvas.delete("all")
     canvas.create_rectangle(0, 0, 240, 240, fill=preset["background"], outline="")
+    geometry = display_geometry()
 
-    # Same geometry as LvglFace: rotated rounded-square outline, vertical eyes,
-    # and two bottom-facing arcs. Legacy expression fields remain available for
-    # animation, but the reference icon does not use pupils or a filled mouth.
-    half, corner = 85, 28
-    points = []
-    for cx, cy, start in ((half - corner, half - corner, -90),
-                          (-half + corner, half - corner, 0),
-                          (-half + corner, -half + corner, 90),
-                          (half - corner, -half + corner, 180)):
-        for step in range(7):
-            angle = math.radians(start + step * 90 / 6)
-            x, y = cx + corner * math.cos(angle), cy + corner * math.sin(angle)
-            points.extend((120 + (x - y) / math.sqrt(2),
-                           120 + (x + y) / math.sqrt(2)))
-    canvas.create_line(*points, points[0], points[1], fill=preset["face"], width=4,
-                       joinstyle="curve")
+    def stroke(points, color, width):
+        canvas.create_line(*[value for point in points for value in point],
+                           fill=color, width=width, joinstyle="round", capstyle="round")
+
+    stroke(geometry["outline"], preset["face"], geometry["outlineWidth"])
+
     def rounded_rect(x, y, width, height, radius, fill):
+        radius = min(radius, width / 2, height / 2)
         canvas.create_rectangle(x + radius, y, x + width - radius, y + height,
                                 fill=fill, outline="")
         canvas.create_rectangle(x, y + radius, x + width, y + height - radius,
@@ -60,16 +51,20 @@ def draw(canvas, preset: dict) -> None:
         for cx, cy in ((x, y), (x + width - 2 * radius, y),
                        (x, y + height - 2 * radius),
                        (x + width - 2 * radius, y + height - 2 * radius)):
-            canvas.create_arc(cx, cy, cx + 2 * radius, cy + 2 * radius,
-                              start=0, extent=360, fill=fill, outline="")
+            canvas.create_oval(cx, cy, cx + 2 * radius, cy + 2 * radius,
+                               fill=fill, outline="")
 
-    for x in (48, 152):
-        rounded_rect(x, 43, 28, 86, 16, preset["face"])
-    for x in (62, 114):
-        canvas.create_arc(x, 104, x + 64, 168, start=200, extent=140,
-                          style="arc", outline=preset["face"], width=11)
-    if preset["effectRadius"]:
-        canvas.create_oval(120 - 3, 29, 120 + 3, 35, fill=preset["effect"], outline="")
+    for x, y, base_width, base_height in geometry["eyes"]:
+        width = base_width * preset["eyeWidth"] // 36
+        height = base_height * preset["eyeOpen"] // 42
+        rounded_rect(x + int((base_width-width)/2) + preset["pupilOffsetX"],
+                     y + int((base_height-height)/2) + preset["pupilOffsetY"],
+                     width, height, geometry["eyeRadius"], preset["eye"])
+    mouth_y = geometry["mouth"][0][1]
+    mouth = [(120 + int((x-120)*preset["mouthWidth"]/42),
+              mouth_y + int((y-mouth_y)*preset["mouthHeight"]/14))
+             for x, y in geometry["mouth"]]
+    stroke(mouth, preset["mouth"], geometry["mouthWidth"])
 
 
 def main() -> None:
@@ -122,11 +117,14 @@ def main() -> None:
                 messagebox.showerror("Export failed", str(error))
 
     tk.OptionMenu(root, selected, *preset_by_name, command=select).pack()
-    for index, (key, bounds) in enumerate(METRIC_BOUNDS.items()):
+    editable_metrics = ("eyeWidth", "eyeOpen", "pupilOffsetX", "pupilOffsetY",
+                        "mouthWidth", "mouthHeight")
+    for index, key in enumerate(editable_metrics):
+        bounds = METRIC_BOUNDS[key]
         tk.Label(fields, text=key).grid(row=index, column=0, sticky="w")
         tk.Spinbox(fields, from_=bounds[0], to=bounds[1], textvariable=variables[key],
                    width=8, command=apply).grid(row=index, column=1)
-    for index, key in enumerate(COLOR_KEYS):
+    for index, key in enumerate(("background", "face", "eye", "mouth")):
         tk.Label(fields, text=key).grid(row=index, column=2, sticky="w")
         tk.Entry(fields, textvariable=variables[key], width=10).grid(row=index, column=3)
     fields.bind_all("<Return>", apply)
