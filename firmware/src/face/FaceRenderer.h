@@ -25,6 +25,7 @@ class FaceRenderer {
     surface.beginLayer(FaceLayer::Background);
     surface.fillRect(0, 0, width, height, c.background);
     surface.beginLayer(FaceLayer::Face);
+    fillFace(surface, ox, oy, c.face);
     for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i)
       stroke(surface, kFaceOutline[i-1], kFaceOutline[i], ox, oy, kFaceOutlineWidth, c.face);
 
@@ -42,6 +43,20 @@ class FaceRenderer {
       const FacePoint next = mouthPoint(kFaceMouth[i], m);
       stroke(surface, previous, next, ox, oy, kFaceMouthWidth, c.mouth);
       previous = next;
+    }
+  }
+
+  static void fillFace(DrawSurface& surface, int ox, int oy, Color color) {
+    for (int y = 0; y < 240; ++y) {
+      int left = 240, right = -1;
+      for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i) {
+        const FacePoint a = kFaceOutline[i-1], b = kFaceOutline[i];
+        if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) {
+          const int x = a.x + (y-a.y)*(b.x-a.x)/(b.y-a.y);
+          left = std::min(left, x); right = std::max(right, x);
+        }
+      }
+      if (right >= left) surface.fillRect(ox + left, oy + y, right-left+1, 1, color);
     }
   }
 

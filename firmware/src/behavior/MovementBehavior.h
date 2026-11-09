@@ -21,7 +21,7 @@ struct MovementTuning {
 };
 
 constexpr MovementTuning kDefaultMovementTuning = {
-    20.0f, 4, 1.8f, 350, 800,
+    20.0f, 4, 1.8f, 2000, 800,
 };
 constexpr float kJumpLowAccelerationG = 0.6f;
 constexpr uint32_t kJumpPatternWindowMs = 800;
@@ -59,7 +59,7 @@ class MovementBehavior {
     else filteredRoll_ = fmaxf(desiredRoll, filteredRoll_ - step);
     lastTiltMs_ = nowMs;
     MovementRenderState result = {withTilt({filteredRoll_, motion.verticalAccelerationG}, underlying), overlayActive_};
-    if (result.jumpOverlayActive) result.preset = surprisedOverlay(result.preset);
+    if (result.jumpOverlayActive) result.preset = surprisedOverlay(result.preset, nowMs - overlayStartedAtMs_);
     return result;
   }
 
@@ -73,8 +73,9 @@ class MovementBehavior {
     return adjusted;
   }
 
-  static ExpressionPreset surprisedOverlay(ExpressionPreset preset) {
-    preset.colors.background = preset.colors.effect;
+  static ExpressionPreset surprisedOverlay(ExpressionPreset preset, uint32_t elapsedMs) {
+    constexpr uint32_t colors[] = {0xff0044, 0x0055ff, 0x00aa55, 0x9900cc, 0xdd7700, 0x00aaaa};
+    preset.colors.background.rgb = colors[(elapsedMs / 200) % (sizeof(colors) / sizeof(colors[0]))];
     preset.metrics.eyeOpen += 24;
     preset.metrics.mouthHeight += 26;
     return preset;

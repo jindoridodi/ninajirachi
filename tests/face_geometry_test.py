@@ -1,4 +1,5 @@
 import sys
+import math
 import unittest
 from pathlib import Path
 
@@ -31,12 +32,17 @@ class FaceGeometryTest(unittest.TestCase):
         self.assertGreater(max(y for x, y in g["mouth"]), g["mouth"][0][1],
                            "mouth lobes curve down")
 
+    def test_face_fits_inside_round_display(self):
+        g = display_geometry()
+        self.assertLessEqual(max(math.hypot(x - 119.5, y - 119.5)
+                                 for x, y in g["outline"]) + g["outlineWidth"] / 2, 118)
+
     def test_idle_renders_with_valid_canvas_options(self):
         canvas = RasterCanvas()
         draw(canvas, PRESETS[0])
-        # Center of left eye and area below mouth: blue and black respectively.
-        self.assertEqual(canvas.image.getpixel((69*4, 95*4)), (0, 0, 238))
-        self.assertEqual(canvas.image.getpixel((120*4, 160*4)), (0, 0, 0))
+        self.assertEqual(canvas.image.getpixel((69*4, 111*4)), (0, 0, 0))
+        self.assertEqual(canvas.image.getpixel((120*4, 136*4)), (255, 255, 255))
+        self.assertEqual(canvas.image.getpixel((120*4, 176*4)), (255, 255, 255))
 
     def test_openness_control_changes_the_render(self):
         from PIL import ImageChops

@@ -25,7 +25,7 @@ def sample_path(path):
 def display_geometry():
     g = GEOMETRY
     scale = g["displayWidth"] / g["sourceWidth"]
-    ox, oy = (240 - g["displayWidth"]) / 2, (240 - g["sourceHeight"] * scale) / 2
+    ox, oy = (240 - g["displayWidth"]) / 2, (240 - g["sourceHeight"] * scale) / 2 + g["displayOffsetY"]
     def convert(path):
         return [(round(ox + x * scale), round(oy + y * scale)) for x, y in sample_path(path)]
     return {
