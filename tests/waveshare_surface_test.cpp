@@ -23,6 +23,14 @@ int main() {
   surface.fillRect(-1, -1, 2, 2, {0xFFFFFF});
   assert(pixel(0, 0) == WHITE && pixel(1, 0) == BLACK && pixel(0, 1) == BLACK);
 
+  surface.fillRect(0, 0, 240, 240, {0});
+  Paint_DrawString_EN(32, 50, "Battery / settings", &Font12, BLACK, WHITE);
+  bool textVisible = false;
+  for (int y = 50; y < 62 && !textVisible; ++y)
+    for (int x = 32; x < 152; ++x)
+      textVisible |= pixel(x, y) != BLACK;
+  assert(textVisible);
+
   nina::FaceRenderer renderer;
   auto preset = nina::idlePreset();
   preset.colors.background = preset.colors.face = {0};

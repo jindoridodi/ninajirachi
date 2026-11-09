@@ -540,6 +540,33 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
 }  // namespace
 
 int main() {
+  nina::WearableBehavior staleAcceleration;
+  nina::WearableInput stale(100, false, nina::ExpressionName::Idle, {});
+  stale.accelerationMagnitudeG = 0.4f;
+  staleAcceleration.update(stale);
+  stale.elapsedMs = 150;
+  stale.accelerationValid = true;
+  stale.accelerationMagnitudeG = 3.0f;
+  if (!expect(!staleAcceleration.update(stale).jumpOverlayActive,
+              "stale acceleration and an isolated impact do not trigger a jump")) return 1;
+  nina::WearableBehavior walking;
+  nina::WearableInput step(50114, false, nina::ExpressionName::Idle, {});
+  step.accelerationValid = true;
+  step.accelerationMagnitudeG = 0.449f;
+  walking.update(step);
+  step.elapsedMs = 50301;
+  step.accelerationMagnitudeG = 3.699f;
+  if (!expect(!walking.update(step).jumpOverlayActive,
+              "recorded walking does not trigger a jump without gravity")) return 1;
+  nina::WearableBehavior missingGravity;
+  nina::WearableInput sample(17640, false, nina::ExpressionName::Idle, {});
+  sample.accelerationValid = true;
+  sample.accelerationMagnitudeG = 0.198f;
+  missingGravity.update(sample);
+  sample.elapsedMs = 17760;
+  sample.accelerationMagnitudeG = 4.067f;
+  if (!expect(missingGravity.update(sample).jumpOverlayActive,
+              "fresh low acceleration followed by impact reacts without a gravity estimate")) return 1;
   if (!jumpOverridesBlink()) return 1;
   if (!tiltAndFocusedAnimation()) return 1;
   if (!movementOverlaysFocusedInteraction()) return 1;

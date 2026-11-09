@@ -24,6 +24,7 @@ constexpr MovementTuning kDefaultMovementTuning = {
     20.0f, 4, 1.8f, 2000, 800,
 };
 constexpr float kJumpLowAccelerationG = 0.6f;
+constexpr float kJumpLowMagnitudeG = 0.4f;
 constexpr uint32_t kJumpPatternWindowMs = 800;
 
 struct MovementRenderState {
@@ -36,16 +37,19 @@ class MovementBehavior {
   explicit MovementBehavior(MovementTuning tuning = kDefaultMovementTuning) : tuning_(tuning) {}
 
   MovementRenderState update(const MovementSnapshot& motion, const ExpressionPreset& underlying,
-                             uint32_t nowMs, bool valid = true) {
+                             uint32_t nowMs, bool valid = true, bool accelerationValid = false,
+                             float accelerationMagnitudeG = 0) {
+    const bool jumpValid = valid || (accelerationValid && isfinite(accelerationMagnitudeG));
+    const float jumpAcceleration = valid ? motion.verticalAccelerationG : accelerationMagnitudeG;
     if (cooldownActive_ && nowMs - cooldownStartedAtMs_ >= tuning_.jumpCooldownMs) cooldownActive_ = false;
     if (overlayActive_ && nowMs - overlayStartedAtMs_ >= tuning_.jumpOverlayDurationMs) overlayActive_ = false;
-    if (valid && motion.verticalAccelerationG < kJumpLowAccelerationG &&
+    if (jumpValid && jumpAcceleration < (valid ? kJumpLowAccelerationG : kJumpLowMagnitudeG) &&
         !cooldownActive_ && !jumpPending_) {
       jumpPending_ = true;
       jumpStartedAtMs_ = nowMs;
     }
     if (jumpPending_ && nowMs - jumpStartedAtMs_ > kJumpPatternWindowMs) jumpPending_ = false;
-    if (valid && jumpPending_ && motion.verticalAccelerationG >= tuning_.jumpAccelerationThresholdG &&
+    if (jumpValid && jumpPending_ && jumpAcceleration >= tuning_.jumpAccelerationThresholdG &&
         !cooldownActive_) {
       overlayStartedAtMs_ = cooldownStartedAtMs_ = nowMs;
       overlayActive_ = cooldownActive_ = true;

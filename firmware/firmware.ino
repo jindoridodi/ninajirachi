@@ -31,6 +31,7 @@ bool haveImuTimestamp = false;
 uint32_t lastImuSuccessAtMs = 0;
 bool compassReady = false;
 bool showRaw = false;
+bool showJumpDebug = false;
 bool scanned = false;
 uint32_t lastFrameMs = 0;
 uint32_t lastLogMs = 0;
@@ -86,7 +87,8 @@ void renderSettings(const nina::SettingsBatteryDisplay& settings) {
   const auto text = nina::settingsBatteryLines(settings);
   surface.fillRect(0, 0, 240, 240, {0});
   for (int line = 0; line < 7; ++line)
-    Paint_DrawString_EN(32, 50 + line * 20, text.lines[line], &Font12, WHITE, BLACK);
+    // The Waveshare string wrapper passes these two colors to Paint_DrawChar in reverse.
+    Paint_DrawString_EN(32, 50 + line * 20, text.lines[line], &Font12, BLACK, WHITE);
 }
 
 void serialCommands() {
@@ -151,6 +153,9 @@ void serialCommands() {
     compass.cancelCalibration();
   } else if (command == 'r') {
     showRaw = !showRaw;
+  } else if (command == 'j') {
+    showJumpDebug = !showJumpDebug;
+    Serial.println(showJumpDebug ? "[DEBUG-jump] enabled" : "[DEBUG-jump] disabled");
   } else if (command >= '0' && command <= '4') {
     const nina::ExpressionName names[] = {nina::ExpressionName::Idle, nina::ExpressionName::Curious,
       nina::ExpressionName::Happy, nina::ExpressionName::Surprised, nina::ExpressionName::Excited};
@@ -181,7 +186,7 @@ void setup() {
   if (!radioReady) Serial.println("ESP-NOW initialization failed");
   snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
            unsigned(identity));
-  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; 0-4 expressions");
+  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; j jump debug; 0-4 expressions");
   renderer.render(surface, nina::idlePreset(), 240, 240);
   surface.present();
 }
@@ -194,14 +199,16 @@ void loop() {
   nina::MagneticVector gravity{0, 0, 0};
   float rollDegrees = 0, accelerationG = 0;
   bool motionValid = false;
+  float acceleration[3] = {}, gyro[3] = {};
+  uint32_t timestamp = 0;
+  bool fresh = false;
   if (imuReady) {
-    float acceleration[3] = {}, gyro[3] = {};
     uint8_t stamp[3] = {}, raw[12] = {};
     const bool readOk = readImuRegisters(imuAddress, QMI8658Register_Timestamp_L, stamp, sizeof(stamp)) &&
                         readImuRegisters(imuAddress, QMI8658Register_Ax_L, raw, sizeof(raw));
-    const uint32_t timestamp = uint32_t(stamp[0]) | (uint32_t(stamp[1]) << 8) |
-                               (uint32_t(stamp[2]) << 16);
-    const bool fresh = readOk && (!haveImuTimestamp || timestamp != lastImuTimestamp);
+    timestamp = uint32_t(stamp[0]) | (uint32_t(stamp[1]) << 8) |
+                (uint32_t(stamp[2]) << 16);
+    fresh = readOk && (!haveImuTimestamp || timestamp != lastImuTimestamp);
     if (haveImuTimestamp && now - lastImuSuccessAtMs > nina::GravityEstimator::kMaxSampleAgeMs)
       haveMovementGravity = false;
     if (!fresh && now - lastImuSuccessAtMs > 100) haveMovementGravity = false;
@@ -243,6 +250,9 @@ void loop() {
       nina::BatterySnapshot(nina::batteryMillivolts(), false, false, 0, deviceId,
                             true, false, "prototype-13-14"), localIdentity);
   input.motionValid = motionValid;
+  input.accelerationValid = fresh;
+  input.accelerationMagnitudeG = sqrtf(acceleration[0] * acceleration[0] +
+      acceleration[1] * acceleration[1] + acceleration[2] * acceleration[2]) / 1000.0f;
   input.rollDegrees = rollDegrees;
   input.verticalAccelerationG = accelerationG;
   nina::BlePacket packets[8];
@@ -257,6 +267,13 @@ void loop() {
   input.headingValid = heading.valid;
   input.headingDegrees = heading.degrees;
   auto output = behavior.update(input, observations, count);
+  if (showJumpDebug) {
+    Serial.printf("[DEBUG-jump] %lu %lu %lu %d %d %.3f %.1f %.1f %.1f %.1f %.1f %.1f %d\n",
+                  (unsigned long)now, (unsigned long)input.elapsedMs, (unsigned long)timestamp,
+                  fresh, input.motionValid, input.verticalAccelerationG,
+                  acceleration[0], acceleration[1], acceleration[2], gyro[0], gyro[1], gyro[2],
+                  output.jumpOverlayActive);
+  }
   if (radioReady) {
     radio.update(input.elapsedMs);
     nina::RadioPacket packet;

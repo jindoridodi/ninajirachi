@@ -68,6 +68,8 @@ struct WearableInput {
   float headingDegrees = 0;
   bool headingValid = false;
   bool motionValid = false;
+  bool accelerationValid = false;
+  float accelerationMagnitudeG = 0;
   float rollDegrees = 0;
   float verticalAccelerationG = 0;
 };
@@ -126,7 +128,8 @@ class WearableBehavior {
       visible.metrics.eyeOffsetX = lroundf(gazeOffset_) + idleEyeMotion(input.elapsedMs);
     } else visible.metrics.eyeOffsetX += lroundf(gazeOffset_);
     const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
-        input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid);
+        input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid,
+        input.accelerationValid, input.accelerationMagnitudeG);
     return {screen_, motion.preset, {input.battery}, peerCount_, targetId_, gaze, motion.jumpOverlayActive};
   }
 

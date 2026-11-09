@@ -25,7 +25,7 @@ For a headless visual check, `python3 tools/render_face_preview.py /tmp/face.png
 
 The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up.
 
-Movement uses the driver's configured ±8 g and ±512°/s IMU scales. Tilt follows a settled gravity estimate and holds its last value while movement prevents a reliable estimate. A low-acceleration phase followed by a vertical impact triggers a jump overlay; tune the thresholds on the assembled wearable in #15.
+Movement uses the driver's configured ±8 g and ±512°/s IMU scales. Tilt follows a settled gravity estimate and holds its last value while movement prevents a reliable estimate. A low-acceleration phase followed by an impact triggers a jump overlay. When gravity is unavailable, jump detection uses a stricter acceleration magnitude threshold to reduce walking reactions; other movement may still trigger it or gentler jumps may be missed. Tune the thresholds on the assembled wearable in #15.
 
 Download the [official demo ZIP](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Demo.zip), then install the required unmodified drivers from the repository root:
 
@@ -41,6 +41,8 @@ Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC mi
 ## Runtime controls
 
 Hold the face for 5 seconds to open battery/settings. Release, then hold for 3 seconds to return. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Serial commands `0`–`4` select idle, curious, happy, surprised, and excited presets for testing.
+
+At 115200 baud, send `j` to toggle temporary jump diagnostic output. Each `[DEBUG-jump]` sample contains loop time, behavior time, sensor timestamp, fresh and motion-valid flags, vertical acceleration in g, raw acceleration in mg, gyro in degrees per second, and overlay state. Logging can slow sampling, so leave it off outside testing.
 
 The external compass starts disabled until verified. The compass uses a separate I²C controller on GPIO15 (SDA) and GPIO16 (SCL), while the onboard touch controller and IMU remain on GPIO6/GPIO7. At 115200 baud, send `s` to scan the compass bus. After checking the physical QMC5883P marking, 3.3 V wiring, and sensor-axis alignment, send `v` to enable the detected `0x2C` device. The adapter also verifies chip identity. Successful verification is saved in NVS; on later boots the firmware probes the address and checks the chip again before enabling it. Send `u` to forget verification and calibration before replacing or remounting the sensor, then physically inspect, scan, and verify again. If storage reports a failure, do not replace the sensor until forgetting verification succeeds. Send `c` to collect calibration while rotating the assembled wearable through all axes, `w` to save, `x` to cancel, and `r` to toggle raw/heading logs. Calibration is stored per board in NVS. Recalibrate after changing the sensor, mounting, or enclosure.
 
