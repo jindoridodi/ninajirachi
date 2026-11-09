@@ -540,6 +540,30 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
 }  // namespace
 
 int main() {
+  {
+    nina::WearableBehavior batch;
+    const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
+    nina::DiscoveryObservation discovery = {peer, 12, -40, 100};
+    nina::WearableInput in(100, false, nina::ExpressionName::Idle, {}, 1);
+    in.headingValid = true;
+    in.headingDegrees = 90;
+    const nina::DirectionObservation directions[] = {
+      {2, -40, 0, 100}, {2, -40, 0, 100}, {2, -65, 90, 100},
+      {2, -65, 90, 100}, {2, -80, 180, 100}, {2, -80, 180, 100}};
+    const auto output = batch.update(in, &discovery, 1, directions, 6);
+    if (!expect(output.targetId == 2 && output.gaze == nina::Gaze::Left,
+                "one frame ingests every direction observation")) return 1;
+    const uint8_t other[] = {'N','I','N','A',1,1,0,0,0,0,0,3};
+    nina::DiscoveryObservation replacement = {other, 12, -20, 101};
+    in.elapsedMs = 101;
+    const auto switched = batch.update(in, &replacement, 1, directions, 6);
+    if (!expect(switched.targetId == 3 && switched.gaze == nina::Gaze::Center,
+                "target switch discards old batched direction evidence")) return 1;
+    in.headingValid = false;
+    if (!expect(batch.update(in, nullptr, 0, directions, 0).gaze == nina::Gaze::Center,
+                "missing heading centers gaze after a batched frame")) return 1;
+  }
+
   nina::WearableBehavior staleAcceleration;
   nina::WearableInput stale(100, false, nina::ExpressionName::Idle, {});
   stale.accelerationMagnitudeG = 0.4f;
