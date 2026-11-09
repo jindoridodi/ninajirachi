@@ -18,6 +18,7 @@ bool radioReady = false;
 uint64_t localIdentity = 0;
 nina::CompassService compass;
 nina::GravityEstimator gravityEstimator;
+TwoWire compassBus(1);
 nina::MagneticVector movementGravity{0, 0, 0};
 uint32_t movementGravityAtMs = 0;
 bool haveMovementGravity = false;
@@ -36,10 +37,12 @@ uint32_t lastLogMs = 0;
 char deviceId[13];
 constexpr uint32_t kFramePeriodMs = 33;
 constexpr uint8_t kCompassAddress = 0x2C;
+constexpr uint8_t kCompassSdaPin = 15;
+constexpr uint8_t kCompassSclPin = 16;
 
 bool compassAddressPresent() {
-  Wire.beginTransmission(kCompassAddress);
-  return Wire.endTransmission() == 0;
+  compassBus.beginTransmission(kCompassAddress);
+  return compassBus.endTransmission() == 0;
 }
 
 bool readImuRegisters(uint8_t address, uint8_t reg, uint8_t* data, size_t size) {
@@ -68,7 +71,7 @@ void restoreCompass() {
   const bool verified = prefs.getUChar("address", 0) == kCompassAddress;
   prefs.end();
   if (verified && compassAddressPresent())
-    compassReady = compass.begin(Wire, nina::CompassConfig(true, kCompassAddress));
+    compassReady = compass.begin(compassBus, nina::CompassConfig(true, kCompassAddress));
 }
 
 bool clearCompassCalibration() {
@@ -90,14 +93,19 @@ void serialCommands() {
   if (!Serial.available()) return;
   const char command = Serial.read();
   if (command == 's') {
+    Serial.println("Scanning compass I2C bus on SDA15/SCL16...");
     scanned = false;
+    uint8_t found = 0;
     for (uint8_t address = 1; address < 127; ++address) {
-      Wire.beginTransmission(address);
-      if (Wire.endTransmission() == 0) {
+      compassBus.beginTransmission(address);
+      if (compassBus.endTransmission() == 0) {
         Serial.printf("I2C 0x%02X\n", address);
+        ++found;
         if (address == kCompassAddress) scanned = true;
       }
     }
+    if (found == 0) Serial.println("No I2C devices found");
+    else if (!scanned) Serial.println("QMC5883P not found at 0x2C");
   } else if (command == 'v') {
     // User confirms physical QMC5883P marking, wiring, and aligned IMU/compass axes.
     Preferences verification;
@@ -106,7 +114,7 @@ void serialCommands() {
                            verification.getUChar("address", 0) == 0;
     if (opened) verification.end();
     const bool safeCalibration = scanned && opened && (!forgotten || clearCompassCalibration());
-    compassReady = safeCalibration && compass.begin(Wire, nina::CompassConfig(true, kCompassAddress));
+    compassReady = safeCalibration && compass.begin(compassBus, nina::CompassConfig(true, kCompassAddress));
     Serial.println(compassReady ? "Compass enabled" : "Scan/verify QMC5883P first");
     if (compassReady) {
       Preferences prefs;
@@ -121,7 +129,7 @@ void serialCommands() {
         }
         prefs.end();
       }
-      if (!compassReady) compass.begin(Wire);
+      if (!compassReady) compass.begin(compassBus);
     }
   } else if (command == 'u') {
     Preferences prefs;
@@ -134,7 +142,7 @@ void serialCommands() {
     if (forgotten && !clearCompassCalibration()) Serial.println("Could not clear compass calibration; retry verification");
     compassReady = false;
     scanned = false;
-    compass.begin(Wire);
+    compass.begin(compassBus);
   } else if (command == 'c') {
     Serial.println(compass.startCalibration() ? "Rotate through all axes; w saves" : "Enable compass first");
   } else if (command == 'w') {
@@ -159,6 +167,7 @@ void setup() {
     return;
   }
   displayReady = true;
+  compassBus.begin(kCompassSdaPin, kCompassSclPin, 400000);
   nina::resetTouch();
   analogReadResolution(12);
   analogSetPinAttenuation(1, ADC_11db);
