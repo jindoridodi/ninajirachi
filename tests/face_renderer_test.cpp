@@ -5,11 +5,6 @@
 struct Pixels final : nina::DrawSurface {
   uint32_t pixels[240][240] = {};
   void beginLayer(nina::FaceLayer) override {}
-  void fillCircle(int x, int y, int radius, nina::Color c) override {
-    for (int dy = -radius; dy <= radius; ++dy)
-      for (int dx = -radius; dx <= radius; ++dx)
-        if (dx*dx + dy*dy <= radius*radius) fillRect(x+dx, y+dy, 1, 1, c);
-  }
   void fillRect(int x, int y, int w, int h, nina::Color c) override {
     for (int row = std::max(0, y); row < std::min(240, y+h); ++row)
       for (int col = std::max(0, x); col < std::min(240, x+w); ++col)
@@ -52,7 +47,11 @@ int main(int argc, char** argv) {
   // Every preset, including extreme authoring values, remains renderable.
   for (int i = 0; i < 5; ++i) {
     Pixels frame;
-    renderer.render(frame, nina::expressionPreset(static_cast<nina::ExpressionName>(i)), 240, 240);
+    const auto& expression = nina::expressionPreset(static_cast<nina::ExpressionName>(i));
+    renderer.render(frame, expression, 240, 240);
+    for (int y = 0; y < 60; ++y)
+      for (int x = 0; x < 240; ++x)
+        assert(frame.pixels[y][x] == expression.colors.background.rgb);
   }
   preset.metrics.eyeWidth = preset.metrics.eyeOpen = 1;
   renderer.render(gaze, preset, 240, 240);

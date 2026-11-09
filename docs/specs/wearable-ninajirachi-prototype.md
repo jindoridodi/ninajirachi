@@ -55,7 +55,7 @@ The first prototype supports one peer well. A peer begins with focused interacti
 ## Implementation Decisions
 
 - Use Arduino C++ on the Waveshare ESP32-S3 Touch LCD 1.28 board with the `ESP32S3 Dev Module` target.
-- Use a parameterized face renderer with background, rounded-triangle outline, solid rounded-rectangle eyes, double-U mouth, and effects layers. Expression presets supply values instead of selecting separate expression image files.
+- Use a parameterized face renderer with background, rounded-triangle outline, solid rounded-rectangle eyes, and double-U mouth layers. A jump changes the background color; no decorative dot is drawn above the face. Expression presets supply values instead of selecting separate expression image files.
 - Provide a desktop GUI preview/editor for tuning the same expression presets at 240×240. It is an authoring tool, not a wearable runtime dependency.
 - Reserve bitmap assets for optional decorative effects that cannot be drawn simply; validate their flash and RAM cost early.
 - Keep sensor input, peer tracking, interaction-state selection, screen-mode selection, animation timing, and rendering as separate responsibilities behind the `WearableBehavior` seam.

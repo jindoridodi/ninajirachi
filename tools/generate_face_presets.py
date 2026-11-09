@@ -14,7 +14,7 @@ COLOR_KEYS = ("background", "face", "eye", "mouth", "effect")
 METRIC_BOUNDS = {
     "eyeWidth": (1, 100), "eyeOpen": (1, 100),
     "eyeOffsetX": (-60, 60), "eyeOffsetY": (-60, 60),
-    "mouthWidth": (1, 100), "mouthHeight": (1, 100), "effectRadius": (0, 24),
+    "mouthWidth": (1, 100), "mouthHeight": (1, 100),
 }
 
 

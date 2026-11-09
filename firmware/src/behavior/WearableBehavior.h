@@ -220,7 +220,7 @@ class WearableBehavior {
       {value(x.eyeWidth, y.eyeWidth), value(x.eyeOpen, y.eyeOpen),
        value(x.eyeOffsetX, y.eyeOffsetX),
        value(x.eyeOffsetY, y.eyeOffsetY), value(x.mouthWidth, y.mouthWidth),
-       value(x.mouthHeight, y.mouthHeight), value(x.effectRadius, y.effectRadius)}};
+       value(x.mouthHeight, y.mouthHeight)}};
   }
 
   void updateScreen(uint32_t elapsedMs, bool touchDown) {

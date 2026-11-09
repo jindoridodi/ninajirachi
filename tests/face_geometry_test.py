@@ -9,6 +9,13 @@ from preview.face_preview import PRESETS, draw
 
 
 class FaceGeometryTest(unittest.TestCase):
+    def test_no_expression_draws_a_dot_above_the_face(self):
+        for preset in PRESETS:
+            with self.subTest(expression=preset["name"]):
+                canvas = RasterCanvas()
+                draw(canvas, preset)
+                self.assertIsNone(canvas.image.crop((0, 0, 960, 60*4)).getbbox())
+
     def test_firmware_geometry_matches_preview(self):
         self.assertEqual(OUTPUT.read_text(), render_header())
 

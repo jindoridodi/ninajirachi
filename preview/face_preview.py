@@ -65,10 +65,6 @@ def draw(canvas, preset: dict) -> None:
               mouth_y + int((y-mouth_y)*preset["mouthHeight"]/14))
              for x, y in geometry["mouth"]]
     stroke(mouth, preset["mouth"], geometry["mouthWidth"])
-    radius = preset["effectRadius"]
-    if radius > 0:
-        canvas.create_oval(120-radius, 32-radius, 120+radius, 32+radius,
-                           fill=preset["effect"], outline="")
 
 
 def main() -> None:

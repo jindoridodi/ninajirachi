@@ -25,7 +25,6 @@ struct FaceMetrics {
   int16_t eyeOffsetY;
   int16_t mouthWidth;
   int16_t mouthHeight;
-  int16_t effectRadius;
 };
 
 struct ExpressionPreset {

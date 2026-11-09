@@ -7,13 +7,12 @@
 
 namespace nina {
 
-enum class FaceLayer { Background, Face, Eyes, Mouth, Effects };
+enum class FaceLayer { Background, Face, Eyes, Mouth };
 
 class DrawSurface {
  public:
   virtual ~DrawSurface() = default;
   virtual void beginLayer(FaceLayer layer) = 0;
-  virtual void fillCircle(int x, int y, int radius, Color color) = 0;
   virtual void fillRect(int x, int y, int width, int height, Color color) = 0;
 };
 
@@ -44,8 +43,6 @@ class FaceRenderer {
       stroke(surface, previous, next, ox, oy, kFaceMouthWidth, c.mouth);
       previous = next;
     }
-    surface.beginLayer(FaceLayer::Effects);
-    if (m.effectRadius > 0) surface.fillCircle(120 + ox, 32 + oy, m.effectRadius, c.effect);
   }
 
  private:
