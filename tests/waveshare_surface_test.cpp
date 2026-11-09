@@ -30,7 +30,7 @@ int main() {
   preset.colors.pupil = {0xFF0000};
   preset.colors.mouth = {0x00FF00};
   renderer.render(surface, preset, 240, 240);
-  assert(pixel(72, 92) == RED && pixel(168, 92) == RED);
-  assert(pixel(56, 92) == WHITE && pixel(152, 92) == WHITE);
-  assert(pixel(120, 174) == GREEN);
+  assert(pixel(69, 95) == WHITE && pixel(171, 95) == WHITE);
+  assert(pixel(120, 120) == BLACK);
+  assert(pixel(104, 142) == GREEN);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <lvgl.h>
+#include <algorithm>
 #include "ExpressionPreset.h"
 #include "FaceGeometry.generated.h"
 
@@ -14,7 +15,9 @@ class LvglFace {
     lv_obj_clear_flag(root_, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(root_, 240, 240);
     lv_obj_center(root_);
-    outline_ = line(kFaceOutline, sizeof(kFaceOutline) / sizeof(kFaceOutline[0]),
+    for (unsigned i = 0; i < sizeof(outlinePoints_) / sizeof(outlinePoints_[0]); ++i)
+      outlinePoints_[i] = {kFaceOutline[i].x, kFaceOutline[i].y};
+    outline_ = line(outlinePoints_, sizeof(outlinePoints_) / sizeof(outlinePoints_[0]),
                     kFaceOutlineWidth);
     for (int i = 0; i < 2; ++i) {
       eyes_[i] = lv_obj_create(root_);
@@ -24,6 +27,10 @@ class LvglFace {
     }
     mouth_ = line(mouthPoints_, sizeof(mouthPoints_) / sizeof(mouthPoints_[0]),
                   kFaceMouthWidth);
+    effect_ = lv_obj_create(root_);
+    lv_obj_remove_style_all(effect_);
+    lv_obj_set_style_radius(effect_, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_opa(effect_, LV_OPA_COVER, 0);
     render(preset);
   }
 
@@ -35,8 +42,8 @@ class LvglFace {
     const auto& m = preset.metrics;
     for (int i = 0; i < 2; ++i) {
       const auto& eye = kFaceEyes[i];
-      const int width = eye[2] * m.eyeWidth / 36;
-      const int height = eye[3] * m.eyeOpen / 42;
+      const int width = std::max(1, eye[2] * m.eyeWidth / 36);
+      const int height = std::max(1, eye[3] * m.eyeOpen / 42);
       lv_obj_set_pos(eyes_[i], eye[0] + (eye[2]-width)/2 + m.pupilOffsetX,
                      eye[1] + (eye[3]-height)/2 + m.pupilOffsetY);
       lv_obj_set_size(eyes_[i], width, height);
@@ -51,6 +58,14 @@ class LvglFace {
     lv_line_set_points(mouth_, mouthPoints_, sizeof(mouthPoints_) / sizeof(mouthPoints_[0]));
     lv_obj_set_style_line_color(mouth_, lv_color_hex(preset.colors.mouth.rgb), 0);
     lv_obj_invalidate(mouth_);
+    if (m.effectRadius > 0) {
+      lv_obj_clear_flag(effect_, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_set_pos(effect_, 120-m.effectRadius, 32-m.effectRadius);
+      lv_obj_set_size(effect_, m.effectRadius*2, m.effectRadius*2);
+      lv_obj_set_style_bg_color(effect_, lv_color_hex(preset.colors.effect.rgb), 0);
+    } else {
+      lv_obj_add_flag(effect_, LV_OBJ_FLAG_HIDDEN);
+    }
   }
 
   lv_obj_t* object() const { return root_; }
@@ -71,6 +86,8 @@ class LvglFace {
   lv_obj_t* outline_ = nullptr;
   lv_obj_t* eyes_[2] = {};
   lv_obj_t* mouth_ = nullptr;
+  lv_obj_t* effect_ = nullptr;
+  lv_point_t outlinePoints_[sizeof(kFaceOutline) / sizeof(kFaceOutline[0])] = {};
   lv_point_t mouthPoints_[sizeof(kFaceMouth) / sizeof(kFaceMouth[0])] = {};
 };
 

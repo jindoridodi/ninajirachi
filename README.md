@@ -53,12 +53,13 @@ Render the face from parameters rather than maintaining separate images for ever
 
 1. Code-drawn background
 2. Face shape
-3. Eyes and eyelids
-4. Pupils
-5. Mouth
-6. Effects
+3. Solid rounded-rectangle eyes
+4. Continuous double-U mouth
+5. Effects
 
-An expression preset supplies values such as eye openness, pupil offset, mouth shape/opening, colors, effects, and animation speed. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes.
+The face is the blue outlined rounded triangle from the reference, with its wide aspect ratio preserved inside 240×240. The former filled circular face and oval eyes/mouth have been replaced. `shared/face_geometry.json` supplies the curves and eye proportions used by the firmware renderer, LVGL component, and desktop preview. After geometry edits, run `python3 tools/face_geometry.py`.
+
+An expression preset supplies eye openness, gaze offset, mouth width/depth, colors, and effects. The existing `pupilOffsetX/Y` fields shift the solid eyes; legacy face-radius, eyelid, and pupil-radius fields are retained for compatibility with behavior records but do not draw placeholder features. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes.
 
 ### Face authoring
 
@@ -70,10 +71,10 @@ Reserve bitmap assets for occasional decorative effects that are substantially h
 
 The animation loop should keep input sampling, peer tracking, state selection, and rendering separate. A small expression state machine is sufficient:
 
-- `idle`: gentle pupil motion and occasional blink
-- `curious`: target-directed gaze and slightly raised eyelids
+- `idle`: gentle eye motion and occasional blink
+- `curious`: target-directed gaze and slightly wider eyes
 - `happy`: bright eyes, animated mouth, and positive effects
-- `surprised`: wide eyes and an open mouth
+- `surprised`: wide eyes and a deeper mouth curve
 - `excited`: heightened animation after one peer remains nearby for a sustained period
 
 Blink periodically, but let jump and excited reactions temporarily override the idle blink schedule. Keep animation timing non-blocking so sensor and wireless updates continue while frames are drawn.

@@ -55,8 +55,8 @@ def draw(canvas, preset: dict) -> None:
                                fill=fill, outline="")
 
     for x, y, base_width, base_height in geometry["eyes"]:
-        width = base_width * preset["eyeWidth"] // 36
-        height = base_height * preset["eyeOpen"] // 42
+        width = max(1, base_width * preset["eyeWidth"] // 36)
+        height = max(1, base_height * preset["eyeOpen"] // 42)
         rounded_rect(x + int((base_width-width)/2) + preset["pupilOffsetX"],
                      y + int((base_height-height)/2) + preset["pupilOffsetY"],
                      width, height, geometry["eyeRadius"], preset["eye"])
@@ -65,6 +65,10 @@ def draw(canvas, preset: dict) -> None:
               mouth_y + int((y-mouth_y)*preset["mouthHeight"]/14))
              for x, y in geometry["mouth"]]
     stroke(mouth, preset["mouth"], geometry["mouthWidth"])
+    radius = preset["effectRadius"]
+    if radius > 0:
+        canvas.create_oval(120-radius, 32-radius, 120+radius, 32+radius,
+                           fill=preset["effect"], outline="")
 
 
 def main() -> None:
@@ -118,13 +122,13 @@ def main() -> None:
 
     tk.OptionMenu(root, selected, *preset_by_name, command=select).pack()
     editable_metrics = ("eyeWidth", "eyeOpen", "pupilOffsetX", "pupilOffsetY",
-                        "mouthWidth", "mouthHeight")
+                        "mouthWidth", "mouthHeight", "effectRadius")
     for index, key in enumerate(editable_metrics):
         bounds = METRIC_BOUNDS[key]
         tk.Label(fields, text=key).grid(row=index, column=0, sticky="w")
         tk.Spinbox(fields, from_=bounds[0], to=bounds[1], textvariable=variables[key],
                    width=8, command=apply).grid(row=index, column=1)
-    for index, key in enumerate(("background", "face", "eye", "mouth")):
+    for index, key in enumerate(("background", "face", "eye", "mouth", "effect")):
         tk.Label(fields, text=key).grid(row=index, column=2, sticky="w")
         tk.Entry(fields, textvariable=variables[key], width=10).grid(row=index, column=3)
     fields.bind_all("<Return>", apply)
