@@ -59,13 +59,15 @@ Render the face from parameters rather than maintaining separate images for ever
 
 The face is the blue outlined rounded triangle from the reference, with its wide aspect ratio preserved inside 240×240. The former filled circular face and oval eyes/mouth have been replaced. `shared/face_geometry.json` supplies the curves and eye proportions used by the firmware renderer, LVGL component, and desktop preview. After geometry edits, run `python3 tools/face_geometry.py`.
 
-An expression preset supplies eye openness, gaze offset, mouth width/depth, colors, and effects. The existing `pupilOffsetX/Y` fields shift the solid eyes; legacy face-radius, eyelid, and pupil-radius fields are retained for compatibility with behavior records but do not draw placeholder features. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes.
+An expression preset supplies eye openness, `eyeOffsetX/Y` gaze offsets, mouth width/depth, colors, and effects. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes. Exported presets use only these current parameters; re-export any saved presets made with the placeholder model.
 
 ### Face authoring
 
 Use a desktop GUI preview/editor to tune expression presets at 240×240. It should show the same parameterized face model as the wearable and export preset values, not a collection of raster expression files. The desktop preview is an authoring tool only; it does not run on the wearable.
 
 Launch the editor with `python3 preview/face_preview.py`. Tk (`tkinter`) is required only to launch the GUI; preset export and headless tests (`python3 tests/preview_editor_test.py`) do not require it.
+
+Run `sh tests/run_all.sh` for all host checks (Pillow and the installed official Waveshare source are required). These checks cover rendering, preview export, movement, peer behavior, settings, and compass calculations; hardware acceptance still requires the assembled wearables.
 
 Reserve bitmap assets for occasional decorative effects that are substantially harder to draw procedurally. Test their flash and RAM cost early.
 
@@ -92,7 +94,7 @@ Use the built-in QMI8658 accelerometer and gyroscope:
 
 - Detect a jump from a short-lived acceleration pattern followed by a change in vertical motion or orientation.
 - On a jump, flash or change the background and show surprised eyes.
-- Use gyroscope and accelerometer readings for tilt/orientation behavior, such as small expression or pupil adjustments.
+- Use gyroscope and accelerometer readings for tilt/orientation behavior, such as small expression or eye-offset adjustments.
 - Tune thresholds while the device is worn; a desk test is not enough.
 
 Jump detection should have a cooldown/debounce period so one jump produces one reaction rather than a burst of reactions.
@@ -123,7 +125,7 @@ This is a playful approximation, not precise tracking.
 2. While the wearer naturally turns, record the target peer's Wi-Fi RSSI together with the current compass heading.
 3. Smooth several samples for each heading window while the wearer naturally turns.
 4. Treat the heading with the strongest averaged RSSI as the target's approximate direction.
-5. Convert the relative direction into `left`, `center`, or `right` and move the pupils accordingly.
+5. Convert the relative direction into `left`, `center`, or `right` and shift the eyes accordingly.
 
 The estimate works best when the wearer turns naturally. Bodies, clothing, walls, reflections, antenna orientation, and multipath can make RSSI misleading. If the signal is too weak, too unstable, or has not been sampled across enough headings, keep the eyes centered rather than pretending the direction is known. Hold the last confident gaze briefly, then use the centered-eye fallback after roughly 2 seconds without a fresh confident update.
 
@@ -157,7 +159,7 @@ Useful data records are a peer record (`id`, `rssi`, `lastSeen`, and optional di
 ## Recommended implementation order
 
 1. Render a parameterized face and expression presets.
-2. Add periodic blinking, moving pupils, and animated mouth states.
+2. Add periodic blinking, moving eyes, and animated mouth states.
 3. Add jump detection and a flashing background.
 4. Add magnetometer readings and compass calibration.
 5. Build and test a second wearable.

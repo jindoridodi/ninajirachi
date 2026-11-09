@@ -1,44 +1,26 @@
-# Implementation Handoff
+# Implementation handoff
 
-## Published baseline
+## Current baseline
 
-`main` contains the merged shared-face and movement work from [PR #16](https://github.com/jindoridodi/ninajirachi/pull/16):
+`main` contains the parameterized reference face, movement behavior, compass service, expression/settings screen, BLE peer discovery, and ESP-NOW direction evidence. Software integration is present; physical operation still needs the checks below.
 
-- Parameterized face renderer and generated expression-preset contract
-- 240×240 desktop face preview
-- Arduino entry point plus Waveshare direct-renderer adapter boundary
-- Host-side face-renderer and movement-behavior checks
-- Official Waveshare documentation references
-- Movement behavior with tilt pupil adjustment, debounced jump overlay, and resume
+- `shared/face_geometry.json` defines the rounded-triangle outline, solid eyes, and double-U mouth. The direct wearable renderer, optional LVGL component, and desktop preview share this geometry.
+- `shared/expression_presets.json` defines colors, eye openness/offsets, mouth width/depth, and effects. Generate the firmware headers with `tools/generate_face_presets.py` and `tools/face_geometry.py`.
+- `WearableBehavior` coordinates expressions, peer selection, approximate gaze, touch holds, and the movement overlay. Tilt shifts the solid eyes; a jump temporarily overrides the expression and then resumes it.
+- The Arduino sketch uses the official Waveshare direct driver. LVGL is available as a separate face component, not a required firmware dependency.
 
 Read `README.md`, `AGENTS.md`, `GLOSSARY.md`, ADR-0001, the prototype spec, and the current GitHub issue before changing firmware.
 
-## Active GitHub tickets
+## Verification
 
-- [#13 Make the compass usable on the wearable](https://github.com/jindoridodi/ninajirachi/issues/13)
-- [#14 Animate expressions and expose battery settings](https://github.com/jindoridodi/ninajirachi/issues/14)
-- [#11 Make two wearables recognize and react to each other](https://github.com/jindoridodi/ninajirachi/issues/11), blocked by #14
-- [#10 Make face gaze respond to a peer](https://github.com/jindoridodi/ninajirachi/issues/10), blocked by #13 and #11
-- [#15 Validate the worn two-wearable experience](https://github.com/jindoridodi/ninajirachi/issues/15)
+Run `sh tests/run_all.sh` for the host checks. The display-adapter test requires the official Waveshare source installed with `tools/prepare_waveshare.py`; the headless face-rendering test requires Pillow. See [firmware setup](../firmware/README.md) for the actual Arduino compile and upload workflow.
 
-## Resumed tickets #13 and #14
+Hardware acceptance remains separate from software tests:
 
-`codex/finish-wearable-prototype` integrates the compass and expression/settings software. The firmware uses a nonblocking loop, a real battery-voltage input, serial calibration controls, and the touchscreen settings gestures. See `firmware/README.md` for setup and commands. The entries below identify the original preserved checkpoints, not the latest implementation.
+- Inspect the physical QMC5883P marking and wiring, scan I²C, verify raw readings, and calibrate after final enclosure assembly. Use [the compass bench procedure](./compass-bench.md).
+- Inspect all expressions, blinking, gaze movement, jump overlays, and touchscreen holds on the round display.
+- Compare battery voltage against a meter. Charging state is unknown and battery percentage is uncalibrated.
+- Use two physical wearables to check BLE discovery, sustained proximity, ESP-NOW reception, and centered-eye fallback when direction evidence becomes stale.
+- Tune movement and radio thresholds while worn.
 
-## Original WIP checkpoints
-
-### Compass: `codex/issue-13-compass`
-
-Commit `e2b76ec` preserved QMC5883P I²C/configuration and calibration scaffolding, a compass bench guide, and host-side calibration tests. The resumed implementation adds persistence, runtime integration, read validation, and filtered gravity; physical I²C detection and enclosure calibration are still pending.
-
-### Expressions/settings: `codex/issue-14-expressions-settings`
-
-Commit `89583f1` preserved expanded expression presets, wearable behavior/settings scaffolding, and dedicated tests. Its idle-blink failure is addressed in the resumed #14 work.
-
-## Hardware handoff
-
-Read [Waveshare board notes](./research/waveshare-board-notes.md) before display, touch, battery, or QMI8658 work. The external QMC5883P is not bench-verified; begin with a physical module inspection and I²C scan.
-
-## Current limits
-
-Peer discovery, ESP-NOW gaze, and the final worn test are outside the resumed #13/#14 work. Compass detection and calibration in the physical enclosure, touch hold behavior on the actual controller, battery measurement against a meter, and display appearance still require a connected board. Host tests and compilation cannot substitute for that evidence.
+The historical shared-face, compass, movement, and expression/settings checkpoints remain in Git history. Completed feature branches are not required to build `main`. Keep dirty worktrees and saved testing changes until their owner decides how to retain them.

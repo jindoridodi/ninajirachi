@@ -124,8 +124,8 @@ class WearableBehavior {
     ExpressionPreset visible = face_;
     if (targetId_) {
       const int16_t motion = lroundf(2 * sinf(float(input.elapsedMs % 5600) * 6.2831853f / 5600));
-      visible.metrics.pupilOffsetX = lroundf(gazeOffset_) + motion;
-    } else visible.metrics.pupilOffsetX += lroundf(gazeOffset_);
+      visible.metrics.eyeOffsetX = lroundf(gazeOffset_) + motion;
+    } else visible.metrics.eyeOffsetX += lroundf(gazeOffset_);
     const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid);
     return {screen_, motion.preset, {input.battery}, peerCount_, targetId_, gaze, motion.jumpOverlayActive};
@@ -216,13 +216,11 @@ class WearableBehavior {
     const auto& y = b.metrics;
     return {b.name,
       {color(a.colors.background, b.colors.background), color(a.colors.face, b.colors.face),
-       color(a.colors.eye, b.colors.eye), color(a.colors.eyelid, b.colors.eyelid),
-       color(a.colors.pupil, b.colors.pupil), color(a.colors.mouth, b.colors.mouth),
+       color(a.colors.eye, b.colors.eye), color(a.colors.mouth, b.colors.mouth),
        color(a.colors.effect, b.colors.effect)},
-      {value(x.faceRadius, y.faceRadius), value(x.eyeWidth, y.eyeWidth),
-       value(x.eyeOpen, y.eyeOpen), value(x.eyelidHeight, y.eyelidHeight),
-       value(x.pupilRadius, y.pupilRadius), value(x.pupilOffsetX, y.pupilOffsetX),
-       value(x.pupilOffsetY, y.pupilOffsetY), value(x.mouthWidth, y.mouthWidth),
+      {value(x.eyeWidth, y.eyeWidth), value(x.eyeOpen, y.eyeOpen),
+       value(x.eyeOffsetX, y.eyeOffsetX),
+       value(x.eyeOffsetY, y.eyeOffsetY), value(x.mouthWidth, y.mouthWidth),
        value(x.mouthHeight, y.mouthHeight), value(x.effectRadius, y.effectRadius)}};
   }
 
@@ -265,11 +263,10 @@ class WearableBehavior {
       const float openness = fabsf(float(phaseMs) - (kBlinkPeriodMs - kBlinkDurationMs / 2)) /
                              (kBlinkDurationMs / 2);
       face.metrics.eyeOpen = 3 + lroundf((face.metrics.eyeOpen - 3) * openness);
-      face.metrics.pupilRadius = lroundf(face.metrics.pupilRadius * openness);
     }
 
-    const int16_t pupilMotion = lroundf(2 * sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
-    face.metrics.pupilOffsetX += pupilMotion;
+    const int16_t eyeMotion = lroundf(2 * sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
+    face.metrics.eyeOffsetX += eyeMotion;
     if (face.name == ExpressionName::Idle || face.name == ExpressionName::Curious) {
       face.metrics.mouthHeight += lroundf(sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
     }

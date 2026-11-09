@@ -22,11 +22,10 @@ bool keepsIdleFaceAlive() {
          expect(start.face.name == nina::ExpressionName::Idle, "renders the requested idle preset") &&
          expect(blink.face.metrics.eyeOpen < start.face.metrics.eyeOpen,
                 "idle face closes its eyes during a blink") &&
-         expect(blink.face.metrics.pupilRadius == 0, "blink hides pupils") &&
          expect(later.face.metrics.eyeOpen == start.face.metrics.eyeOpen,
                 "idle face reopens its eyes after a blink") &&
-         expect(later.face.metrics.pupilOffsetX != start.face.metrics.pupilOffsetX,
-                "idle pupils move over time");
+         expect(later.face.metrics.eyeOffsetX != start.face.metrics.eyeOffsetX,
+                "idle eyes move over time");
 }
 
 bool rendersNamedExpressions() {
@@ -66,8 +65,7 @@ bool transitionsFromVisibleBlink() {
   const auto blink = behavior.update({3900, false, nina::ExpressionName::Idle, battery});
   const auto change = behavior.update({3900, false, nina::ExpressionName::Surprised, battery});
   if (!expect(blink.face.metrics.eyeOpen == 3 && change.face.metrics.eyeOpen == 3 &&
-              change.face.metrics.pupilRadius == blink.face.metrics.pupilRadius &&
-              change.face.metrics.pupilOffsetX == blink.face.metrics.pupilOffsetX &&
+              change.face.metrics.eyeOffsetX == blink.face.metrics.eyeOffsetX &&
               change.face.metrics.mouthHeight == blink.face.metrics.mouthHeight,
               "changing expression during blink preserves visible geometry")) return false;
   const auto halfway = behavior.update({4050, false, nina::ExpressionName::Surprised, battery});
@@ -297,7 +295,9 @@ bool movementOverlaysFocusedInteraction() {
   in.elapsedMs = 550; in.verticalAccelerationG = 0; b.update(in);
   in.elapsedMs = 600; in.verticalAccelerationG = 2.1f;
   const auto jump = b.update(in);
-  in.elapsedMs = 1000; in.verticalAccelerationG = 1.0f;
+  in.elapsedMs = 600 + nina::kDefaultMovementTuning.jumpOverlayDurationMs;
+  in.discovery.receivedMs = in.elapsedMs;
+  in.verticalAccelerationG = 1.0f;
   const auto resumed = b.update(in);
   return expect(jump.jumpOverlayActive && jump.face.metrics.eyeOpen > normal.face.metrics.eyeOpen,
                 "jump overlays focused expression") &&
@@ -318,8 +318,8 @@ bool tiltAndFocusedAnimation() {
   const auto tilted = b.update(in);
   return expect(animated.face.metrics.mouthHeight != start.face.metrics.mouthHeight,
                 "focused mouth animates") &&
-         expect(tilted.face.metrics.pupilOffsetX > animated.face.metrics.pupilOffsetX,
-                "tilt offsets the focused pupil");
+         expect(tilted.face.metrics.eyeOffsetX > animated.face.metrics.eyeOffsetX,
+                "tilt offsets the focused eyes");
 }
 
 bool jumpOverridesBlink() {
@@ -329,7 +329,7 @@ bool jumpOverridesBlink() {
   in.motionValid = true; in.verticalAccelerationG = 0.4f; b.update(in);
   in.elapsedMs = 3900; in.verticalAccelerationG = 2.1f;
   const auto jump = b.update(in);
-  return expect(jump.jumpOverlayActive && jump.face.metrics.pupilRadius > 0,
+  return expect(jump.jumpOverlayActive && jump.face.metrics.eyeOpen > 3,
                 "jump overrides a closed blink");
 }
 
@@ -350,8 +350,8 @@ bool gazeUsesTargetEvidence() {
   if (!expect(firstGaze.gaze == nina::Gaze::Left, "strongest heading is left")) return false;
   in.elapsedMs = 700;
   const auto settledGaze = behavior.update(in);
-  if (!expect(settledGaze.face.metrics.pupilOffsetX < firstGaze.face.metrics.pupilOffsetX,
-              "pupil moves smoothly toward gaze")) return false;
+  if (!expect(settledGaze.face.metrics.eyeOffsetX < firstGaze.face.metrics.eyeOffsetX,
+              "eyes move smoothly toward gaze")) return false;
   in.headingDegrees = 270;
   if (!expect(behavior.update(in).gaze == nina::Gaze::Right, "strongest heading is right")) return false;
   in.headingDegrees = 350;

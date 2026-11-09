@@ -10,9 +10,6 @@ struct Pixels final : nina::DrawSurface {
       for (int dx = -radius; dx <= radius; ++dx)
         if (dx*dx + dy*dy <= radius*radius) fillRect(x+dx, y+dy, 1, 1, c);
   }
-  void fillEllipse(int, int, int, int, nina::Color) override {
-    assert(false && "placeholder oval renderer must not be used");
-  }
   void fillRect(int x, int y, int w, int h, nina::Color c) override {
     for (int row = std::max(0, y); row < std::min(240, y+h); ++row)
       for (int col = std::max(0, x); col < std::min(240, x+w); ++col)
@@ -48,7 +45,7 @@ int main(int argc, char** argv) {
   renderer.render(blink, preset, 240, 240);
   assert(blink.pixels[80][69] == 0 && idle.pixels[80][69] == 0x0000EE);
   preset.metrics.eyeOpen = 42;
-  preset.metrics.pupilOffsetX = 10;
+  preset.metrics.eyeOffsetX = 10;
   Pixels gaze;
   renderer.render(gaze, preset, 240, 240);
   assert(gaze.pixels[95][60] == 0 && idle.pixels[95][60] == 0x0000EE);

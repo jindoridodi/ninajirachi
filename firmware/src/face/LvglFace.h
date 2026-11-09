@@ -44,8 +44,8 @@ class LvglFace {
       const auto& eye = kFaceEyes[i];
       const int width = std::max(1, eye[2] * m.eyeWidth / 36);
       const int height = std::max(1, eye[3] * m.eyeOpen / 42);
-      lv_obj_set_pos(eyes_[i], eye[0] + (eye[2]-width)/2 + m.pupilOffsetX,
-                     eye[1] + (eye[3]-height)/2 + m.pupilOffsetY);
+      lv_obj_set_pos(eyes_[i], eye[0] + (eye[2]-width)/2 + m.eyeOffsetX,
+                     eye[1] + (eye[3]-height)/2 + m.eyeOffsetY);
       lv_obj_set_size(eyes_[i], width, height);
       lv_obj_set_style_radius(eyes_[i], kFaceEyeRadius, 0);
       lv_obj_set_style_bg_color(eyes_[i], lv_color_hex(preset.colors.eye.rgb), 0);

@@ -10,11 +10,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "shared" / "expression_presets.json"
 OUTPUT = ROOT / "firmware" / "src" / "face" / "ExpressionPresets.generated.h"
-COLOR_KEYS = ("background", "face", "eye", "eyelid", "pupil", "mouth", "effect")
+COLOR_KEYS = ("background", "face", "eye", "mouth", "effect")
 METRIC_BOUNDS = {
-    "faceRadius": (1, 120), "eyeWidth": (1, 100), "eyeOpen": (1, 100),
-    "eyelidHeight": (0, 100), "pupilRadius": (0, 40),
-    "pupilOffsetX": (-60, 60), "pupilOffsetY": (-60, 60),
+    "eyeWidth": (1, 100), "eyeOpen": (1, 100),
+    "eyeOffsetX": (-60, 60), "eyeOffsetY": (-60, 60),
     "mouthWidth": (1, 100), "mouthHeight": (1, 100), "effectRadius": (0, 24),
 }
 
@@ -39,13 +38,8 @@ def render(presets: list[dict]) -> str:
     for preset in presets:
         name = preset["name"]
         enum_name = name.title()
-        colors = ", ".join("{" + color(preset[key]) + "}" for key in (
-            "background", "face", "eye", "eyelid", "pupil", "mouth", "effect"
-        ))
-        metrics = ", ".join(str(int(preset[key])) for key in (
-            "faceRadius", "eyeWidth", "eyeOpen", "eyelidHeight", "pupilRadius",
-            "pupilOffsetX", "pupilOffsetY", "mouthWidth", "mouthHeight", "effectRadius"
-        ))
+        colors = ", ".join("{" + color(preset[key]) + "}" for key in COLOR_KEYS)
+        metrics = ", ".join(str(preset[key]) for key in METRIC_BOUNDS)
         rows.extend((
             f"constexpr ExpressionPreset k{enum_name}Preset = {{",
             f"    ExpressionName::{enum_name},",

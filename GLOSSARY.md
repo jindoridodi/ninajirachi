@@ -63,7 +63,7 @@ The normal visual screen where the Ninajirachi expression and interactions are s
 _Avoid_: home screen, default screen
 
 **Parameterized face**:
-The runtime face rendered from expression values such as eye openness, pupil offset, mouth shape, and effects rather than a collection of expression image files.
+The runtime face rendered from expression values such as eye openness, eye offset, mouth shape, and effects rather than a collection of expression image files.
 _Avoid_: sprite face, image state
 
 **Expression preset**:

@@ -17,7 +17,7 @@ The first prototype supports one peer well. A peer begins with focused interacti
 1. As a wearer, I want to see an animated Ninajirachi face on the round display, so that the device feels alive while I wear it.
 2. As a wearer, I want the face to be rendered from expression parameters, so that expressions can change without managing an image file for every state.
 3. As a wearer, I want the face to blink periodically, so that idle animation feels natural.
-4. As a wearer, I want pupils and the mouth to move during idle and interaction states, so that the device communicates emotion without sound.
+4. As a wearer, I want the solid eyes and the mouth to move during idle and interaction states, so that the device communicates emotion without sound.
 5. As a wearer, I want the face to react to tilt and orientation, so that small movements produce expressive behavior.
 6. As a wearer, I want a jump to trigger surprised eyes and a changing or flashing background, so that the device visibly reacts to movement.
 7. As a wearer, I want one jump to produce one debounced reaction, so that sensor noise does not create repeated surprises.
@@ -30,7 +30,7 @@ The first prototype supports one peer well. A peer begins with focused interacti
 14. As a wearer, I want target selection to resist small RSSI fluctuations, so that the eyes do not flicker between targets.
 15. As a wearer, I want the face to enter focused interaction when one peer is nearby, so that the wearable acknowledges another person’s wearable.
 16. As a wearer, I want focused interaction to become excited interaction after sustained proximity, so that two wearables feel more engaged over time.
-17. As a wearer, I want the wearable to estimate whether the selected peer is to my left, center, or right, so that the pupils can look generally toward it.
+17. As a wearer, I want the wearable to estimate whether the selected peer is to my left, center, or right, so that the eyes can look generally toward it.
 18. As a wearer, I want direction evidence to be collected while I naturally turn, so that compass heading and RSSI can produce a playful directional estimate.
 19. As a wearer, I want the gaze to return to centered eyes soon after directional evidence stops being reliable, so that the face does not hold a misleading direction indefinitely.
 20. As a wearer, I want the wearable to return to ordinary idle behavior when no peer is nearby, so that the device remains useful when worn alone.
@@ -55,7 +55,7 @@ The first prototype supports one peer well. A peer begins with focused interacti
 ## Implementation Decisions
 
 - Use Arduino C++ on the Waveshare ESP32-S3 Touch LCD 1.28 board with the `ESP32S3 Dev Module` target.
-- Use a parameterized face renderer with logical background, face, eye/eyelid, pupil, mouth, and effects layers. Expression presets supply values instead of selecting separate expression image files.
+- Use a parameterized face renderer with background, rounded-triangle outline, solid rounded-rectangle eyes, double-U mouth, and effects layers. Expression presets supply values instead of selecting separate expression image files.
 - Provide a desktop GUI preview/editor for tuning the same expression presets at 240×240. It is an authoring tool, not a wearable runtime dependency.
 - Reserve bitmap assets for optional decorative effects that cannot be drawn simply; validate their flash and RAM cost early.
 - Keep sensor input, peer tracking, interaction-state selection, screen-mode selection, animation timing, and rendering as separate responsibilities behind the `WearableBehavior` seam.
