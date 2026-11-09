@@ -123,8 +123,7 @@ class WearableBehavior {
     gazeUpdatedMs_ = input.elapsedMs;
     ExpressionPreset visible = face_;
     if (targetId_) {
-      const int16_t motion = lroundf(2 * sinf(float(input.elapsedMs % 5600) * 6.2831853f / 5600));
-      visible.metrics.eyeOffsetX = lroundf(gazeOffset_) + motion;
+      visible.metrics.eyeOffsetX = lroundf(gazeOffset_) + idleEyeMotion(input.elapsedMs);
     } else visible.metrics.eyeOffsetX += lroundf(gazeOffset_);
     const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid);
@@ -254,6 +253,10 @@ class WearableBehavior {
     wasTouchDown_ = touchDown;
   }
 
+  static int16_t idleEyeMotion(uint32_t elapsedMs) {
+    return lroundf(2 * sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
+  }
+
   static void animate(ExpressionPreset& face, uint32_t elapsedMs) {
     const uint32_t phaseMs = elapsedMs % kBlinkPeriodMs;
     const bool blinking = face.name != ExpressionName::Surprised &&
@@ -265,8 +268,7 @@ class WearableBehavior {
       face.metrics.eyeOpen = 3 + lroundf((face.metrics.eyeOpen - 3) * openness);
     }
 
-    const int16_t eyeMotion = lroundf(2 * sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
-    face.metrics.eyeOffsetX += eyeMotion;
+    face.metrics.eyeOffsetX += idleEyeMotion(elapsedMs);
     if (face.name == ExpressionName::Idle || face.name == ExpressionName::Curious) {
       face.metrics.mouthHeight += lroundf(sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
     }
