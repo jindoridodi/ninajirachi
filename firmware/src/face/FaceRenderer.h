@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ExpressionPreset.h"
+#include "FaceGeometry.generated.h"
 #include <math.h>
 #include <algorithm>
 
@@ -20,56 +21,62 @@ class DrawSurface {
 class FaceRenderer {
  public:
   void render(DrawSurface& surface, const ExpressionPreset& preset, int width, int height) const {
-    const int centerX = width / 2;
-    const int centerY = height / 2;
-    const int eyeY = centerY - 28;
-    const int leftEyeX = centerX - 48;
-    const int rightEyeX = centerX + 48;
-    const FaceMetrics& metrics = preset.metrics;
-    const FaceColors& colors = preset.colors;
-
+    const int ox = (width - 240) / 2, oy = (height - 240) / 2;
+    const auto& m = preset.metrics;
+    const auto& c = preset.colors;
     surface.beginLayer(FaceLayer::Background);
-    surface.fillRect(0, 0, width, height, colors.background);
-
+    surface.fillRect(0, 0, width, height, c.background);
     surface.beginLayer(FaceLayer::Face);
-    surface.fillCircle(centerX, centerY, metrics.faceRadius, colors.face);
+    for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i)
+      stroke(surface, kFaceOutline[i-1], kFaceOutline[i], ox, oy, kFaceOutlineWidth, c.face);
 
     surface.beginLayer(FaceLayer::Eyes);
-    surface.fillEllipse(leftEyeX, eyeY, metrics.eyeWidth, metrics.eyeOpen, colors.eye);
-    surface.fillEllipse(rightEyeX, eyeY, metrics.eyeWidth, metrics.eyeOpen, colors.eye);
-
-    surface.beginLayer(FaceLayer::Eyelids);
-    if (metrics.eyelidHeight > 0) {
-    surface.fillRect(leftEyeX - metrics.eyeWidth / 2, eyeY - metrics.eyeOpen / 2,
-                     metrics.eyeWidth, metrics.eyelidHeight, colors.eyelid);
-    surface.fillRect(rightEyeX - metrics.eyeWidth / 2, eyeY - metrics.eyeOpen / 2,
-                     metrics.eyeWidth, metrics.eyelidHeight, colors.eyelid);
+    for (const auto& eye : kFaceEyes) {
+      const int w = std::max(1, eye[2] * m.eyeWidth / 36);
+      const int h = std::max(1, eye[3] * m.eyeOpen / 42);
+      const int x = ox + eye[0] + (eye[2]-w)/2 + m.pupilOffsetX;
+      const int y = oy + eye[1] + (eye[3]-h)/2 + m.pupilOffsetY;
+      roundedRect(surface, x, y, w, h, kFaceEyeRadius, c.eye);
     }
-
-    surface.beginLayer(FaceLayer::Pupils);
-    if (metrics.pupilRadius > 0 && metrics.eyeWidth > 0 && metrics.eyeOpen > 3) {
-      for (int eyeX = leftEyeX; eyeX <= rightEyeX; eyeX += rightEyeX - leftEyeX) {
-        for (int row = -metrics.pupilRadius; row <= metrics.pupilRadius; ++row) {
-          const int y = eyeY + metrics.pupilOffsetY + row;
-          if (y < eyeY - metrics.eyeOpen / 2 + metrics.eyelidHeight) continue;
-          const float ratio = float(y - eyeY) / (metrics.eyeOpen / 2.0f);
-          if (fabsf(ratio) > 1) continue;
-          const int eyeSpan = int(metrics.eyeWidth / 2.0f * sqrtf(1 - ratio * ratio));
-          const int pupilSpan = int(sqrtf(float(metrics.pupilRadius * metrics.pupilRadius - row * row)));
-          const int left = std::max(eyeX - eyeSpan, eyeX + metrics.pupilOffsetX - pupilSpan);
-          const int right = std::min(eyeX + eyeSpan, eyeX + metrics.pupilOffsetX + pupilSpan);
-          if (left <= right) surface.fillRect(left, y, right - left + 1, 1, colors.pupil);
-        }
-      }
-    }
-
     surface.beginLayer(FaceLayer::Mouth);
-    surface.fillEllipse(centerX, centerY + 54, metrics.mouthWidth, metrics.mouthHeight,
-                        colors.mouth);
-
+    FacePoint previous = mouthPoint(kFaceMouth[0], m);
+    for (unsigned i = 1; i < sizeof(kFaceMouth) / sizeof(kFaceMouth[0]); ++i) {
+      const FacePoint next = mouthPoint(kFaceMouth[i], m);
+      stroke(surface, previous, next, ox, oy, kFaceMouthWidth, c.mouth);
+      previous = next;
+    }
     surface.beginLayer(FaceLayer::Effects);
-    if (metrics.effectRadius > 0) {
-      surface.fillCircle(centerX, centerY - 88, metrics.effectRadius, colors.effect);
+    if (m.effectRadius > 0) surface.fillCircle(120 + ox, 32 + oy, m.effectRadius, c.effect);
+  }
+
+ private:
+  static FacePoint mouthPoint(FacePoint p, const FaceMetrics& m) {
+    return {int16_t(120 + (p.x-120)*m.mouthWidth/42),
+            int16_t(kFaceMouth[0].y + (p.y-kFaceMouth[0].y)*m.mouthHeight/14)};
+  }
+
+  static void roundedRect(DrawSurface& s, int x, int y, int w, int h, int radius, Color c) {
+    const float r = std::min(float(radius), std::min(w, h) / 2.0f);
+    for (int row = 0; row < h; ++row) {
+      const float dy = std::max(0.0f, r - std::min(row + 0.5f, h - row - 0.5f));
+      const int inset = int(ceilf(r - sqrtf(std::max(0.0f, r*r - dy*dy)) - 0.5f));
+      s.fillRect(x + inset, y + row, w - inset*2, 1, c);
+    }
+  }
+
+  static void stroke(DrawSurface& s, FacePoint a, FacePoint b, int ox, int oy,
+                     int width, Color c) {
+    const int steps = std::max(1, std::max(abs(b.x-a.x), abs(b.y-a.y)));
+    for (int step = 0; step <= steps; ++step) {
+      const int x = ox + a.x + (b.x-a.x)*step/steps;
+      const int y = oy + a.y + (b.y-a.y)*step/steps;
+      if (width == 1) { s.fillRect(x, y, 1, 1, c); continue; }
+      const float r = width / 2.0f;
+      for (int row = 0; row < width; ++row) {
+        const float dy = row + 0.5f - r;
+        const int span = int(sqrtf(r*r - dy*dy));
+        s.fillRect(x - span, y + row - width/2, span*2 + 1, 1, c);
+      }
     }
   }
 };

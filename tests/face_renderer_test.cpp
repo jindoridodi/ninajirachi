@@ -1,90 +1,62 @@
 #include "../firmware/src/face/FaceRenderer.h"
-
+#include <cassert>
 #include <cstdio>
 
-namespace {
-
-struct RecordingSurface final : nina::DrawSurface {
-  int backgroundCount = 0;
-  int faceCount = 0;
-  int eyeCount = 0;
-  int eyelidCount = 0;
-  int pupilCount = 0;
-  int mouthCount = 0;
-  int effectCount = 0;
-  int backgroundWidth = 0;
-  int backgroundHeight = 0;
-  int faceX = 0;
-  int faceY = 0;
-  int faceRadius = 0;
-  nina::FaceLayer currentLayer = nina::FaceLayer::Background;
-
-  void beginLayer(nina::FaceLayer layer) override { currentLayer = layer; }
-  void fillCircle(int x, int y, int radius, nina::Color) override {
-    if (currentLayer == nina::FaceLayer::Face) {
-      faceX = x;
-      faceY = y;
-      faceRadius = radius;
-    }
-    count();
+struct Pixels final : nina::DrawSurface {
+  uint32_t pixels[240][240] = {};
+  void beginLayer(nina::FaceLayer) override {}
+  void fillCircle(int x, int y, int radius, nina::Color c) override {
+    for (int dy = -radius; dy <= radius; ++dy)
+      for (int dx = -radius; dx <= radius; ++dx)
+        if (dx*dx + dy*dy <= radius*radius) fillRect(x+dx, y+dy, 1, 1, c);
   }
-  void fillEllipse(int, int, int, int, nina::Color) override { count(); }
-  void fillRect(int, int, int width, int height, nina::Color) override {
-    if (currentLayer == nina::FaceLayer::Background) {
-      backgroundWidth = width;
-      backgroundHeight = height;
-    }
-    count();
+  void fillEllipse(int, int, int, int, nina::Color) override {
+    assert(false && "placeholder oval renderer must not be used");
   }
-
-  void count() {
-    switch (currentLayer) {
-      case nina::FaceLayer::Background: ++backgroundCount; break;
-      case nina::FaceLayer::Face: ++faceCount; break;
-      case nina::FaceLayer::Eyes: ++eyeCount; break;
-      case nina::FaceLayer::Eyelids: ++eyelidCount; break;
-      case nina::FaceLayer::Pupils: ++pupilCount; break;
-      case nina::FaceLayer::Mouth: ++mouthCount; break;
-      case nina::FaceLayer::Effects: ++effectCount; break;
-    }
+  void fillRect(int x, int y, int w, int h, nina::Color c) override {
+    for (int row = std::max(0, y); row < std::min(240, y+h); ++row)
+      for (int col = std::max(0, x); col < std::min(240, x+w); ++col)
+        pixels[row][col] = c.rgb;
   }
 };
 
-bool expect(bool condition, const char* message) {
-  if (condition) return true;
-  std::fprintf(stderr, "failed: %s\n", message);
-  return false;
-}
-
-}  // namespace
-
-int main() {
-  const nina::ExpressionPreset& idle = nina::idlePreset();
-  RecordingSurface surface;
+int main(int argc, char** argv) {
   nina::FaceRenderer renderer;
-
-  renderer.render(surface, idle, 240, 240);
-
-  nina::ExpressionPreset blink = idle;
-  blink.metrics.eyeOpen = 3;
-  blink.metrics.pupilRadius = 0;
-  RecordingSurface closed;
-  renderer.render(closed, blink, 240, 240);
-  if (!expect(closed.pupilCount == 0, "closed eyes hide pupils")) return 1;
-  RecordingSurface surprised;
-  renderer.render(surprised, nina::expressionPreset(nina::ExpressionName::Surprised), 240, 240);
-  if (!expect(surprised.eyelidCount == 0, "wide surprised eyes have no eyelid rectangle")) return 1;
-
-  return !(expect(idle.name == nina::ExpressionName::Idle, "idle preset is named") &&
-           expect(surface.backgroundCount == 1, "renders a background") &&
-           expect(surface.backgroundWidth == 240 && surface.backgroundHeight == 240,
-                  "fills the 240x240 display") &&
-           expect(surface.faceCount == 1, "renders a face shape") &&
-           expect(surface.faceX == 120 && surface.faceY == 120 && surface.faceRadius == 112,
-                  "centers the idle face") &&
-           expect(surface.eyeCount == 2, "renders both eyes") &&
-           expect(surface.eyelidCount == 2, "renders both eyelids") &&
-           expect(surface.pupilCount >= 2, "renders visible pupils") &&
-           expect(surface.mouthCount == 1, "renders a mouth") &&
-           expect(surface.effectCount == 0, "idle has no decorative effect"));
+  auto preset = nina::idlePreset();
+  Pixels idle;
+  renderer.render(idle, preset, 240, 240);
+  assert(idle.pixels[62][120] == 0x0000EE);  // Flat top.
+  assert(idle.pixels[95][69] == 0x0000EE);  // Solid left eye.
+  assert(idle.pixels[95][171] == 0x0000EE);
+  assert(idle.pixels[120][120] == 0);       // No filled face disc.
+  assert(idle.pixels[142][104] == 0x0000EE);// Left mouth lobe.
+  assert(idle.pixels[160][120] == 0);
+  if (argc == 2) {
+    FILE* image = fopen(argv[1], "wb");
+    assert(image);
+    fprintf(image, "P6\n240 240\n255\n");
+    for (const auto& row : idle.pixels)
+      for (uint32_t p : row) {
+        const unsigned char rgb[] = {static_cast<unsigned char>(p >> 16),
+          static_cast<unsigned char>(p >> 8), static_cast<unsigned char>(p)};
+        fwrite(rgb, 1, 3, image);
+      }
+    fclose(image);
+  }
+  preset.metrics.eyeOpen = 3;
+  Pixels blink;
+  renderer.render(blink, preset, 240, 240);
+  assert(blink.pixels[80][69] == 0 && idle.pixels[80][69] == 0x0000EE);
+  preset.metrics.eyeOpen = 42;
+  preset.metrics.pupilOffsetX = 10;
+  Pixels gaze;
+  renderer.render(gaze, preset, 240, 240);
+  assert(gaze.pixels[95][60] == 0 && idle.pixels[95][60] == 0x0000EE);
+  // Every preset, including extreme authoring values, remains renderable.
+  for (int i = 0; i < 5; ++i) {
+    Pixels frame;
+    renderer.render(frame, nina::expressionPreset(static_cast<nina::ExpressionName>(i)), 240, 240);
+  }
+  preset.metrics.eyeWidth = preset.metrics.eyeOpen = 1;
+  renderer.render(gaze, preset, 240, 240);
 }
