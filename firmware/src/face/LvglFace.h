@@ -41,19 +41,16 @@ class LvglFace {
     lv_obj_set_style_line_color(outline_, lv_color_hex(preset.colors.face.rgb), 0);
     const auto& m = preset.metrics;
     for (int i = 0; i < 2; ++i) {
-      const auto& eye = kFaceEyes[i];
-      const int width = std::max(1, eye[2] * m.eyeWidth / 36);
-      const int height = std::max(1, eye[3] * m.eyeOpen / 42);
-      lv_obj_set_pos(eyes_[i], eye[0] + (eye[2]-width)/2 + m.eyeOffsetX,
-                     eye[1] + (eye[3]-height)/2 + m.eyeOffsetY);
-      lv_obj_set_size(eyes_[i], width, height);
+      const auto eye = faceEye(kFaceEyes[i], m);
+      lv_obj_set_pos(eyes_[i], eye.x, eye.y);
+      lv_obj_set_size(eyes_[i], eye.width, eye.height);
       lv_obj_set_style_radius(eyes_[i], kFaceEyeRadius, 0);
       lv_obj_set_style_bg_color(eyes_[i], lv_color_hex(preset.colors.eye.rgb), 0);
     }
     for (unsigned i = 0; i < sizeof(mouthPoints_) / sizeof(mouthPoints_[0]); ++i) {
-      mouthPoints_[i].x = 120 + (kFaceMouth[i].x - 120) * m.mouthWidth / 42;
-      mouthPoints_[i].y = kFaceMouth[0].y +
-          (kFaceMouth[i].y - kFaceMouth[0].y) * m.mouthHeight / 14;
+      const auto point = faceMouthPoint(kFaceMouth[i], m);
+      mouthPoints_[i].x = point.x;
+      mouthPoints_[i].y = point.y;
     }
     lv_line_set_points(mouth_, mouthPoints_, sizeof(mouthPoints_) / sizeof(mouthPoints_[0]));
     lv_obj_set_style_line_color(mouth_, lv_color_hex(preset.colors.mouth.rgb), 0);
