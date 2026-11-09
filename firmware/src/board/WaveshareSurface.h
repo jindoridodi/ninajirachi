@@ -28,11 +28,6 @@ class WaveshareSurface final : public DrawSurface {
 
   void beginLayer(FaceLayer) override {}
 
-  void fillCircle(int x, int y, int radius, Color color) override {
-    if (radius <= 0) return;
-    Paint_DrawCircle(x, y, radius, rgb565(color), DOT_PIXEL_1X1, DRAW_FILL_FULL);
-  }
-
   void fillRect(int x, int y, int width, int height, Color color) override {
     if (width <= 0 || height <= 0 || x >= 240 || y >= 240) return;
     const int endX = min(239, x + width - 1);

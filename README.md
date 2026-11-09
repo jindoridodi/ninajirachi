@@ -55,11 +55,10 @@ Render the face from parameters rather than maintaining separate images for ever
 2. Face shape
 3. Solid rounded-rectangle eyes
 4. Continuous double-U mouth
-5. Effects
 
 The face is the blue outlined rounded triangle from the reference, with its wide aspect ratio preserved inside 240×240. The former filled circular face and oval eyes/mouth have been replaced. `shared/face_geometry.json` supplies the curves and eye proportions used by the firmware renderer, LVGL component, and desktop preview. After geometry edits, run `python3 tools/face_geometry.py`.
 
-An expression preset supplies eye openness, `eyeOffsetX/Y` gaze offsets, mouth width/depth, colors, and effects. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes. Exported presets use only these current parameters; re-export any saved presets made with the placeholder model.
+An expression preset supplies eye openness, `eyeOffsetX/Y` gaze offsets, mouth width/depth, and colors, including the jump background-flash color. The face has no decorative dot above it. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes. Exported presets use only these current parameters; re-export any saved presets made with the placeholder model.
 
 ### Face authoring
 

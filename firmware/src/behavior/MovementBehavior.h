@@ -77,7 +77,6 @@ class MovementBehavior {
     preset.colors.background = preset.colors.effect;
     preset.metrics.eyeOpen += 24;
     preset.metrics.mouthHeight += 26;
-    if (preset.metrics.effectRadius < 12) preset.metrics.effectRadius = 12;
     return preset;
   }
 

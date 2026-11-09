@@ -12,8 +12,7 @@
       "eyeOffsetX": 0,
       "eyeOffsetY": 0,
       "mouthWidth": 42,
-      "mouthHeight": 14,
-      "effectRadius": 0
+      "mouthHeight": 14
     },
     {
       "name": "curious",
@@ -27,8 +26,7 @@
       "eyeOffsetX": 4,
       "eyeOffsetY": -2,
       "mouthWidth": 30,
-      "mouthHeight": 8,
-      "effectRadius": 0
+      "mouthHeight": 8
     },
     {
       "name": "happy",
@@ -42,8 +40,7 @@
       "eyeOffsetX": 0,
       "eyeOffsetY": 1,
       "mouthWidth": 48,
-      "mouthHeight": 20,
-      "effectRadius": 4
+      "mouthHeight": 20
     },
     {
       "name": "surprised",
@@ -57,8 +54,7 @@
       "eyeOffsetX": 0,
       "eyeOffsetY": 0,
       "mouthWidth": 28,
-      "mouthHeight": 32,
-      "effectRadius": 10
+      "mouthHeight": 32
     },
     {
       "name": "excited",
@@ -72,8 +68,7 @@
       "eyeOffsetX": 0,
       "eyeOffsetY": -1,
       "mouthWidth": 52,
-      "mouthHeight": 26,
-      "effectRadius": 12
+      "mouthHeight": 26
     }
   ]
 }

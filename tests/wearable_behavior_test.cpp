@@ -43,8 +43,7 @@ bool rendersNamedExpressions() {
          expect(surprised.face.name == nina::ExpressionName::Surprised, "renders surprised") &&
          expect(excited.face.name == nina::ExpressionName::Excited, "renders excited") &&
          expect(happy.face.metrics.mouthHeight != curious.face.metrics.mouthHeight,
-                "expressions have distinct mouths") &&
-         expect(excited.face.metrics.effectRadius > 0, "excited has an effect");
+                "expressions have distinct mouths");
 }
 
 bool animatesIdleMouth() {

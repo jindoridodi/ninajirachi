@@ -5,31 +5,31 @@ namespace nina {
 constexpr ExpressionPreset kIdlePreset = {
     ExpressionName::Idle,
     {{0x000000}, {0x0000EE}, {0x0000EE}, {0x0000EE}, {0x0000EE}},
-    {36, 42, 0, 0, 42, 14, 0}
+    {36, 42, 0, 0, 42, 14}
 };
 
 constexpr ExpressionPreset kCuriousPreset = {
     ExpressionName::Curious,
     {{0x000000}, {0x0000EE}, {0x0000EE}, {0x0000EE}, {0x0000EE}},
-    {36, 46, 4, -2, 30, 8, 0}
+    {36, 46, 4, -2, 30, 8}
 };
 
 constexpr ExpressionPreset kHappyPreset = {
     ExpressionName::Happy,
     {{0x000000}, {0x0000EE}, {0x0000EE}, {0x0000EE}, {0x0000EE}},
-    {38, 38, 0, 1, 48, 20, 4}
+    {38, 38, 0, 1, 48, 20}
 };
 
 constexpr ExpressionPreset kSurprisedPreset = {
     ExpressionName::Surprised,
     {{0x000000}, {0x0000EE}, {0x0000EE}, {0x0000EE}, {0x0000EE}},
-    {38, 58, 0, 0, 28, 32, 10}
+    {38, 58, 0, 0, 28, 32}
 };
 
 constexpr ExpressionPreset kExcitedPreset = {
     ExpressionName::Excited,
     {{0x000000}, {0x0000EE}, {0x0000EE}, {0x0000EE}, {0x0000EE}},
-    {40, 48, 0, -1, 52, 26, 12}
+    {40, 48, 0, -1, 52, 26}
 };
 
 inline const ExpressionPreset& expressionPreset(ExpressionName name) {
