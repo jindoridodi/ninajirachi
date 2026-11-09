@@ -2,6 +2,7 @@
   "sourceWidth": 1153,
   "sourceHeight": 609,
   "displayWidth": 224,
+  "displayOffsetY": 16,
   "outlineWidth": 4,
   "outline": [
     [80, 4],

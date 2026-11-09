@@ -24,6 +24,9 @@ class RasterCanvas:
     def create_oval(self, *coords, fill, outline):
         self.painter.ellipse(tuple(v * 4 for v in coords), fill=fill)
 
+    def create_polygon(self, *coords, fill, outline):
+        self.painter.polygon(tuple(v * 4 for v in coords), fill=fill)
+
     def create_line(self, *coords, fill, width, joinstyle, capstyle):
         assert joinstyle in ("bevel", "miter", "round")
         assert capstyle in ("butt", "projecting", "round")

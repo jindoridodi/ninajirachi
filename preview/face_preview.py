@@ -40,6 +40,8 @@ def draw(canvas, preset: dict) -> None:
         canvas.create_line(*[value for point in points for value in point],
                            fill=color, width=width, joinstyle="round", capstyle="round")
 
+    canvas.create_polygon(*[value for point in geometry["outline"] for value in point],
+                          fill=preset["face"], outline="")
     stroke(geometry["outline"], preset["face"], geometry["outlineWidth"])
 
     def rounded_rect(x, y, width, height, radius, fill):

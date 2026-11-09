@@ -1,4 +1,5 @@
 #include "../firmware/src/face/FaceRenderer.h"
+#include "../firmware/src/behavior/MovementBehavior.h"
 #include <cassert>
 #include <cstdio>
 
@@ -17,12 +18,12 @@ int main(int argc, char** argv) {
   auto preset = nina::idlePreset();
   Pixels idle;
   renderer.render(idle, preset, 240, 240);
-  assert(idle.pixels[62][120] == 0x0000EE);  // Flat top.
-  assert(idle.pixels[95][69] == 0x0000EE);  // Solid left eye.
-  assert(idle.pixels[95][171] == 0x0000EE);
-  assert(idle.pixels[120][120] == 0);       // No filled face disc.
-  assert(idle.pixels[142][104] == 0x0000EE);// Left mouth lobe.
-  assert(idle.pixels[160][120] == 0);
+  assert(idle.pixels[78][120] == 0xffffff);
+  assert(idle.pixels[111][69] == 0);
+  assert(idle.pixels[111][171] == 0);
+  assert(idle.pixels[136][120] == 0xffffff);
+  assert(idle.pixels[158][104] == 0);
+  assert(idle.pixels[176][120] == 0xffffff);
   if (argc == 2) {
     FILE* image = fopen(argv[1], "wb");
     assert(image);
@@ -38,12 +39,21 @@ int main(int argc, char** argv) {
   preset.metrics.eyeOpen = 3;
   Pixels blink;
   renderer.render(blink, preset, 240, 240);
-  assert(blink.pixels[80][69] == 0 && idle.pixels[80][69] == 0x0000EE);
+  assert(blink.pixels[96][69] == 0xffffff && idle.pixels[96][69] == 0);
   preset.metrics.eyeOpen = 42;
   preset.metrics.eyeOffsetX = 10;
   Pixels gaze;
   renderer.render(gaze, preset, 240, 240);
-  assert(gaze.pixels[95][60] == 0 && idle.pixels[95][60] == 0x0000EE);
+  assert(gaze.pixels[111][60] == 0xffffff && idle.pixels[111][60] == 0);
+  nina::MovementBehavior movement;
+  movement.update({0, 0.4f}, preset, 0);
+  for (uint32_t time = 100; time < 1300; time += 200) {
+    const auto jump = movement.update({0, 2.1f}, preset, time);
+    Pixels frame;
+    renderer.render(frame, jump.preset, 240, 240);
+    assert(jump.jumpOverlayActive && frame.pixels[0][0] != 0 && frame.pixels[0][0] != 0xffffff);
+    assert(frame.pixels[136][120] == 0xffffff);
+  }
   // Every preset, including extreme authoring values, remains renderable.
   for (int i = 0; i < 5; ++i) {
     Pixels frame;

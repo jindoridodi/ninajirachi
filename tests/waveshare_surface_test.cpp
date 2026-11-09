@@ -29,7 +29,7 @@ int main() {
   preset.colors.eye = {0xFFFFFF};
   preset.colors.mouth = {0x00FF00};
   renderer.render(surface, preset, 240, 240);
-  assert(pixel(69, 95) == WHITE && pixel(171, 95) == WHITE);
-  assert(pixel(120, 120) == BLACK);
-  assert(pixel(104, 142) == GREEN);
+  assert(pixel(69, 111) == WHITE && pixel(171, 111) == WHITE);
+  assert(pixel(120, 136) == BLACK);
+  assert(pixel(104, 158) == GREEN);
 }

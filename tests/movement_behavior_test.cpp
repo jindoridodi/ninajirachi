@@ -25,6 +25,7 @@ int main() {
   movement.update({0.0f, 0.4f}, focused, 75);
   const nina::MovementRenderState jumped = movement.update({0.0f, 2.1f}, focused, 100);
   const nina::MovementRenderState heldJump = movement.update({0.0f, 2.1f}, focused, 150);
+  const nina::MovementRenderState nextColor = movement.update({0.0f, 2.1f}, focused, 300);
   const uint32_t overlayEnd = 100 + nina::kDefaultMovementTuning.jumpOverlayDurationMs;
   const nina::MovementRenderState resumed = movement.update({0.0f, 1.0f}, focused, overlayEnd);
 
@@ -46,8 +47,9 @@ int main() {
            expect(tilted.preset.metrics.eyeOffsetX > idle.metrics.eyeOffsetX,
                   "tilt subtly shifts eyes") &&
            expect(jumped.jumpOverlayActive, "jump starts a transient overlay") &&
-           expect(jumped.preset.colors.background.rgb == focused.colors.effect.rgb,
-                  "jump flashes the background") &&
+           expect(jumped.preset.colors.background.rgb != focused.colors.background.rgb &&
+                  nextColor.preset.colors.background.rgb != jumped.preset.colors.background.rgb,
+                  "jump cycles background colors") &&
            expect(jumped.preset.metrics.eyeOpen > focused.metrics.eyeOpen,
                   "jump shows surprised eyes") &&
            expect(jumped.preset.metrics.mouthHeight > focused.metrics.mouthHeight,
