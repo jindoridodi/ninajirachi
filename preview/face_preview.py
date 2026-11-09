@@ -31,6 +31,20 @@ def export_presets(presets: list[dict], path: Path) -> None:
         OUTPUT.write_text(header)
 
 
+def expression_geometry(geometry, preset):
+    eyes = []
+    for x, y, base_width, base_height in geometry["eyes"]:
+        width = max(1, base_width * preset["eyeWidth"] // 36)
+        height = max(1, base_height * preset["eyeOpen"] // 42)
+        eyes.append((x + int((base_width-width)/2) + preset["eyeOffsetX"],
+                     y + int((base_height-height)/2) + preset["eyeOffsetY"], width, height))
+    mouth_y = geometry["mouth"][0][1]
+    mouth = [(120 + int((x-120)*preset["mouthWidth"]/42),
+              mouth_y + int((y-mouth_y)*preset["mouthHeight"]/14))
+             for x, y in geometry["mouth"]]
+    return eyes, mouth
+
+
 def draw(canvas, preset: dict) -> None:
     canvas.delete("all")
     canvas.create_rectangle(0, 0, 240, 240, fill=preset["background"], outline="")
@@ -56,16 +70,9 @@ def draw(canvas, preset: dict) -> None:
             canvas.create_oval(cx, cy, cx + 2 * radius, cy + 2 * radius,
                                fill=fill, outline="")
 
-    for x, y, base_width, base_height in geometry["eyes"]:
-        width = max(1, base_width * preset["eyeWidth"] // 36)
-        height = max(1, base_height * preset["eyeOpen"] // 42)
-        rounded_rect(x + int((base_width-width)/2) + preset["eyeOffsetX"],
-                     y + int((base_height-height)/2) + preset["eyeOffsetY"],
-                     width, height, geometry["eyeRadius"], preset["eye"])
-    mouth_y = geometry["mouth"][0][1]
-    mouth = [(120 + int((x-120)*preset["mouthWidth"]/42),
-              mouth_y + int((y-mouth_y)*preset["mouthHeight"]/14))
-             for x, y in geometry["mouth"]]
+    eyes, mouth = expression_geometry(geometry, preset)
+    for x, y, width, height in eyes:
+        rounded_rect(x, y, width, height, geometry["eyeRadius"], preset["eye"])
     stroke(mouth, preset["mouth"], geometry["mouthWidth"])
 
 

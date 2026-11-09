@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ExpressionPreset.h"
-#include "FaceGeometry.generated.h"
+#include "FaceLayout.h"
 #include <math.h>
 #include <algorithm>
 
@@ -31,16 +31,14 @@ class FaceRenderer {
 
     surface.beginLayer(FaceLayer::Eyes);
     for (const auto& eye : kFaceEyes) {
-      const int w = std::max(1, eye[2] * m.eyeWidth / 36);
-      const int h = std::max(1, eye[3] * m.eyeOpen / 42);
-      const int x = ox + eye[0] + (eye[2]-w)/2 + m.eyeOffsetX;
-      const int y = oy + eye[1] + (eye[3]-h)/2 + m.eyeOffsetY;
-      roundedRect(surface, x, y, w, h, kFaceEyeRadius, c.eye);
+      const auto layout = faceEye(eye, m);
+      roundedRect(surface, ox + layout.x, oy + layout.y, layout.width, layout.height,
+                  kFaceEyeRadius, c.eye);
     }
     surface.beginLayer(FaceLayer::Mouth);
-    FacePoint previous = mouthPoint(kFaceMouth[0], m);
+    FacePoint previous = faceMouthPoint(kFaceMouth[0], m);
     for (unsigned i = 1; i < sizeof(kFaceMouth) / sizeof(kFaceMouth[0]); ++i) {
-      const FacePoint next = mouthPoint(kFaceMouth[i], m);
+      const FacePoint next = faceMouthPoint(kFaceMouth[i], m);
       stroke(surface, previous, next, ox, oy, kFaceMouthWidth, c.mouth);
       previous = next;
     }
@@ -61,11 +59,6 @@ class FaceRenderer {
   }
 
  private:
-  static FacePoint mouthPoint(FacePoint p, const FaceMetrics& m) {
-    return {int16_t(120 + (p.x-120)*m.mouthWidth/42),
-            int16_t(kFaceMouth[0].y + (p.y-kFaceMouth[0].y)*m.mouthHeight/14)};
-  }
-
   static void roundedRect(DrawSurface& s, int x, int y, int w, int h, int radius, Color c) {
     const float r = std::min(float(radius), std::min(w, h) / 2.0f);
     for (int row = 0; row < h; ++row) {
