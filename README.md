@@ -55,7 +55,7 @@ Render the face from parameters rather than maintaining separate images for ever
 3. Solid rounded-rectangle eyes
 4. Continuous double-U mouth
 
-The face is a white filled rounded triangle with black eyes and mouth on a black background, with its wide aspect ratio preserved inside 240×240. The previous blue face color was `#0000EE`, saved here for future reference. `shared/face_geometry.json` supplies the curves and eye proportions used by the firmware renderer, LVGL component, and desktop preview. After geometry edits, run `python3 tools/face_geometry.py`.
+The face is a white filled rounded triangle with black eyes and mouth on a black background, with its wide aspect ratio preserved inside 240×240. The previous blue face color was `#0000EE`, saved here for future reference. `shared/face_geometry.json` supplies the curves and eye proportions used by the firmware renderer and desktop preview. After geometry edits, run `python3 tools/face_geometry.py`.
 
 An expression preset supplies eye openness, `eyeOffsetX/Y` gaze offsets, mouth width/depth, optional tongue extension (`tongueOut`), and colors. Jump overlays cycle the background through several colors. The face has no decorative dot above it. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes. Exported presets use only these current parameters; re-export any saved presets made with the placeholder model.
 

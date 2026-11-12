@@ -4,20 +4,9 @@ Open `firmware.ino` in Arduino IDE and target `ESP32S3 Dev Module` with `esp32 b
 
 The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` driver, not LVGL or TFT_eSPI. Copy the driver files listed in `src/waveshare/README.md` from the official demo package before compiling. Those files provide the verified GC9A01A display definition: SPI GPIO 8/9/10/11/12/14 with active-high backlight GPIO 2. The runtime also reads the touch count for hold gestures and uses the QMI8658 driver for gravity measurements in compass tilt compensation.
 
-## LVGL face authoring
+## Face authoring
 
-`src/face/LvglFace.h` renders the reference icon in LVGL v8: a wide rounded triangle with a flat top, short vertical rounded-rectangle eyes, and a continuous double-U mouth with rounded ends. The reference aspect ratio is preserved inside the 240x240 screen.
-
-```cpp
-#include "src/face/LvglFace.h"
-
-nina::LvglFace face;
-face.create(lv_scr_act(), nina::idlePreset());
-// Later, from the animation loop:
-face.render(nina::expressionPreset(nina::ExpressionName::Excited));
-```
-
-The Arduino sketch's `FaceRenderer` draws this same face through the verified direct Waveshare path; the placeholder renderer has been removed. `LvglFace` is available for LVGL display integrations. `shared/face_geometry.json` contains the outline and mouth cubic control points in reference-image coordinates, eye rectangles, corner radius, and stroke widths. Both firmware renderers and the Tk preview use this geometry; after editing it, run `python3 tools/face_geometry.py` to regenerate `src/face/FaceGeometry.generated.h` (`--check` verifies it). LVGL draws the sampled curves with rounded line segments. Objects and point buffers persist across expression updates.
+The Arduino sketch's `FaceRenderer` draws the reference icon through the verified direct Waveshare path: a wide rounded triangle with a flat top, short vertical rounded-rectangle eyes, and a continuous double-U mouth with rounded ends. The reference aspect ratio is preserved inside the 240×240 screen. `shared/face_geometry.json` contains the outline and mouth cubic control points in reference-image coordinates, eye rectangles, corner radius, and stroke widths. The firmware renderer and Tk preview use this geometry; after editing it, run `python3 tools/face_geometry.py` to regenerate `src/face/FaceGeometry.generated.h` (`--check` verifies it).
 
 Run `python3 preview/face_preview.py` to tune eye width/openness, `eyeOffsetX/Y`, mouth width/depth, tongue extension (`tongueOut`, 0–20), and colors. Gaze shifts the solid eyes. There is no decorative dot above the face; the jump background flashes through bright colors every 100 ms, changing the starting color and order on each jump. The jump face opens smoothly even during a blink, with a gentler eye shape and a short, wide black tongue that grows out over 400 ms over the unchanged mouth; the face and background ease back to the current expression over the final quarter of the overlay. Export writes only the current expression parameters. The reference idle values are eyeWidth=36, eyeOpen=42, mouthWidth=42, mouthHeight=14; these scale the traced geometry. Re-export saved presets made with the previous model before using them with this version.
 
