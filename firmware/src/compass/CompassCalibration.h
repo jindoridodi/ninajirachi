@@ -70,7 +70,7 @@ class CompassCalibration {
     const float y = field.y * right.y + field.z * right.z;
     if (!std::isfinite(x) || !std::isfinite(y) || x * x + y * y < 1e-8f) return invalid;
     constexpr float kRadiansToDegrees = 57.2957795131f;
-    return normalizeDegrees(std::atan2(y, x) * kRadiansToDegrees + headingOffsetDegrees_);
+    return normalizeDegrees(-std::atan2(y, x) * kRadiansToDegrees + headingOffsetDegrees_);
   }
 
  private:

@@ -1,6 +1,7 @@
 #include "src/board/WaveshareSurface.h"
 #include "src/board/BoardInputs.h"
 #include "src/behavior/WearableBehavior.h"
+#include "src/behavior/HeadingHistory.h"
 #include "src/face/SettingsBatteryRenderer.h"
 #include "src/compass/CompassService.h"
 #include "src/board/MotionSampler.h"
@@ -17,6 +18,7 @@ nina::EspNowDiscovery radio;
 bool radioReady = false;
 uint64_t localIdentity = 0;
 nina::CompassService compass;
+nina::HeadingHistory headingHistory;
 nina::MotionSampler motionSampler(Wire);
 TwoWire compassBus(1);
 nina::ExpressionName expression = nina::ExpressionName::Idle;
@@ -155,6 +157,8 @@ void loop() {
   const auto timestamp = motion.timestamp;
   const auto fresh = motion.fresh;
   const bool sampled = compassReady && compass.update(now, gravity);
+  const auto sampledHeading = compass.heading(now);
+  headingHistory.record(now, sampledHeading.valid, sampledHeading.degrees);
   if (sampled && showRaw && now - lastLogMs >= 250) {
     lastLogMs = now;
     const auto raw = compass.raw();
@@ -183,9 +187,9 @@ void loop() {
     while (directionCount < 8 && radio.receive(packet)) {
       const uint32_t observedMs = millis();
       if (observedMs - packet.receivedMs > 250) continue;
-      const auto heading = compass.heading(observedMs);
-      if (heading.valid)
-        directions[directionCount++] = {packet.peer, packet.rssi, heading.degrees, observedMs};
+      float packetHeading;
+      if (headingHistory.at(packet.receivedMs, packetHeading))
+        directions[directionCount++] = {packet.peer, packet.rssi, packetHeading, packet.receivedMs};
     }
   }
   input.elapsedMs = millis();

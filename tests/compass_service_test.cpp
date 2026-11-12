@@ -58,7 +58,7 @@ int main() {
   bus.sample(1000, 1000, 0);
   assert(restored.update(300, {0, 0, 1}));
   assert(restored.heading(300).valid);
-  assert(std::fabs(restored.heading(300).degrees - 45) < 0.01f);
+  assert(std::fabs(restored.heading(300).degrees - 315) < 0.01f);
   assert(!restored.heading(551).valid);
   bus.registers[9] = 3;
   assert(!restored.update(301, {0, 0, 1}));
@@ -97,7 +97,7 @@ int main() {
   restored.cancelCalibration();
   bus.sample(1000, 1000, 0);
   assert(restored.update(600, {0, 0, 1}));
-  assert(std::fabs(restored.heading(600).degrees - 45) < 0.01f); // Old calibration survives failure/cancel.
+  assert(std::fabs(restored.heading(600).degrees - 315) < 0.01f); // Old calibration survives failure/cancel.
 
   assert(restored.startCalibration());
   for (unsigned i = 0; i < 120; ++i) {
