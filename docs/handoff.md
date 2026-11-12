@@ -6,7 +6,7 @@
 
 - `shared/face_geometry.json` defines the rounded-triangle outline, solid eyes, and double-U mouth. The direct wearable renderer and desktop preview share this geometry.
 - `shared/expression_presets.json` defines colors, eye openness/offsets, mouth width/depth, and tongue extension. Generate the firmware headers with `tools/generate_face_presets.py` and `tools/face_geometry.py`.
-- `WearableBehavior` coordinates expressions, peer selection, approximate gaze, touch holds, and the movement overlay. Tilt shifts the solid eyes; a jump temporarily overrides the expression and then resumes it.
+- `NearbyInteraction` owns peer continuity, target selection, sustained proximity, and approximate gaze evidence. `WearableBehavior` advances it once per frame and coordinates expressions, touch holds, and the movement overlay. Tilt shifts the solid eyes; a jump temporarily overrides the expression and then resumes it.
 - The Arduino sketch uses the official Waveshare direct driver.
 
 Read `README.md`, `AGENTS.md`, `GLOSSARY.md`, ADR-0001, the prototype spec, and the current GitHub issue before changing firmware.

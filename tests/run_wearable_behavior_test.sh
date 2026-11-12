@@ -6,3 +6,6 @@ c++ -std=gnu++11 -Wall -Wextra -Werror tests/wearable_behavior_test.cpp -o /tmp/
 /tmp/ninajirachi-wearable-behavior-test
 c++ -std=gnu++11 -Wall -Wextra -Werror tests/settings_battery_renderer_test.cpp -o /tmp/ninajirachi-settings-test
 /tmp/ninajirachi-settings-test
+
+c++ -std=gnu++11 -Wall -Wextra -Werror tests/nearby_interaction_test.cpp -o /tmp/ninajirachi-nearby-interaction-test
+/tmp/ninajirachi-nearby-interaction-test
