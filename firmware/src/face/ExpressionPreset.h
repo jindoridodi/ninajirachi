@@ -15,7 +15,6 @@ struct FaceColors {
   Color face;
   Color eye;
   Color mouth;
-  Color effect;
 };
 
 struct FaceMetrics {

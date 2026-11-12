@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import os
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -12,6 +13,54 @@ from tools.generate_face_presets import render
 
 
 class PreviewEditorTest(unittest.TestCase):
+    def test_failed_rollback_preserves_backup_and_reports_location(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "presets.json"
+            output = Path(folder) / "header.h"
+            source.write_text("old source")
+            output.write_text("old header")
+            replace = os.replace
+            def fail_source_and_rollback(src, dst):
+                if Path(dst) == source or str(src).endswith(".backup.h"):
+                    raise OSError("replacement failed")
+                replace(src, dst)
+            with patch.dict(export_presets.__globals__, {"SOURCE": source, "OUTPUT": output}), \
+                    patch("os.replace", side_effect=fail_source_and_rollback):
+                with self.assertRaisesRegex(OSError, "Previous header saved at") as error:
+                    export_presets(PRESETS, source)
+            backup, = Path(folder).glob("*.backup.h")
+            self.assertIn(str(backup), str(error.exception))
+            self.assertEqual(backup.read_text(), "old header")
+            self.assertEqual(source.read_text(), "old source")
+
+    def test_canonical_export_restores_header_when_source_replace_fails(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "presets.json"
+            output = Path(folder) / "header.h"
+            source.write_text("old source")
+            output.write_text("old header")
+            replace = os.replace
+            def fail_source(src, dst):
+                if Path(dst) == source:
+                    raise OSError("source replacement failed")
+                replace(src, dst)
+            with patch.dict(export_presets.__globals__, {"SOURCE": source, "OUTPUT": output}), \
+                    patch("os.replace", side_effect=fail_source):
+                with self.assertRaises(OSError):
+                    export_presets(PRESETS, source)
+            self.assertEqual(source.read_text(), "old source")
+            self.assertEqual(output.read_text(), "old header")
+
+    def test_canonical_export_preserves_source_when_header_cannot_be_staged(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "presets.json"
+            source.write_text("original")
+            output = Path(folder) / "missing" / "header.h"
+            with patch.dict(export_presets.__globals__, {"SOURCE": source, "OUTPUT": output}):
+                with self.assertRaises(OSError):
+                    export_presets(PRESETS, source)
+            self.assertEqual(source.read_text(), "original")
+
     def test_only_remaining_expressions_can_be_exported(self):
         self.assertEqual([p["name"] for p in PRESETS], ["idle", "curious", "excited"])
         for name in ("happy", "surprised"):

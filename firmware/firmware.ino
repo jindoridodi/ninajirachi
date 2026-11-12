@@ -33,26 +33,8 @@ constexpr uint8_t kCompassAddress = 0x2C;
 constexpr uint8_t kCompassSdaPin = 15;
 constexpr uint8_t kCompassSclPin = 16;
 
-bool compassAddressPresent() {
-  compassBus.beginTransmission(kCompassAddress);
-  return compassBus.endTransmission() == 0;
-}
-
 void restoreCompass() {
-  Preferences prefs;
-  if (!prefs.begin("nina-verified", true)) return;
-  const bool verified = prefs.getUChar("address", 0) == kCompassAddress;
-  prefs.end();
-  if (verified && compassAddressPresent())
-    compassReady = compass.begin(compassBus, nina::CompassConfig(true, kCompassAddress));
-}
-
-bool clearCompassCalibration() {
-  Preferences prefs;
-  if (!prefs.begin("nina-compass", false)) return false;
-  const bool ok = !prefs.isKey("cal-v1") || prefs.remove("cal-v1");
-  prefs.end();
-  return ok;
+  compassReady = compass.restore(compassBus, kCompassAddress);
 }
 
 void renderSettings(const nina::SettingsBatteryDisplay& settings) {
@@ -82,41 +64,16 @@ void serialCommands() {
     else if (!scanned) Serial.println("QMC5883P not found at 0x2C");
   } else if (command == 'v') {
     // User confirms physical QMC5883P marking, wiring, and aligned IMU/compass axes.
-    Preferences verification;
-    const bool opened = verification.begin("nina-verified", false);
-    const bool forgotten = opened && verification.isKey("address") &&
-                           verification.getUChar("address", 0) == 0;
-    if (opened) verification.end();
-    const bool safeCalibration = scanned && opened && (!forgotten || clearCompassCalibration());
-    compassReady = safeCalibration && compass.begin(compassBus, nina::CompassConfig(true, kCompassAddress));
-    Serial.println(compassReady ? "Compass enabled" : "Scan/verify QMC5883P first");
-    if (compassReady) {
-      Preferences prefs;
-      if (!prefs.begin("nina-verified", false)) {
-        Serial.println("Could not save compass verification; scan and verify again");
-        compassReady = false;
-      }
-      else {
-        if (prefs.putUChar("address", kCompassAddress) != 1) {
-          Serial.println("Could not save compass verification; scan and verify again");
-          compassReady = false;
-        }
-        prefs.end();
-      }
-      if (!compassReady) compass.begin(compassBus);
-    }
+    compassReady = compass.verify(compassBus, kCompassAddress, scanned);
+    Serial.println(compassReady ? "Compass enabled" : "Scan/verify QMC5883P first or check storage");
   } else if (command == 'u') {
-    Preferences prefs;
-    bool forgotten = false;
-    if (prefs.begin("nina-verified", false)) {
-      forgotten = prefs.putUChar("address", 0) == 1;
-      if (!forgotten) Serial.println("Could not clear compass verification; do not replace sensor");
-      prefs.end();
-    } else Serial.println("Could not clear compass verification");
-    if (forgotten && !clearCompassCalibration()) Serial.println("Could not clear compass calibration; retry verification");
+    bool cleared = false;
+    if (!compass.forgetVerification(compassBus, cleared))
+      Serial.println("Could not clear compass verification; do not replace sensor");
+    else if (!cleared)
+      Serial.println("Could not clear compass calibration; retry verification");
     compassReady = false;
     scanned = false;
-    compass.begin(compassBus);
   } else if (command == 'c') {
     Serial.println(compass.startCalibration() ? "Rotate through all axes; w saves" : "Enable compass first");
   } else if (command == 'w') {
