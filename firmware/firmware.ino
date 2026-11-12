@@ -198,31 +198,30 @@ void loop() {
     const auto& packet = packets[count];
     observations[count++] = {packet.data, sizeof(packet.data), packet.rssi, packet.receivedMs};
   }
+  nina::DirectionObservation directions[8];
+  size_t directionCount = 0;
+  if (radioReady) {
+    radio.update(millis());
+    nina::RadioPacket packet;
+    while (directionCount < 8 && radio.receive(packet)) {
+      const uint32_t observedMs = millis();
+      if (observedMs - packet.receivedMs > 250) continue;
+      const auto heading = compass.heading(observedMs);
+      if (heading.valid)
+        directions[directionCount++] = {packet.peer, packet.rssi, heading.degrees, observedMs};
+    }
+  }
   input.elapsedMs = millis();
   const auto heading = compass.heading(input.elapsedMs);
   input.headingValid = heading.valid;
   input.headingDegrees = heading.degrees;
-  auto output = behavior.update(input, observations, count);
+  const auto output = behavior.update(input, observations, count, directions, directionCount);
   if (showJumpDebug) {
     Serial.printf("[DEBUG-jump] %lu %lu %lu %d %d %.3f %.1f %.1f %.1f %.1f %.1f %.1f %d\n",
                   (unsigned long)now, (unsigned long)input.elapsedMs, (unsigned long)timestamp,
                   fresh, input.motionValid, input.verticalAccelerationG,
                   acceleration[0], acceleration[1], acceleration[2], gyro[0], gyro[1], gyro[2],
                   output.jumpOverlayActive);
-  }
-  if (radioReady) {
-    radio.update(input.elapsedMs);
-    nina::RadioPacket packet;
-    while (radio.receive(packet)) {
-      input.elapsedMs = millis();
-      if (input.elapsedMs - packet.receivedMs > 250) continue;
-      const auto currentHeading = compass.heading(input.elapsedMs);
-      input.headingValid = currentHeading.valid;
-      input.headingDegrees = currentHeading.degrees;
-      input.radioPeerId = packet.peer;
-      input.radioRssi = packet.rssi;
-      output = behavior.update(input, nullptr, 0);
-    }
   }
   if (!displayReady) return;
   if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);

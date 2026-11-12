@@ -52,6 +52,13 @@ struct DiscoveryObservation {
   uint32_t receivedMs;
 };
 
+struct DirectionObservation {
+  uint64_t peerId;
+  int rssi;
+  float headingDegrees;
+  uint32_t observedMs;
+};
+
 struct WearableInput {
   WearableInput(uint32_t time, bool touch, ExpressionName requested, BatterySnapshot power,
                 uint64_t identity = 0, DiscoveryObservation observation = {})
@@ -90,7 +97,8 @@ class WearableBehavior {
     return update(input, &input.discovery, 1);
   }
 
-  WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count) {
+  WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count,
+                        const DirectionObservation* directions = nullptr, size_t directionCount = 0) {
     updateScreen(input.elapsedMs, input.touchDown);
     targetReset_ = false;
     updatePeers(input.elapsedMs, input.localId, observations, count);
@@ -98,6 +106,9 @@ class WearableBehavior {
     direction_.select(targetId_);
     if (input.headingValid) direction_.observe(input.radioPeerId, input.headingDegrees,
                                               input.radioRssi, input.elapsedMs);
+    for (size_t i = 0; i < directionCount; ++i)
+      direction_.observe(directions[i].peerId, directions[i].headingDegrees,
+                         directions[i].rssi, directions[i].observedMs);
     const Gaze gaze = direction_.gaze(input.elapsedMs, input.headingValid, input.headingDegrees);
     ExpressionName requested = input.expression;
     if (targetId_) requested = input.elapsedMs - targetSinceMs_ >= kSustainedProximityMs
