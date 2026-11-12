@@ -40,8 +40,8 @@ void restoreCompass() {
   compassReady = compass.restore(compassBus, kCompassAddress);
 }
 
-void renderSettings(const nina::SettingsBatteryDisplay& settings) {
-  const auto text = nina::settingsBatteryLines(settings);
+void renderSettings(const nina::BatterySnapshot& battery) {
+  const auto text = nina::settingsBatteryLines(battery);
   surface.fillRect(0, 0, 240, 240, {0});
   for (int line = 0; line < 7; ++line)
     // The Waveshare string wrapper passes these two colors to Paint_DrawChar in reverse.
@@ -97,7 +97,7 @@ void serialCommands() {
     compassReady = false;
     scanned = false;
   } else if (command == 'c') {
-    Serial.println(compass.startCalibration() ? "Rotate through all axes; w saves" : "Enable compass first");
+    Serial.println(compass.startCalibration() ? "Rotate through all axes; w saves" : "Enable compass and check calibration storage first");
   } else if (command == 'w') {
     Serial.println(compass.saveCalibration() ? "Calibration saved" : "Not enough coverage/samples or storage failed");
   } else if (command == 'x') {
@@ -131,7 +131,7 @@ void setup() {
   nina::resetTouch();
   analogReadResolution(12);
   analogSetPinAttenuation(1, ADC_11db);
-  motionSampler.begin();
+  if (!motionSampler.begin()) Serial.println("QMI8658 motion initialization failed");
   restoreCompass();
   const uint64_t identity = ESP.getEfuseMac();
   localIdentity = identity & 0xffffffffffffULL;
@@ -185,11 +185,7 @@ void loop() {
     radio.update(millis());
     nina::RadioPacket packet;
     while (directionCount < 8 && radio.receive(packet)) {
-      const uint32_t observedMs = millis();
-      if (observedMs - packet.receivedMs > 250) continue;
-      float packetHeading;
-      if (headingHistory.at(packet.receivedMs, packetHeading))
-        directions[directionCount++] = {packet.peer, packet.rssi, packetHeading, packet.receivedMs};
+      if (headingHistory.associate(packet, millis(), directions[directionCount])) ++directionCount;
     }
   }
   input.elapsedMs = millis();
@@ -207,6 +203,6 @@ void loop() {
   if (!displayReady) return;
   if (showDirection) renderDirection(output, input.headingValid);
   else if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
-  else renderSettings(output.settings);
+  else renderSettings(output.battery);
   surface.present();
 }

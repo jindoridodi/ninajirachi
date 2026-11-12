@@ -149,6 +149,9 @@ int main() {
   assert(invalid.begin(bus, {true, 0x2c})); // Raw inspection still works if NVS fails.
   assert(!invalid.calibrated());
   expectLabel(invalid, true, "CAL UNKNOWN");
+  assert(!invalid.startCalibration());
+  assert(!invalid.collecting());
+  assert(invalid.update(902, {0, 0, 1})); // Raw inspection survives unavailable storage.
   assert(!invalid.begin(bus));
   assert(!invalid.startCalibration());
 }

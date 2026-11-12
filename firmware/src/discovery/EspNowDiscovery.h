@@ -12,8 +12,6 @@ namespace nina {
 constexpr uint8_t kPeerWifiChannel = 1;
 constexpr uint32_t kBeaconPeriodMs = 250;
 
-struct RadioPacket { uint64_t peer; int rssi; uint32_t receivedMs; };
-
 class EspNowDiscovery {
  public:
   bool begin(uint64_t identity) {

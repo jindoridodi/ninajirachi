@@ -105,9 +105,9 @@ bool opensAndClosesSettingsWithTaps() {
               nina::ScreenName::Face, "nine taps do not open settings")) return false;
   const auto settings = tap(behavior, 1800, battery);
   if (!expect(settings.screen == nina::ScreenName::SettingsBattery &&
-              settings.settings.battery.millivolts == 3890 && settings.settings.battery.charging &&
-              settings.settings.battery.hasEstimatedPercent && settings.settings.battery.estimatedPercent == 72 &&
-              settings.settings.battery.deviceId == battery.deviceId, "ten taps open settings with battery data")) return false;
+              settings.battery.millivolts == 3890 && settings.battery.charging &&
+              settings.battery.hasEstimatedPercent && settings.battery.estimatedPercent == 72 &&
+              settings.battery.deviceId == battery.deviceId, "ten taps open settings with battery data")) return false;
   for (int i = 0; i < 4; ++i) tap(behavior, 2000 + i * 200, battery);
   if (!expect(behavior.update({2700, false, nina::ExpressionName::Idle, battery}).screen ==
               nina::ScreenName::SettingsBattery, "four taps do not close settings")) return false;

@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "../face/ExpressionPreset.h"
+#include "BatterySnapshot.h"
 #include "NearbyInteraction.h"
 #include "MovementBehavior.h"
 
@@ -18,27 +19,6 @@ constexpr uint32_t kBlinkPeriodMs = 4000;
 constexpr uint32_t kBlinkDurationMs = 200;
 
 enum class ScreenName { Face, SettingsBattery };
-
-struct BatterySnapshot {
-  BatterySnapshot(uint16_t voltage = 0, bool isCharging = false, bool calibrated = false,
-                  uint8_t percent = 0, const char* id = "unknown", bool voltageKnown = true,
-                  bool knownCharging = false, const char* firmware = "prototype")
-      : millivolts(voltage), charging(isCharging), hasEstimatedPercent(calibrated),
-        estimatedPercent(percent), deviceId(id), hasVoltage(voltageKnown),
-        chargingKnown(knownCharging), firmwareId(firmware) {}
-  uint16_t millivolts;
-  bool charging;
-  bool hasEstimatedPercent;
-  uint8_t estimatedPercent;
-  const char* deviceId;
-  bool hasVoltage;
-  bool chargingKnown;
-  const char* firmwareId;
-};
-
-struct SettingsBatteryDisplay {
-  BatterySnapshot battery;
-};
 
 struct WearableInput {
   WearableInput(uint32_t time, bool touch, ExpressionName requested, BatterySnapshot power,
@@ -62,7 +42,7 @@ struct WearableInput {
 struct WearableOutput {
   ScreenName screen;
   ExpressionPreset face;
-  SettingsBatteryDisplay settings;
+  BatterySnapshot battery;
   size_t peerCount;
   uint64_t targetId;
   Gaze gaze;
@@ -111,7 +91,7 @@ class WearableBehavior {
     const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid,
         input.accelerationValid, input.accelerationMagnitudeG);
-    return {screen_, motion.preset, {input.battery}, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive, nearby.relativeDirection};
+    return {screen_, motion.preset, input.battery, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive, nearby.relativeDirection};
   }
 
  private:
