@@ -18,6 +18,25 @@ struct CompassHeading {
   uint32_t sampledAtMs;
 };
 
+enum class CalibrationAvailability {
+  Unknown,
+  Collecting,
+  Saved,
+  NotSaved,
+  Invalid
+};
+
+inline const char* calibrationStatusLabel(CalibrationAvailability status) {
+  switch (status) {
+    case CalibrationAvailability::Collecting: return "CALIBRATING";
+    case CalibrationAvailability::Saved: return "CAL SAVED";
+    case CalibrationAvailability::NotSaved: return "NO CAL SAVED";
+    case CalibrationAvailability::Invalid: return "CAL INVALID";
+    case CalibrationAvailability::Unknown:
+    default: return "CAL UNKNOWN";
+  }
+}
+
 class CompassService {
  public:
   bool restore(TwoWire& bus, uint8_t address) {
@@ -56,6 +75,7 @@ class CompassService {
   bool begin(TwoWire& bus, CompassConfig config = {}) {
     if (storageOpen_) storage_.end();
     storageOpen_ = false;
+    storageLoad_ = StorageLoad::Unread;
     calibration_ = CompassCalibration{};
     collecting_ = false;
     samples_ = 0;
@@ -63,11 +83,23 @@ class CompassService {
     valid_ = false;
     if (enabled_) {
       storageOpen_ = storage_.begin("nina-compass", false);
-      Record record{};
-      if (storageOpen_ && storage_.getBytesLength("cal-v1") == sizeof(record) &&
-          storage_.getBytes("cal-v1", &record, sizeof(record)) == sizeof(record) &&
-          record.version == kStorageVersion && usable(record.data)) {
-        calibration_ = CompassCalibration(record.data);
+      if (!storageOpen_) {
+        storageLoad_ = StorageLoad::Unread;
+      } else if (!storage_.isKey("cal-v1")) {
+        storageLoad_ = StorageLoad::Absent;
+      } else {
+        Record record{};
+        const size_t length = storage_.getBytesLength("cal-v1");
+        if (length != sizeof(record)) {
+          storageLoad_ = StorageLoad::Rejected;
+        } else if (storage_.getBytes("cal-v1", &record, sizeof(record)) != sizeof(record)) {
+          storageLoad_ = StorageLoad::Unread;
+        } else if (record.version == kStorageVersion && usable(record.data)) {
+          calibration_ = CompassCalibration(record.data);
+          storageLoad_ = StorageLoad::Saved;
+        } else {
+          storageLoad_ = StorageLoad::Rejected;
+        }
       }
     }
     return enabled_;
@@ -115,6 +147,7 @@ class CompassService {
     record.data = data;
     if (storage_.putBytes("cal-v1", &record, sizeof(record)) != sizeof(record)) return false;
     calibration_ = CompassCalibration(data);
+    storageLoad_ = StorageLoad::Saved;
     collecting_ = false;
     valid_ = false;
     return true;
@@ -125,6 +158,17 @@ class CompassService {
   bool collecting() const { return collecting_; }
   uint32_t calibrationSamples() const { return samples_; }
 
+  CalibrationAvailability calibrationAvailability(bool compassEnabled) const {
+    if (!compassEnabled || !storageOpen_ || storageLoad_ == StorageLoad::Unread)
+      return CalibrationAvailability::Unknown;
+    if (collecting_) return CalibrationAvailability::Collecting;
+    if (storageLoad_ == StorageLoad::Saved || calibrated())
+      return CalibrationAvailability::Saved;
+    if (storageLoad_ == StorageLoad::Absent) return CalibrationAvailability::NotSaved;
+    if (storageLoad_ == StorageLoad::Rejected) return CalibrationAvailability::Invalid;
+    return CalibrationAvailability::Unknown;
+  }
+
  private:
   static bool clearCalibration() {
     Preferences prefs;
@@ -133,6 +177,7 @@ class CompassService {
     prefs.end();
     return ok;
   }
+  enum class StorageLoad { Unread, Absent, Rejected, Saved };
   struct Record { uint32_t version; CompassCalibrationData data; };
   static constexpr uint32_t kStorageVersion = 0x4E430001;
   static bool usable(const CompassCalibrationData& data) {
@@ -149,6 +194,7 @@ class CompassService {
   uint32_t sampledAtMs_ = 0;
   float degrees_ = 0;
   bool storageOpen_ = false, collecting_ = false;
+  StorageLoad storageLoad_ = StorageLoad::Unread;
   uint32_t samples_ = 0;
 };
 

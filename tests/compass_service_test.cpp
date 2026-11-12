@@ -1,6 +1,7 @@
 #include "../firmware/src/compass/CompassService.h"
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 std::vector<uint8_t> Preferences::bytes;
 bool Preferences::failOpen = false;
@@ -8,6 +9,11 @@ bool Preferences::failWrite = false;
 bool Preferences::failRemove = false;
 bool Preferences::verifiedKey = false;
 uint8_t Preferences::verifiedAddress = 0;
+
+static void expectLabel(nina::CompassService& compass, bool enabled, const char* label) {
+  assert(std::strcmp(nina::calibrationStatusLabel(compass.calibrationAvailability(enabled)),
+                     label) == 0);
+}
 
 int main() {
   {
@@ -30,6 +36,7 @@ int main() {
     nina::CompassService rebooted;
     assert(rebooted.restore(replacementBus, 0x2c));
     assert(!rebooted.calibrated());
+    expectLabel(rebooted, true, "NO CAL SAVED");
     Preferences::verifiedKey = false;
   }
   TwoWire bus;
@@ -38,6 +45,7 @@ int main() {
   assert(!compass.begin(bus));
   assert(bus.transactions == 0); // Disabled means no bus activity.
   assert(compass.begin(bus, {true, 0x2c}));
+  expectLabel(compass, true, "NO CAL SAVED");
   assert(bus.registers[0x29] == 0x06);
   assert(bus.registers[0x0b] == 0x08);
   assert(bus.registers[0x0a] == 0xcd);
@@ -46,6 +54,7 @@ int main() {
   assert(compass.raw().z == -300);
   assert(!compass.heading(100).valid); // No calibration yet.
   assert(compass.startCalibration());
+  expectLabel(compass, true, "CALIBRATING");
   assert(!compass.saveCalibration());
   for (unsigned i = 0; i < 120; ++i) {
     bus.sample((i & 1) ? 1000 : -1000, (i & 2) ? 1000 : -1000,
@@ -53,8 +62,11 @@ int main() {
     assert(compass.update(110 + i, {0, 0, 1}));
   }
   assert(compass.saveCalibration());
+  expectLabel(compass, true, "CAL SAVED");
   nina::CompassService restored;
   assert(restored.begin(bus, {true, 0x2c}));
+  expectLabel(restored, true, "CAL SAVED");
+  expectLabel(restored, false, "CAL UNKNOWN");
   bus.sample(1000, 1000, 0);
   assert(restored.update(300, {0, 0, 1}));
   assert(restored.heading(300).valid);
@@ -84,6 +96,8 @@ int main() {
   assert(!restored.heading(300).valid);
 
   assert(restored.startCalibration());
+  assert(restored.calibrated());
+  expectLabel(restored, true, "CALIBRATING");
   for (unsigned i = 0; i < 120; ++i) {
     bus.sample((i & 1) ? 2000 : -2000, (i & 2) ? 1000 : -1000,
                (i & 4) ? 1000 : -1000);
@@ -95,6 +109,7 @@ int main() {
   Preferences::failWrite = false;
   assert(!restored.saveCalibration(NAN));
   restored.cancelCalibration();
+  expectLabel(restored, true, "CAL SAVED");
   bus.sample(1000, 1000, 0);
   assert(restored.update(600, {0, 0, 1}));
   assert(std::fabs(restored.heading(600).degrees - 45) < 0.01f); // Old calibration survives failure/cancel.
@@ -123,14 +138,17 @@ int main() {
   Preferences::bytes[0] ^= 1; // Unknown storage version is never accepted.
   assert(invalid.begin(bus, {true, 0x2c}));
   assert(!invalid.calibrated());
+  expectLabel(invalid, true, "CAL INVALID");
   assert(invalid.update(901, {0, 0, 1}));
   assert(!invalid.heading(901).valid);
   Preferences::bytes.resize(2);
   assert(invalid.begin(bus, {true, 0x2c}));
   assert(!invalid.calibrated());
+  expectLabel(invalid, true, "CAL INVALID");
   Preferences::failOpen = true;
   assert(invalid.begin(bus, {true, 0x2c})); // Raw inspection still works if NVS fails.
   assert(!invalid.calibrated());
+  expectLabel(invalid, true, "CAL UNKNOWN");
   assert(!invalid.begin(bus));
   assert(!invalid.startCalibration());
 }
