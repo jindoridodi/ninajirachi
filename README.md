@@ -63,7 +63,7 @@ An expression preset supplies eye openness, `eyeOffsetX/Y` gaze offsets, mouth w
 
 Use a desktop GUI preview/editor to tune expression presets at 240×240. It should show the same parameterized face model as the wearable and export preset values, not a collection of raster expression files. The desktop preview is an authoring tool only; it does not run on the wearable.
 
-Launch the editor with `python3 preview/face_preview.py`. Tk (`tkinter`) is required only to launch the GUI; preset export and headless tests (`python3 tests/preview_editor_test.py`) do not require it.
+Launch the editor with `python3 preview/face_preview.py`. Tk (`tkinter`) and Pillow are required to launch the GUI with antialiased rendering; preset export and headless tests (`python3 tests/preview_editor_test.py`) do not require it.
 
 Run `sh tests/run_all.sh` for all host checks (Pillow and the installed official Waveshare source are required). These checks cover rendering, preview export, movement, peer behavior, settings, and compass calculations; hardware acceptance still requires the assembled wearables.
 

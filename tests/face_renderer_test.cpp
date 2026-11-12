@@ -36,6 +36,32 @@ int main(int argc, char** argv) {
       }
     fclose(image);
   }
+  // Tongue pixels may only extend below the mouth curve, even as it deforms.
+  for (int width : {12, 42, 80}) {
+    for (int height : {14, 35, 70}) {
+      auto expression = nina::idlePreset();
+      expression.metrics.mouthWidth = width;
+      expression.metrics.mouthHeight = height;
+      Pixels normal, tongue;
+      renderer.render(normal, expression, 240, 240);
+      expression.metrics.tongueOut = 20;
+      renderer.render(tongue, expression, 240, 240);
+      for (unsigned i = 1; i < sizeof(nina::kFaceMouth)/sizeof(nina::kFaceMouth[0]); ++i) {
+        const auto a = nina::faceMouthPoint(nina::kFaceMouth[i-1], expression.metrics);
+        const auto b = nina::faceMouthPoint(nina::kFaceMouth[i], expression.metrics);
+        for (int x = std::max(0, int(ceilf(a.x))); x < std::min(240, int(ceilf(b.x))); ++x) {
+          const float mouthY = a.y + (b.y-a.y) * (x-a.x) / (b.x-a.x);
+          for (int y = 135; y + 0.5f < mouthY && y < 240; ++y)
+            assert(normal.pixels[y][x] == tongue.pixels[y][x]);
+        }
+      }
+    }
+  }
+  bool softenedEdge = false;
+  for (int y = 140; y < 170; ++y)
+    for (int x = 80; x < 160; ++x)
+      softenedEdge |= idle.pixels[y][x] != 0 && idle.pixels[y][x] != 0xffffff;
+  assert(softenedEdge && "mouth edges should have partial pixel coverage");
   preset.metrics.eyeOpen = 3;
   Pixels blink;
   renderer.render(blink, preset, 240, 240);

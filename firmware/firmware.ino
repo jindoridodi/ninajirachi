@@ -24,6 +24,7 @@ bool displayReady = false;
 bool compassReady = false;
 bool showRaw = false;
 bool showJumpDebug = false;
+bool showDirection = false;
 bool scanned = false;
 uint32_t lastFrameMs = 0;
 uint32_t lastLogMs = 0;
@@ -43,6 +44,22 @@ void renderSettings(const nina::SettingsBatteryDisplay& settings) {
   for (int line = 0; line < 7; ++line)
     // The Waveshare string wrapper passes these two colors to Paint_DrawChar in reverse.
     Paint_DrawString_EN(32, 50 + line * 20, text.lines[line], &Font12, BLACK, WHITE);
+}
+
+void renderDirection(const nina::WearableOutput& output, bool headingValid) {
+  surface.fillRect(0, 0, 240, 240, {0});
+  Paint_DrawString_EN(79, 35, "PEER TEST", &Font12, BLACK, WHITE);
+  Paint_DrawString_EN(102, 60, "FRONT", &Font12, BLACK, WHITE);
+  surface.fillRect(116, 116, 8, 8, {0xffffff});
+  if (isfinite(output.relativeDirection)) {
+    const float radians = output.relativeDirection * 3.14159265f / 180.0f;
+    const int x = 120 + lroundf(65 * sinf(radians));
+    const int y = 120 - lroundf(65 * cosf(radians));
+    surface.fillRect(x - 6, y - 6, 12, 12, {0x00ff00});
+  } else {
+    const char* status = !output.targetId ? "NO PEER" : !headingValid ? "NO HEADING" : "TURN TO SAMPLE";
+    Paint_DrawString_EN(65, 175, status, &Font12, BLACK, WHITE);
+  }
 }
 
 void serialCommands() {
@@ -82,6 +99,9 @@ void serialCommands() {
     compass.cancelCalibration();
   } else if (command == 'r') {
     showRaw = !showRaw;
+  } else if (command == 'd') {
+    showDirection = !showDirection;
+    Serial.println(showDirection ? "Peer direction display enabled" : "Peer direction display disabled");
   } else if (command == 't') {
     behavior.triggerJump(millis());
     Serial.println("Jump reaction triggered");
@@ -115,7 +135,7 @@ void setup() {
   if (!radioReady) Serial.println("ESP-NOW initialization failed");
   snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
            unsigned(identity));
-  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; t test jump; j jump debug; 0 idle; 1 curious; 2 excited");
+  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; 0 idle; 1 curious; 2 excited");
   renderer.render(surface, nina::idlePreset(), 240, 240);
   surface.present();
 }
@@ -178,7 +198,8 @@ void loop() {
                   output.jumpOverlayActive);
   }
   if (!displayReady) return;
-  if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
+  if (showDirection) renderDirection(output, input.headingValid);
+  else if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
   else renderSettings(output.settings);
   surface.present();
 }

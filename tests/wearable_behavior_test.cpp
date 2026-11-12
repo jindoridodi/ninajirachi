@@ -218,7 +218,8 @@ bool gazeUsesTargetEvidence() {
   in.elapsedMs = 310; behavior.update(in);
   in.elapsedMs = 400; in.radioPeerId = 0; in.headingDegrees = 90;
   const auto firstGaze = behavior.update(in);
-  if (!expect(firstGaze.gaze == nina::Gaze::Left, "strongest heading is left")) return false;
+  if (!expect(firstGaze.gaze == nina::Gaze::Left && firstGaze.relativeDirection == -90,
+              "visual direction matches strongest heading")) return false;
   in.elapsedMs = 700;
   const auto settledGaze = behavior.update(in);
   if (!expect(settledGaze.face.metrics.eyeOffsetX < firstGaze.face.metrics.eyeOffsetX,
@@ -229,12 +230,14 @@ bool gazeUsesTargetEvidence() {
   if (!expect(behavior.update(in).gaze == nina::Gaze::Center, "angle wraps through north")) return false;
   in.headingDegrees = 90;
   in.headingValid = false; in.elapsedMs = 750;
-  if (!expect(behavior.update(in).gaze == nina::Gaze::Center, "unavailable heading centers gaze")) return false;
+  const auto unavailable = behavior.update(in);
+  if (!expect(unavailable.gaze == nina::Gaze::Center && isnan(unavailable.relativeDirection),
+              "unavailable heading hides visual direction")) return false;
   uint64_t other = 3;
   in.elapsedMs = 800; in.headingValid = true; in.discovery = {other,-20,800};
   const auto switched = behavior.update(in);
-  return expect(switched.targetId == 3 && switched.gaze == nina::Gaze::Center,
-                "target change clears evidence");
+  return expect(switched.targetId == 3 && switched.gaze == nina::Gaze::Center &&
+                isnan(switched.relativeDirection), "target change clears evidence");
 }
 
 bool sustainedProximityChoosesExpression() {

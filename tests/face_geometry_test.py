@@ -32,7 +32,9 @@ class FaceGeometryTest(unittest.TestCase):
             eyes, mouth = expression_geometry(display_geometry(), preset)
             expected = [value for part in (eyes, mouth) for point in part for value in point]
             expected += list(tongue_geometry(mouth, preset))
-            self.assertEqual([int(value) for value in line.split()], expected, preset["name"])
+            self.assertEqual(len(line.split()), len(expected))
+            for actual, value in zip(map(float, line.split()), expected):
+                self.assertAlmostEqual(actual, value, delta=0.0002, msg=preset["name"])
 
     def test_no_expression_draws_a_dot_above_the_face(self):
         for preset in PRESETS:
@@ -76,6 +78,20 @@ class FaceGeometryTest(unittest.TestCase):
         self.assertEqual(tongue.image.getpixel((120*4, 164*4)), (0, 0, 0))
         self.assertEqual(tongue.image.getpixel((113*4, 160*4)), (0, 0, 0))
         self.assertEqual(tongue.image.getpixel((120*4, 170*4)), (255, 255, 255))
+
+    def test_tongue_stays_below_deforming_mouth(self):
+        from PIL import ImageChops
+        for width, height in ((12, 14), (42, 35), (80, 70)):
+            preset = {**PRESETS[0], "mouthWidth": width, "mouthHeight": height}
+            normal, tongue = RasterCanvas(), RasterCanvas()
+            draw(normal, preset)
+            draw(tongue, {**preset, "tongueOut": 20})
+            changed = ImageChops.difference(normal.image, tongue.image)
+            _, mouth = expression_geometry(display_geometry(), preset)
+            for (ax, ay), (bx, by) in zip(mouth, mouth[1:]):
+                for x in range(math.ceil(ax * 4), math.ceil(bx * 4)):
+                    mouth_y = ay + (by-ay) * (x/4-ax) / (bx-ax)
+                    self.assertIsNone(changed.crop((x, 135*4, x+1, int(mouth_y*4))).getbbox())
 
     def test_openness_control_changes_the_render(self):
         from PIL import ImageChops
