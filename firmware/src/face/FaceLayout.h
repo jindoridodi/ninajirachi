@@ -20,4 +20,12 @@ inline FacePoint faceMouthPoint(FacePoint point, const FaceMetrics& metrics) {
           int16_t(kFaceMouth[0].y + (point.y - kFaceMouth[0].y) * metrics.mouthHeight / 14)};
 }
 
+struct FaceTongue { int x, y, width, height, radius; bool visible; };
+
+inline FaceTongue faceTongue(const FaceMetrics& metrics) {
+  const auto anchor = faceMouthPoint(kFaceMouth[sizeof(kFaceMouth) / sizeof(kFaceMouth[0]) / 2], metrics);
+  return {anchor.x - 9, anchor.y + 8, 18, std::max(1, int(metrics.tongueOut) + 4), 9,
+          metrics.tongueOut > 0};
+}
+
 }  // namespace nina

@@ -149,13 +149,9 @@ void loop() {
       acceleration[1] * acceleration[1] + acceleration[2] * acceleration[2]) / 1000.0f;
   input.rollDegrees = motion.rollDegrees;
   input.verticalAccelerationG = motion.verticalAccelerationG;
-  nina::BlePacket packets[8];
   nina::DiscoveryObservation observations[8];
   size_t count = 0;
-  while (count < 8 && discovery.receive(packets[count])) {
-    const auto& packet = packets[count];
-    observations[count++] = {packet.data, sizeof(packet.data), packet.rssi, packet.receivedMs};
-  }
+  while (count < 8 && discovery.receive(observations[count])) ++count;
   nina::DirectionObservation directions[8];
   size_t directionCount = 0;
   if (radioReady) {

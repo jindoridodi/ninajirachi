@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.face_geometry import display_geometry, render_header, OUTPUT
 from tools.render_face_preview import RasterCanvas
-from preview.face_preview import PRESETS, draw, expression_geometry
+from preview.face_preview import PRESETS, draw, expression_geometry, tongue_geometry
 
 
 class FaceGeometryTest(unittest.TestCase):
@@ -16,11 +16,11 @@ class FaceGeometryTest(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         cases = PRESETS + [
             {**PRESETS[0], "eyeWidth": 1, "eyeOpen": 1, "eyeOffsetX": -60,
-             "eyeOffsetY": 60, "mouthWidth": 100, "mouthHeight": 100},
+             "eyeOffsetY": 60, "mouthWidth": 100, "mouthHeight": 100, "tongueOut": 20},
             {**PRESETS[0], "eyeWidth": 100, "eyeOpen": 100, "eyeOffsetX": 60,
-             "eyeOffsetY": -60, "mouthWidth": 1, "mouthHeight": 1},
+             "eyeOffsetY": -60, "mouthWidth": 1, "mouthHeight": 1, "tongueOut": 1},
         ]
-        keys = ("eyeWidth", "eyeOpen", "eyeOffsetX", "eyeOffsetY", "mouthWidth", "mouthHeight")
+        keys = ("eyeWidth", "eyeOpen", "eyeOffsetX", "eyeOffsetY", "mouthWidth", "mouthHeight", "tongueOut")
         with tempfile.TemporaryDirectory() as folder:
             executable = Path(folder) / "face-layout"
             subprocess.run(["c++", "-std=c++11", str(root / "tests/face_layout_test.cpp"),
@@ -31,6 +31,7 @@ class FaceGeometryTest(unittest.TestCase):
         for preset, line in zip(cases, result.stdout.splitlines()):
             eyes, mouth = expression_geometry(display_geometry(), preset)
             expected = [value for part in (eyes, mouth) for point in part for value in point]
+            expected += list(tongue_geometry(mouth, preset))
             self.assertEqual([int(value) for value in line.split()], expected, preset["name"])
 
     def test_no_expression_draws_a_dot_above_the_face(self):

@@ -2,10 +2,10 @@
 #include <cstdio>
 
 int main() {
-  int width, open, offsetX, offsetY, mouthWidth, mouthHeight;
-  while (scanf("%d %d %d %d %d %d", &width, &open, &offsetX, &offsetY, &mouthWidth, &mouthHeight) == 6) {
+  int width, open, offsetX, offsetY, mouthWidth, mouthHeight, tongue;
+  while (scanf("%d %d %d %d %d %d %d", &width, &open, &offsetX, &offsetY, &mouthWidth, &mouthHeight, &tongue) == 7) {
     const nina::FaceMetrics metrics = {int16_t(width), int16_t(open), int16_t(offsetX),
-                                       int16_t(offsetY), int16_t(mouthWidth), int16_t(mouthHeight), 0};
+                                       int16_t(offsetY), int16_t(mouthWidth), int16_t(mouthHeight), int16_t(tongue)};
     for (const auto& eye : nina::kFaceEyes) {
       const auto result = nina::faceEye(eye, metrics);
       printf("%d %d %d %d ", result.x, result.y, result.width, result.height);
@@ -14,6 +14,8 @@ int main() {
       const auto result = nina::faceMouthPoint(point, metrics);
       printf("%d %d ", result.x, result.y);
     }
+    const auto t = nina::faceTongue(metrics);
+    printf("%d %d %d %d %d %d", t.x, t.y, t.width, t.height, t.radius, t.visible);
     puts("");
   }
 }

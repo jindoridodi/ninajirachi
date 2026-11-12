@@ -4,23 +4,18 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <string.h>
+#include "BeaconProtocol.h"
 
 namespace nina {
-
-struct BlePacket {
-  uint8_t data[12];
-  int rssi;
-  uint32_t receivedMs;
-};
 
 class BleDiscovery : public BLEAdvertisedDeviceCallbacks {
  public:
   bool begin(uint64_t identity) {
-    queue_ = xQueueCreate(8, sizeof(BlePacket));
+    queue_ = xQueueCreate(8, sizeof(DiscoveryObservation));
     if (!queue_) return false;
     BLEDevice::init("");
-    uint8_t data[] = {0xff, 0xff, 'N', 'I', 'N', 'A', 1, 1, 0, 0, 0, 0, 0, 0};
-    for (int i = 13; i >= 8; --i) { data[i] = identity & 0xff; identity >>= 8; }
+    uint8_t data[14] = {0xff, 0xff};
+    encodeBeacon(data + 2, BeaconType::Discovery, identity);
     BLEAdvertisementData advertisement;
     advertisement.setFlags(0x06);
     advertisement.setManufacturerData(std::string(reinterpret_cast<char*>(data), sizeof(data)));
@@ -40,17 +35,18 @@ class BleDiscovery : public BLEAdvertisedDeviceCallbacks {
     return scan->start(0, scanComplete, false);
   }
 
-  bool receive(BlePacket& packet) { return queue_ && xQueueReceive(queue_, &packet, 0) == pdTRUE; }
+  bool receive(DiscoveryObservation& packet) { return queue_ && xQueueReceive(queue_, &packet, 0) == pdTRUE; }
 
   void onResult(BLEAdvertisedDevice device) override {
     const uint32_t receivedMs = millis();
     if (!device.haveManufacturerData() || !device.haveRSSI()) return;
     const std::string data = device.getManufacturerData();
-    if (data.size() != 14 || uint8_t(data[0]) != 0xff || uint8_t(data[1]) != 0xff ||
-        data.compare(2, 4, "NINA") != 0 || uint8_t(data[6]) != 1 || uint8_t(data[7]) != 1)
-      return;
-    BlePacket packet;
-    memcpy(packet.data, data.data() + 2, sizeof(packet.data));
+    if (data.size() != 14 || uint8_t(data[0]) != 0xff || uint8_t(data[1]) != 0xff) return;
+    const uint64_t peer = decodeBeacon(reinterpret_cast<const uint8_t*>(data.data()) + 2,
+                                       data.size() - 2, BeaconType::Discovery);
+    if (!peer) return;
+    DiscoveryObservation packet;
+    packet.peerId = peer;
     packet.rssi = device.getRSSI();
     packet.receivedMs = receivedMs;
     xQueueSend(queue_, &packet, 0);
