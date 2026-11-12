@@ -37,6 +37,8 @@ The external compass starts disabled until verified. The compass uses a separate
 
 The IMU and magnetometer gravity vectors must use the same axes. Confirm the external module mounting before enabling; a rotated mounting needs an explicit axis transform. Invalid or stale headings stay unavailable. See `../docs/compass-bench.md` for the calibration limits and acceptance checklist.
 
+The gravity estimate rejects rotation that changes tilt above 10°/s, but permits rotation around gravity so a steady turn can supply direction evidence. Acceleration magnitude, direction stability, freshness, and the 250 ms settling window still gate validity. Turns that do not cover enough headings within the five-second evidence window keep the centered-eye fallback. Verify this distinction while worn; synthetic turn tests do not establish physical heading accuracy.
+
 ## Compass bench setup
 
 `src/compass/CompassService.h` provides the C++11 Arduino API for verified QMC5883P setup, raw updates, tilt-compensated heading, and calibration stored through ESP32 Preferences. It is disabled by default and requires a caller-configured `TwoWire` bus plus explicit user verification of the chip and scanned address. Main owns serial commands. Follow [the QMC5883P API and bench procedure](../docs/compass-bench.md) before enabling it.

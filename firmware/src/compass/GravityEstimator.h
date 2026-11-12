@@ -8,7 +8,7 @@ class GravityEstimator {
  public:
   static constexpr uint32_t kQuietWindowMs = 250;
   static constexpr uint32_t kMaxSampleAgeMs = 250;
-  static constexpr float kMaxRotationDps = 10;
+  static constexpr float kMaxTiltRotationDps = 10;
   static constexpr float kMaxMagnitudeDeviationG = 0.1f;
   static constexpr float kMaxDirectionDeviation = 0.1f;
   static constexpr float kFilterAlpha = 0.2f;
@@ -24,13 +24,21 @@ class GravityEstimator {
     const float magnitude = length(accelerationMg) / 1000;
     const float rotation = length(gyroDps);
     if (!std::isfinite(magnitude) || !std::isfinite(rotation) ||
-        std::fabs(magnitude - 1) > kMaxMagnitudeDeviationG || rotation > kMaxRotationDps) {
+        std::fabs(magnitude - 1) > kMaxMagnitudeDeviationG) {
       settling_ = false;
       return {0, 0, 0};
     }
     const MagneticVector down{accelerationMg.x / (1000 * magnitude),
                               accelerationMg.y / (1000 * magnitude),
                               accelerationMg.z / (1000 * magnitude)};
+    // Rotation around gravity changes heading without changing the gravity direction.
+    const float tiltRotation = length({gyroDps.y * down.z - gyroDps.z * down.y,
+                                       gyroDps.z * down.x - gyroDps.x * down.z,
+                                       gyroDps.x * down.y - gyroDps.y * down.x});
+    if (tiltRotation > kMaxTiltRotationDps) {
+      settling_ = false;
+      return {0, 0, 0};
+    }
     if (settling_ && length({down.x - filtered_.x, down.y - filtered_.y,
                             down.z - filtered_.z}) > kMaxDirectionDeviation) {
       settling_ = false;
