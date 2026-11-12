@@ -22,5 +22,7 @@ inline uint64_t decodeBeacon(const uint8_t* data, size_t size, BeaconType type) 
   return identity;
 }
 
+struct RadioPacket { uint64_t peer; int rssi; uint32_t receivedMs; };
+
 struct DiscoveryObservation { uint64_t peerId; int rssi; uint32_t receivedMs; };
 }

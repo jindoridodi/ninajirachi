@@ -4,6 +4,13 @@
 
 namespace nina {
 
+struct DirectionObservation {
+  uint64_t peerId;
+  int rssi;
+  float headingDegrees;
+  uint32_t observedMs;
+};
+
 enum class Gaze { Left, Center, Right };
 constexpr uint32_t kGazeFallbackMs = 2000;
 constexpr uint32_t kDirectionSampleMaxAgeMs = 5000;

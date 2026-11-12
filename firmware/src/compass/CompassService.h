@@ -129,7 +129,7 @@ class CompassService {
   static constexpr int kCalibrationMinSpan = 200;
 
   bool startCalibration() {
-    if (!enabled_) return false;
+    if (!enabled_ || !storageOpen_) return false;
     collection_ = CompassCalibration{};
     samples_ = 0;
     collecting_ = true;

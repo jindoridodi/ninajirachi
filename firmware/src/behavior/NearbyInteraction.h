@@ -12,13 +12,6 @@ constexpr uint32_t kSustainedProximityMs = 10000;
 constexpr int kTargetSwitchMarginDb = 6;
 constexpr size_t kMaxPeers = 4;
 
-struct DirectionObservation {
-  uint64_t peerId;
-  int rssi;
-  float headingDegrees;
-  uint32_t observedMs;
-};
-
 struct NearbyInteractionState {
   size_t peerCount;
   uint64_t targetId;

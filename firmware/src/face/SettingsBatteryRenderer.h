@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdio.h>
-#include "../behavior/WearableBehavior.h"
+#include "../behavior/BatterySnapshot.h"
 
 namespace nina {
 
@@ -10,9 +10,8 @@ struct SettingsBatteryLines {
 };
 
 // The board draws these lines using its existing text API.
-inline SettingsBatteryLines settingsBatteryLines(const SettingsBatteryDisplay& settings) {
+inline SettingsBatteryLines settingsBatteryLines(const BatterySnapshot& battery) {
   SettingsBatteryLines result{};
-  const auto& battery = settings.battery;
   snprintf(result.lines[0], 48, "Battery / settings");
   if (battery.hasVoltage && battery.millivolts > 0)
     snprintf(result.lines[1], 48, "Voltage: %u.%03u V", unsigned(battery.millivolts / 1000),
