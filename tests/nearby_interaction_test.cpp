@@ -1,4 +1,5 @@
 #include "../firmware/src/behavior/NearbyInteraction.h"
+#include "../firmware/src/compass/GravityEstimator.h"
 #include <cstdio>
 
 namespace {
@@ -36,6 +37,35 @@ bool expect(bool condition, const char* message) {
   if (condition) return true;
   std::fprintf(stderr, "failed: %s\n", message);
   return false;
+}
+
+bool gazeDuringSteadyTurn() {
+  nina::GravityEstimator gravity;
+  nina::CompassCalibration calibration({{-1000, -1000, -1000}, {1000, 1000, 1000}, 0});
+  nina::NearbyInteraction interaction;
+  nina::NearbyInteractionState state{};
+  uint32_t nextBeaconMs = 0;
+  float heading = 0;
+  // A level wearable turns at 20 degrees/s, with 33 ms frames and 250 ms beacons.
+  for (uint32_t now = 0; now <= 4950; now += 33) {
+    const float angle = now * 20.0f / 1000;
+    const float radians = angle * 0.0174532925f;
+    const nina::MagneticSample field{int16_t(lroundf(1000 * cosf(radians))),
+                                      int16_t(lroundf(1000 * sinf(radians))), 0};
+    const auto down = gravity.update(now + 1, {0, 0, 1000}, {0, 0, 20}, now);
+    heading = calibration.headingDegrees(field, down);
+    const bool beacon = now >= nextBeaconMs;
+    if (beacon) nextBeaconMs = now + 250;
+    const nina::DiscoveryObservation discovery{2, -40, now};
+    const nina::DirectionObservation direction{2, angle < 22.5f ? -40 : angle < 67.5f ? -60 : -80,
+                                                heading, now};
+    state = interaction.update(now, 1, &discovery, beacon ? 1 : 0,
+        std::isfinite(heading), heading, &direction, beacon && std::isfinite(heading) ? 1 : 0);
+  }
+  return expect(state.targetId == 2 && state.gaze == nina::Gaze::Left,
+                "steady turn acquires approximate gaze through gravity and calibrated heading") &&
+         expect(interaction.update(6950, 1, nullptr, 0, true, heading).gaze == nina::Gaze::Center,
+                "gaze returns to centered-eye fallback without fresh turn evidence");
 }
 
 bool multiHopQueuedContinuity(uint32_t start) {
@@ -308,7 +338,8 @@ bool returningPeerStartsFocusedAgain() {
 }  // namespace
 
 int main() {
-  return !(gazeRejectsOtherPeerAndInsufficientCoverage() &&
+  return !(gazeDuringSteadyTurn() &&
+           gazeRejectsOtherPeerAndInsufficientCoverage() &&
            samePeerReturnClearsGaze() &&
            gazeAgesIndividualSamples() &&
            gazeUsesAveragesAndStopsWhenStill() &&

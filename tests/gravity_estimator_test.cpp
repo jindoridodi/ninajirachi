@@ -29,6 +29,15 @@ int main() {
   assert(estimator.update(15, level, {0, nan, 0}, 1440).z == 0);
   assert(estimator.update(16, {0, 0, 0}, quiet, 1460).z == 0);
 
+  nina::GravityEstimator turning;
+  const nina::MagneticVector tilted{600, 0, 800}, yaw{12, 0, 16};
+  assert(turning.update(1, tilted, yaw, 0).z == 0);
+  const auto down = turning.update(2, tilted, yaw, 250);
+  assert(std::fabs(down.x - 0.6f) < 0.001f && std::fabs(down.z - 0.8f) < 0.001f);
+  assert(turning.update(3, tilted, {16, 0, -12}, 280).z == 0);  // Rotation across gravity.
+  assert(turning.update(4, tilted, yaw, 300).z == 0);
+  assert(turning.update(5, tilted, yaw, 550).z > 0.79f);  // Must settle again.
+
   nina::GravityEstimator wrapped;
   assert(wrapped.update(0xFFFFFF, level, quiet, UINT32_MAX - 100).z == 0);
   assert(wrapped.update(0, level, quiet, 149).z == 1);
