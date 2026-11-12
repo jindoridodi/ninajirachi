@@ -4,6 +4,27 @@
 
 namespace {
 
+struct TestInput : nina::WearableInput {
+  TestInput(uint32_t time, bool touch, nina::ExpressionName requested, nina::BatterySnapshot power,
+            uint64_t identity = 0, nina::DiscoveryObservation observation = {})
+      : nina::WearableInput(time, touch, requested, power, identity), discovery(observation) {}
+  nina::DiscoveryObservation discovery;
+  uint64_t radioPeerId = 0;
+  int radioRssi = 0;
+};
+
+class TestBehavior : public nina::WearableBehavior {
+ public:
+  using nina::WearableBehavior::update;
+  nina::WearableOutput update(const TestInput& input) {
+    const nina::DirectionObservation direction = {input.radioPeerId, input.radioRssi,
+                                                   input.headingDegrees, input.elapsedMs};
+    return nina::WearableBehavior::update(input, &input.discovery, 1, &direction,
+                                          input.headingValid && input.radioPeerId ? 1 : 0);
+  }
+};
+
+
 bool expect(bool condition, const char* message) {
   if (condition) return true;
   std::fprintf(stderr, "failed: %s\n", message);
@@ -11,7 +32,7 @@ bool expect(bool condition, const char* message) {
 }
 
 bool keepsIdleFaceAlive() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
 
   const nina::WearableOutput start = behavior.update({0, false, nina::ExpressionName::Idle, battery});
@@ -29,8 +50,8 @@ bool keepsIdleFaceAlive() {
 }
 
 bool rendersNamedExpressions() {
-  nina::WearableBehavior behavior;
-  nina::WearableBehavior excitedBehavior;
+  TestBehavior behavior;
+  TestBehavior excitedBehavior;
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
   const auto curious = behavior.update({1000, false, nina::ExpressionName::Curious, battery});
   const auto excited = excitedBehavior.update({1000, false, nina::ExpressionName::Excited, battery});
@@ -41,7 +62,7 @@ bool rendersNamedExpressions() {
 }
 
 bool animatesIdleMouth() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   nina::BatterySnapshot battery;
   const auto start = behavior.update({0, false, nina::ExpressionName::Idle, battery});
   const auto later = behavior.update({1400, false, nina::ExpressionName::Idle, battery});
@@ -53,7 +74,7 @@ bool animatesIdleMouth() {
 }
 
 bool transitionsFromVisibleBlink() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   nina::BatterySnapshot battery;
   const auto blink = behavior.update({3900, false, nina::ExpressionName::Idle, battery});
   const auto change = behavior.update({3900, false, nina::ExpressionName::Excited, battery});
@@ -73,7 +94,7 @@ bool transitionsFromVisibleBlink() {
 }
 
 bool opensAndClosesSettingsWithTheSpecifiedHolds() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   const nina::BatterySnapshot battery = {3890, true, true, 72, "NINA-42"};
 
   behavior.update({0, true, nina::ExpressionName::Idle, battery});
@@ -95,7 +116,7 @@ bool opensAndClosesSettingsWithTheSpecifiedHolds() {
 }
 
 bool returnsToFaceAfterSettingsInactivity() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   const nina::BatterySnapshot battery = {3700, false, false, 0, "NINA-2"};
 
   behavior.update({0, true, nina::ExpressionName::Idle, battery});
@@ -108,7 +129,7 @@ bool returnsToFaceAfterSettingsInactivity() {
 }
 
 bool requiresReleaseAndExactTimeouts() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   nina::BatterySnapshot battery;
   behavior.update({100, true, nina::ExpressionName::Idle, battery});
   if (!expect(behavior.update({5099, true, nina::ExpressionName::Idle, battery}).screen ==
@@ -124,10 +145,10 @@ bool requiresReleaseAndExactTimeouts() {
 }
 
 bool multiHopQueuedContinuity(uint32_t start) {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
+  TestInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
   b.update(in);
   const nina::DiscoveryObservation batch[] = {{p, 12, -40, start + 2900},
                                                 {p, 12, -40, start + 5800}};
@@ -139,10 +160,10 @@ bool multiHopQueuedContinuity(uint32_t start) {
 }
 
 bool multiHopGapResetsContinuity() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  TestInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
   b.update(in);
   const nina::DiscoveryObservation batch[] = {{p, 12, -40, 2900}, {p, 12, -40, 5900}};
   in.elapsedMs = 6000; in.discovery = {}; b.update(in, batch, 2);
@@ -153,11 +174,11 @@ bool multiHopGapResetsContinuity() {
 }
 
 bool batchedDelayedContinuity(bool otherPeerFirst, uint32_t start) {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
   const uint8_t other[] = {'N','I','N','A',1,1,0,0,0,0,0,3};
-  nina::WearableInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
+  TestInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
   b.update(in);
   const nina::DiscoveryObservation batch[] = {
       {otherPeerFirst ? other : p, 12, otherPeerFirst ? -80 : -40, start + (otherPeerFirst ? 3000u : 100u)},
@@ -174,10 +195,10 @@ bool batchedDelayedContinuity(bool otherPeerFirst, uint32_t start) {
 }
 
 bool batchDoesNotReviveStalePeers() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  TestInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
   b.update(in);
   const nina::DiscoveryObservation batch[] = {{p, 12, -40, 100}, {p, 12, -40, 200}};
   in.elapsedMs = 3200; in.discovery = {};
@@ -187,11 +208,11 @@ bool batchDoesNotReviveStalePeers() {
 }
 
 bool batchKeepsNewestSignal() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
   const uint8_t other[] = {'N','I','N','A',1,1,0,0,0,0,0,3};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 90});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 90});
   b.update(in);
   const nina::DiscoveryObservation batch[] = {{p, 12, -40, 200}, {p, 12, -90, 150},
                                                 {other, 12, -50, 200}};
@@ -201,10 +222,10 @@ bool batchKeepsNewestSignal() {
 }
 
 bool batchDoesNotBridgeAGapOutOfOrder() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  TestInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
   b.update(in);
   const nina::DiscoveryObservation batch[] = {{p, 12, -40, 3100}, {p, 12, -40, 2900}};
   in.elapsedMs = 3200; in.discovery = {}; b.update(in, batch, 2);
@@ -216,10 +237,10 @@ bool batchDoesNotBridgeAGapOutOfOrder() {
 }
 
 bool delayedContinuousProximity(uint32_t start) {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
+  TestInput in(start, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, start});
   b.update(in);
   in.elapsedMs = start + 3100; in.discovery.receivedMs = start + 2900; b.update(in);
   in.elapsedMs = start + 5800; in.discovery.receivedMs = start + 5800; b.update(in);
@@ -233,10 +254,10 @@ bool delayedContinuousProximity(uint32_t start) {
 }
 
 bool delayedObservationsExpireFromReceiveTime() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(3000, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  TestInput in(3000, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
   if (!expect(b.update(in).peerCount == 0, "stale queued observation is ignored")) return false;
   in.elapsedMs = 4000; in.discovery.receivedMs = 2000;
   if (!expect(b.update(in).peerCount == 1, "recent queued observation is accepted")) return false;
@@ -245,10 +266,10 @@ bool delayedObservationsExpireFromReceiveTime() {
 }
 
 bool olderObservationsDoNotReplaceNewerOnes() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 90});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 90});
   b.update(in);
   in.discovery.rssi = -90; in.discovery.receivedMs = 0xfffffff0u;
   b.update(in);
@@ -261,10 +282,10 @@ bool olderObservationsDoNotReplaceNewerOnes() {
 }
 
 bool discoversPeer() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   nina::BatterySnapshot battery;
   const uint8_t packet[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput input = {100, false, nina::ExpressionName::Idle, battery};
+  TestInput input = {100, false, nina::ExpressionName::Idle, battery};
   input.localId = 1;
   input.discovery = {packet, sizeof(packet), -45, 100};
   const auto found = behavior.update(input);
@@ -277,10 +298,10 @@ bool discoversPeer() {
 }
 
 bool movementOverlaysFocusedInteraction() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
   in.motionValid = true; in.verticalAccelerationG = 1.0f;
   b.update(in);
   in.elapsedMs = 500; in.discovery.receivedMs = 500;
@@ -301,10 +322,10 @@ bool movementOverlaysFocusedInteraction() {
 }
 
 bool tiltAndFocusedAnimation() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,0});
+  TestInput in(0, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,0});
   in.motionValid = true; in.verticalAccelerationG = 1;
   const auto start = b.update(in);
   in.elapsedMs = 1400; in.discovery.receivedMs = 1400;
@@ -318,9 +339,9 @@ bool tiltAndFocusedAnimation() {
 }
 
 bool jumpOverridesBlink() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
-  nina::WearableInput in(3800, false, nina::ExpressionName::Idle, battery);
+  TestInput in(3800, false, nina::ExpressionName::Idle, battery);
   in.motionValid = true; in.verticalAccelerationG = 0.4f; b.update(in);
   in.elapsedMs = 3900; in.verticalAccelerationG = 2.1f;
   b.update(in);
@@ -331,10 +352,10 @@ bool jumpOverridesBlink() {
 }
 
 bool gazeUsesTargetEvidence() {
-  nina::WearableBehavior behavior;
+  TestBehavior behavior;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
   in.radioPeerId = 2; in.radioRssi = -45; in.headingValid = true; in.headingDegrees = 0;
   behavior.update(in);
   in.elapsedMs = 110; behavior.update(in);
@@ -364,10 +385,10 @@ bool gazeUsesTargetEvidence() {
 }
 
 bool gazeRejectsWeakAndUnstableEvidence() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
   in.radioPeerId = 2; in.headingValid = true;
   for (int i = 0; i < 6; ++i) {
     in.elapsedMs = 100 + i * 100; in.headingDegrees = (i / 2) * 90;
@@ -375,7 +396,7 @@ bool gazeRejectsWeakAndUnstableEvidence() {
   }
   in.radioPeerId = 0; in.headingDegrees = 90;
   if (!expect(b.update(in).gaze == nina::Gaze::Center, "weak evidence rejected")) return false;
-  nina::WearableBehavior unstable;
+  TestBehavior unstable;
   for (int i = 0; i < 6; ++i) {
     in.elapsedMs = 100 + i * 100; in.headingDegrees = (i / 2) * 90;
     in.radioPeerId = 2; in.radioRssi = i % 2 ? -80 : -40; unstable.update(in);
@@ -385,10 +406,10 @@ bool gazeRejectsWeakAndUnstableEvidence() {
 }
 
 bool gazeUsesAveragesAndStopsWhenStill() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
   const float headings[] = {0,0,90,90,180,180};
   const int signals[] = {-42,-56,-46,-46,-70,-70};
   in.radioPeerId = 2; in.headingValid = true;
@@ -404,10 +425,10 @@ bool gazeUsesAveragesAndStopsWhenStill() {
 }
 
 bool samePeerReturnClearsGaze() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
   b.update(in);
   in.radioPeerId = 2; in.headingValid = true;
   for (int i = 0; i < 6; ++i) {
@@ -423,10 +444,10 @@ bool samePeerReturnClearsGaze() {
 }
 
 bool gazeAgesIndividualSamples() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
   in.radioPeerId = 2; in.headingValid = true; in.headingDegrees = 0; in.radioRssi = -80;
   b.update(in);
   for (int i = 0; i < 18; ++i) {
@@ -440,10 +461,10 @@ bool gazeAgesIndividualSamples() {
 }
 
 bool gazeRejectsOtherPeerAndInsufficientCoverage() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
+  TestInput in(100, false, nina::ExpressionName::Idle, battery, 1, {peer,12,-40,100});
   in.headingValid = true; in.radioPeerId = 3;
   for (int i = 0; i < 6; ++i) {
     in.elapsedMs = 100 + i * 100; in.headingDegrees = (i / 2) * 90;
@@ -461,10 +482,10 @@ bool gazeRejectsOtherPeerAndInsufficientCoverage() {
 }
 
 bool selectsStableTargetsAndIgnoresInvalidPackets() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,1};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -50, 0});
+  TestInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -50, 0});
   if (!expect(b.update(in).peerCount == 0, "own identity ignored")) return false;
   p[11] = 2; p[4] = 2;
   if (!expect(b.update(in).peerCount == 0, "unknown protocol ignored")) return false;
@@ -483,10 +504,10 @@ bool selectsStableTargetsAndIgnoresInvalidPackets() {
 }
 
 bool sustainedProximityAndCapacity() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  TestInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
   b.update(in);
   for (int t = 2000; t <= 10000; t += 2000) {
     in.elapsedMs = t; in.discovery.receivedMs = t;
@@ -504,10 +525,10 @@ bool sustainedProximityAndCapacity() {
 }
 
 bool returningPeerStartsFocusedAgain() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
+  TestInput in(0, false, nina::ExpressionName::Idle, battery, 1, {p, 12, -40, 0});
   for (int t = 0; t <= 10000; t += 2000) { in.elapsedMs = t; in.discovery.receivedMs = t; b.update(in); }
   in.elapsedMs = 13000; in.discovery.receivedMs = 13000;
   return expect(b.update(in).face.name == nina::ExpressionName::Curious,
@@ -515,16 +536,16 @@ bool returningPeerStartsFocusedAgain() {
 }
 
 bool discoveryContinuesInSettingsAndAcrossClockWrap() {
-  nina::WearableBehavior b;
+  TestBehavior b;
   nina::BatterySnapshot battery;
   const uint8_t p[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
-  nina::WearableInput in(0, true, nina::ExpressionName::Idle, battery, 1, {p, 12, -50, 0});
+  TestInput in(0, true, nina::ExpressionName::Idle, battery, 1, {p, 12, -50, 0});
   b.update(in);
   in.elapsedMs = 5000; in.discovery.receivedMs = 5000;
   const auto settings = b.update(in);
   if (!expect(settings.screen == nina::ScreenName::SettingsBattery && settings.peerCount == 1,
               "discovery remains active on settings screen")) return false;
-  nina::WearableBehavior wrapped;
+  TestBehavior wrapped;
   in.touchDown = false;
   in.elapsedMs = 0xfffffff0u; in.discovery.receivedMs = in.elapsedMs;
   wrapped.update(in);
@@ -539,8 +560,8 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
 
 int main() {
   {
-    nina::WearableBehavior manual;
-    nina::WearableInput input(100, false, nina::ExpressionName::Idle, {});
+    TestBehavior manual;
+    TestInput input(100, false, nina::ExpressionName::Idle, {});
     manual.triggerJump(100);
     manual.update(input);
     input.elapsedMs = 500;
@@ -553,10 +574,10 @@ int main() {
   }
 
   {
-    nina::WearableBehavior batch;
+    TestBehavior batch;
     const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
     nina::DiscoveryObservation discovery = {peer, 12, -40, 100};
-    nina::WearableInput in(100, false, nina::ExpressionName::Idle, {}, 1);
+    TestInput in(100, false, nina::ExpressionName::Idle, {}, 1);
     in.headingValid = true;
     in.headingDegrees = 90;
     const nina::DirectionObservation directions[] = {
@@ -576,8 +597,8 @@ int main() {
                 "missing heading centers gaze after a batched frame")) return 1;
   }
 
-  nina::WearableBehavior staleAcceleration;
-  nina::WearableInput stale(100, false, nina::ExpressionName::Idle, {});
+  TestBehavior staleAcceleration;
+  TestInput stale(100, false, nina::ExpressionName::Idle, {});
   stale.accelerationMagnitudeG = 0.4f;
   staleAcceleration.update(stale);
   stale.elapsedMs = 150;
@@ -585,8 +606,8 @@ int main() {
   stale.accelerationMagnitudeG = 3.0f;
   if (!expect(!staleAcceleration.update(stale).jumpOverlayActive,
               "stale acceleration and an isolated impact do not trigger a jump")) return 1;
-  nina::WearableBehavior walking;
-  nina::WearableInput step(50114, false, nina::ExpressionName::Idle, {});
+  TestBehavior walking;
+  TestInput step(50114, false, nina::ExpressionName::Idle, {});
   step.accelerationValid = true;
   step.accelerationMagnitudeG = 0.449f;
   walking.update(step);
@@ -594,8 +615,8 @@ int main() {
   step.accelerationMagnitudeG = 3.699f;
   if (!expect(!walking.update(step).jumpOverlayActive,
               "recorded walking does not trigger a jump without gravity")) return 1;
-  nina::WearableBehavior missingGravity;
-  nina::WearableInput sample(17640, false, nina::ExpressionName::Idle, {});
+  TestBehavior missingGravity;
+  TestInput sample(17640, false, nina::ExpressionName::Idle, {});
   sample.accelerationValid = true;
   sample.accelerationMagnitudeG = 0.198f;
   missingGravity.update(sample);
@@ -606,7 +627,7 @@ int main() {
   if (!jumpOverridesBlink()) return 1;
   if (!tiltAndFocusedAnimation()) return 1;
   if (!movementOverlaysFocusedInteraction()) return 1;
-  nina::WearableBehavior transition;
+  TestBehavior transition;
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
   transition.update({0, false, nina::ExpressionName::Idle, battery});
   const auto before = transition.update({100, false, nina::ExpressionName::Idle, battery});

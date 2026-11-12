@@ -61,17 +61,14 @@ struct DirectionObservation {
 
 struct WearableInput {
   WearableInput(uint32_t time, bool touch, ExpressionName requested, BatterySnapshot power,
-                uint64_t identity = 0, DiscoveryObservation observation = {})
+                uint64_t identity = 0)
       : elapsedMs(time), touchDown(touch), expression(requested), battery(power),
-        localId(identity), discovery(observation) {}
+        localId(identity) {}
   uint32_t elapsedMs;
   bool touchDown;
   ExpressionName expression;
   BatterySnapshot battery;
   uint64_t localId;
-  DiscoveryObservation discovery;
-  uint64_t radioPeerId = 0;
-  int radioRssi = 0;
   float headingDegrees = 0;
   bool headingValid = false;
   bool motionValid = false;
@@ -95,10 +92,6 @@ class WearableBehavior {
  public:
   void triggerJump(uint32_t nowMs) { movement_.triggerJump(nowMs); }
 
-  WearableOutput update(const WearableInput& input) {
-    return update(input, &input.discovery, 1);
-  }
-
   WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count,
                         const DirectionObservation* directions = nullptr, size_t directionCount = 0) {
     updateScreen(input.elapsedMs, input.touchDown);
@@ -106,8 +99,6 @@ class WearableBehavior {
     updatePeers(input.elapsedMs, input.localId, observations, count);
     if (targetReset_) direction_.select(0);
     direction_.select(targetId_);
-    if (input.headingValid) direction_.observe(input.radioPeerId, input.headingDegrees,
-                                              input.radioRssi, input.elapsedMs);
     for (size_t i = 0; i < directionCount; ++i)
       direction_.observe(directions[i].peerId, directions[i].headingDegrees,
                          directions[i].rssi, directions[i].observedMs);
@@ -231,8 +222,7 @@ class WearableBehavior {
     const auto& y = b.metrics;
     return {b.name,
       {color(a.colors.background, b.colors.background), color(a.colors.face, b.colors.face),
-       color(a.colors.eye, b.colors.eye), color(a.colors.mouth, b.colors.mouth),
-       color(a.colors.effect, b.colors.effect)},
+       color(a.colors.eye, b.colors.eye), color(a.colors.mouth, b.colors.mouth)},
       {value(x.eyeWidth, y.eyeWidth), value(x.eyeOpen, y.eyeOpen),
        value(x.eyeOffsetX, y.eyeOffsetX),
        value(x.eyeOffsetY, y.eyeOffsetY), value(x.mouthWidth, y.mouthWidth),

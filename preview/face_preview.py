@@ -19,16 +19,46 @@ PRESETS = json.loads((ROOT / "shared" / "expression_presets.json").read_text())[
 def export_presets(presets: list[dict], path: Path) -> None:
     header = render(presets)  # Validate before replacing any existing file.
     payload = json.dumps({"presets": presets}, indent=2) + "\n"
-    descriptor, temporary = tempfile.mkstemp(dir=path.parent, suffix=".json")
-    try:
-        with os.fdopen(descriptor, "w") as stream:
-            stream.write(payload)
-        os.replace(temporary, path)
-    finally:
-        if os.path.exists(temporary):
-            os.unlink(temporary)
-    if path.resolve() == SOURCE.resolve():
-        OUTPUT.write_text(header)
+    canonical = path.resolve() == SOURCE.resolve()
+    with tempfile.TemporaryDirectory(dir=path.parent) as source_dir:
+        staged_source = Path(source_dir) / "presets.json"
+        staged_source.write_text(payload)
+        if not canonical:
+            os.replace(staged_source, path)
+            return
+        with tempfile.TemporaryDirectory(dir=OUTPUT.parent) as header_dir:
+            staged_header = Path(header_dir) / "new.h"
+            staged_header.write_text(header)
+            backup = None
+            had_header = OUTPUT.exists()
+            if had_header:
+                descriptor, backup_name = tempfile.mkstemp(dir=OUTPUT.parent, suffix=".backup.h")
+                backup = Path(backup_name)
+                try:
+                    with os.fdopen(descriptor, "wb") as stream:
+                        stream.write(OUTPUT.read_bytes())
+                except BaseException:
+                    backup.unlink()
+                    raise
+            try:
+                os.replace(staged_header, OUTPUT)
+                try:
+                    os.replace(staged_source, path)
+                except OSError as error:
+                    try:
+                        if had_header:
+                            os.replace(backup, OUTPUT)
+                        else:
+                            OUTPUT.unlink()
+                    except OSError as rollback_error:
+                        recovery = f"Previous header saved at {backup}" if backup else "Remove the generated header"
+                        backup = None
+                        raise OSError(f"Export failed; rollback failed. {recovery}.") from rollback_error
+                    raise error
+            finally:
+                if backup and backup.exists():
+                    backup.unlink()
+
 
 
 def expression_geometry(geometry, preset):

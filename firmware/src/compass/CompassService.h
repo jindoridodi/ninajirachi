@@ -20,6 +20,39 @@ struct CompassHeading {
 
 class CompassService {
  public:
+  bool restore(TwoWire& bus, uint8_t address) {
+    Preferences prefs;
+    if (!prefs.begin("nina-verified", true)) return false;
+    const bool verified = prefs.getUChar("address", 0) == address;
+    prefs.end();
+    return verified && Qmc5883p::probe(bus, address) && begin(bus, {true, address});
+  }
+
+  bool verify(TwoWire& bus, uint8_t address, bool scanned) {
+    if (!scanned) return false;
+    Preferences prefs;
+    if (!prefs.begin("nina-verified", false)) return false;
+    const bool forgotten = prefs.isKey("address") && prefs.getUChar("address", 0) == 0;
+    prefs.end();
+    if ((forgotten && !clearCalibration()) || !begin(bus, {true, address})) return false;
+    if (!prefs.begin("nina-verified", false)) { begin(bus); return false; }
+    const bool saved = prefs.putUChar("address", address) == 1;
+    prefs.end();
+    if (!saved) begin(bus);
+    return saved;
+  }
+
+  bool forgetVerification(TwoWire& bus, bool& calibrationCleared) {
+    begin(bus);
+    calibrationCleared = false;
+    Preferences prefs;
+    if (!prefs.begin("nina-verified", false)) return false;
+    const bool forgotten = prefs.putUChar("address", 0) == 1;
+    prefs.end();
+    if (forgotten) calibrationCleared = clearCalibration();
+    return forgotten;
+  }
+
   bool begin(TwoWire& bus, CompassConfig config = {}) {
     if (storageOpen_) storage_.end();
     storageOpen_ = false;
@@ -93,6 +126,13 @@ class CompassService {
   uint32_t calibrationSamples() const { return samples_; }
 
  private:
+  static bool clearCalibration() {
+    Preferences prefs;
+    if (!prefs.begin("nina-compass", false)) return false;
+    const bool ok = !prefs.isKey("cal-v1") || prefs.remove("cal-v1");
+    prefs.end();
+    return ok;
+  }
   struct Record { uint32_t version; CompassCalibrationData data; };
   static constexpr uint32_t kStorageVersion = 0x4E430001;
   static bool usable(const CompassCalibrationData& data) {

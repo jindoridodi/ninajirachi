@@ -10,7 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "shared" / "expression_presets.json"
 OUTPUT = ROOT / "firmware" / "src" / "face" / "ExpressionPresets.generated.h"
-COLOR_KEYS = ("background", "face", "eye", "mouth", "effect")
+COLOR_KEYS = ("background", "face", "eye", "mouth")
 METRIC_BOUNDS = {
     "eyeWidth": (1, 100), "eyeOpen": (1, 100),
     "eyeOffsetX": (-60, 60), "eyeOffsetY": (-60, 60),

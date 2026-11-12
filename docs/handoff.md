@@ -5,7 +5,7 @@
 `main` contains the parameterized reference face, movement behavior, compass service, expression/settings screen, BLE peer discovery, and ESP-NOW direction evidence. Software integration is present; physical operation still needs the checks below.
 
 - `shared/face_geometry.json` defines the rounded-triangle outline, solid eyes, and double-U mouth. The direct wearable renderer, optional LVGL component, and desktop preview share this geometry.
-- `shared/expression_presets.json` defines colors, eye openness/offsets, mouth width/depth, and effects. Generate the firmware headers with `tools/generate_face_presets.py` and `tools/face_geometry.py`.
+- `shared/expression_presets.json` defines colors, eye openness/offsets, mouth width/depth, and tongue extension. Generate the firmware headers with `tools/generate_face_presets.py` and `tools/face_geometry.py`.
 - `WearableBehavior` coordinates expressions, peer selection, approximate gaze, touch holds, and the movement overlay. Tilt shifts the solid eyes; a jump temporarily overrides the expression and then resumes it.
 - The Arduino sketch uses the official Waveshare direct driver. LVGL is available as a separate face component, not a required firmware dependency.
 

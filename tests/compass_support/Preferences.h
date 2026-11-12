@@ -7,6 +7,8 @@ class Preferences {
  public:
   static std::vector<uint8_t> bytes;
   static bool failOpen, failWrite;
+  static bool failRemove, verifiedKey;
+  static uint8_t verifiedAddress;
   bool begin(const char*, bool = false) { return !failOpen; }
   size_t getBytesLength(const char*) { return bytes.size(); }
   size_t getBytes(const char*, void* data, size_t size) {
@@ -20,9 +22,17 @@ class Preferences {
     return size;
   }
   bool remove(const char*) {
-    if (failWrite) return false;
+    if (failWrite || failRemove) return false;
     bytes.clear();
     return true;
+  }
+  bool isKey(const char* key) { return std::strcmp(key, "address") == 0 ? verifiedKey : !bytes.empty(); }
+  uint8_t getUChar(const char*, uint8_t fallback = 0) { return verifiedKey ? verifiedAddress : fallback; }
+  size_t putUChar(const char*, uint8_t value) {
+    if (failWrite) return 0;
+    verifiedKey = true;
+    verifiedAddress = value;
+    return 1;
   }
   void end() {}
 };

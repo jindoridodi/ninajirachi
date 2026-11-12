@@ -5,8 +5,33 @@
 std::vector<uint8_t> Preferences::bytes;
 bool Preferences::failOpen = false;
 bool Preferences::failWrite = false;
+bool Preferences::failRemove = false;
+bool Preferences::verifiedKey = false;
+uint8_t Preferences::verifiedAddress = 0;
 
 int main() {
+  {
+    TwoWire replacementBus;
+    replacementBus.registers[0] = 0x80;
+    nina::CompassService lifecycle;
+    Preferences::bytes = {1, 2, 3};
+    Preferences::failRemove = true;
+    bool cleared = true;
+    assert(lifecycle.forgetVerification(replacementBus, cleared));
+    assert(!cleared && Preferences::verifiedAddress == 0);
+    assert(!lifecycle.verify(replacementBus, 0x2c, true));
+    Preferences::failRemove = false;
+    Preferences::failWrite = true;
+    assert(!lifecycle.verify(replacementBus, 0x2c, true));
+    assert(Preferences::verifiedAddress == 0);
+    Preferences::failWrite = false;
+    assert(lifecycle.verify(replacementBus, 0x2c, true));
+    assert(Preferences::bytes.empty() && Preferences::verifiedAddress == 0x2c);
+    nina::CompassService rebooted;
+    assert(rebooted.restore(replacementBus, 0x2c));
+    assert(!rebooted.calibrated());
+    Preferences::verifiedKey = false;
+  }
   TwoWire bus;
   bus.registers[0] = 0x80;
   nina::CompassService compass;
