@@ -4,7 +4,7 @@
 
 namespace nina {
 
-enum class ExpressionName { Idle, Curious, Happy, Surprised, Excited };
+enum class ExpressionName { Idle = 0, Curious = 1, Excited = 2 };
 
 struct Color {
   uint32_t rgb;
@@ -25,6 +25,7 @@ struct FaceMetrics {
   int16_t eyeOffsetY;
   int16_t mouthWidth;
   int16_t mouthHeight;
+  int16_t tongueOut;
 };
 
 struct ExpressionPreset {

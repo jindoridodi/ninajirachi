@@ -19,7 +19,7 @@ The first prototype supports one peer well. A peer begins with focused interacti
 3. As a wearer, I want the face to blink periodically, so that idle animation feels natural.
 4. As a wearer, I want the solid eyes and the mouth to move during idle and interaction states, so that the device communicates emotion without sound.
 5. As a wearer, I want the face to react to tilt and orientation, so that small movements produce expressive behavior.
-6. As a wearer, I want a jump to trigger surprised eyes and a changing or flashing background, so that the device visibly reacts to movement.
+6. As a wearer, I want a jump to trigger wider eyes and a changing or flashing background, so that the device visibly reacts to movement.
 7. As a wearer, I want one jump to produce one debounced reaction, so that sensor noise does not create repeated surprises.
 8. As a wearer, I want the jump reaction to appear immediately over the current expression, so that the movement response feels timely.
 9. As a wearer, I want the focused or excited interaction to resume after the jump reaction, so that a jump does not erase the peer interaction.

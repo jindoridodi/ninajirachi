@@ -14,14 +14,14 @@ The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` d
 nina::LvglFace face;
 face.create(lv_scr_act(), nina::idlePreset());
 // Later, from the animation loop:
-face.render(nina::expressionPreset(nina::ExpressionName::Happy));
+face.render(nina::expressionPreset(nina::ExpressionName::Excited));
 ```
 
 The Arduino sketch's `FaceRenderer` draws this same face through the verified direct Waveshare path; the placeholder renderer has been removed. `LvglFace` is available for LVGL display integrations. `shared/face_geometry.json` contains the outline and mouth cubic control points in reference-image coordinates, eye rectangles, corner radius, and stroke widths. Both firmware renderers and the Tk preview use this geometry; after editing it, run `python3 tools/face_geometry.py` to regenerate `src/face/FaceGeometry.generated.h` (`--check` verifies it). LVGL draws the sampled curves with rounded line segments. Objects and point buffers persist across expression updates.
 
-Run `python3 preview/face_preview.py` to tune eye width/openness, `eyeOffsetX/Y`, mouth width/depth, and colors. Gaze shifts the solid eyes. There is no decorative dot above the face; the jump background cycles through a fixed palette. Export writes only the current expression parameters. The reference idle values are eyeWidth=36, eyeOpen=42, mouthWidth=42, mouthHeight=14; these scale the traced geometry. Re-export saved presets made with the previous model before using them with this version.
+Run `python3 preview/face_preview.py` to tune eye width/openness, `eyeOffsetX/Y`, mouth width/depth, tongue extension (`tongueOut`, 0–20), and colors. Gaze shifts the solid eyes. There is no decorative dot above the face; the jump background flashes through bright colors every 100 ms, changing the starting color and order on each jump. The jump face opens smoothly even during a blink, with a gentler eye shape and a short, wide black tongue that grows out over 400 ms over the unchanged mouth; the face and background ease back to the current expression over the final quarter of the overlay. Export writes only the current expression parameters. The reference idle values are eyeWidth=36, eyeOpen=42, mouthWidth=42, mouthHeight=14; these scale the traced geometry. Re-export saved presets made with the previous model before using them with this version.
 
-For a headless visual check, `python3 tools/render_face_preview.py /tmp/face.png` draws the same preview to PNG (requires Pillow). Use `--preset happy` to inspect another preset. Run `python3 tests/face_geometry_test.py` to check the reference proportions, valid canvas options, and generated geometry.
+For a headless visual check, `python3 tools/render_face_preview.py /tmp/face.png` draws the same preview to PNG (requires Pillow). Use `--preset excited` to inspect another preset. Run `python3 tests/face_geometry_test.py` to check the reference proportions, valid canvas options, and generated geometry.
 
 The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up.
 
@@ -40,9 +40,9 @@ Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC mi
 
 ## Runtime controls
 
-Hold the face for 5 seconds to open battery/settings. Release, then hold for 3 seconds to return. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Serial commands `0`–`4` select idle, curious, happy, surprised, and excited presets for testing.
+Hold the face for 5 seconds to open battery/settings. Release, then hold for 3 seconds to return. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Serial commands `0`, `1`, and `2` select idle, curious, and excited presets for testing.
 
-At 115200 baud, send `j` to toggle temporary jump diagnostic output. Each `[DEBUG-jump]` sample contains loop time, behavior time, sensor timestamp, fresh and motion-valid flags, vertical acceleration in g, raw acceleration in mg, gyro in degrees per second, and overlay state. Logging can slow sampling, so leave it off outside testing.
+At 115200 baud, send `t` to trigger the jump reaction without moving the wearable. Send `j` to toggle temporary jump diagnostic output. Each `[DEBUG-jump]` sample contains loop time, behavior time, sensor timestamp, fresh and motion-valid flags, vertical acceleration in g, raw acceleration in mg, gyro in degrees per second, and overlay state. Logging can slow sampling, so leave it off outside testing.
 
 The external compass starts disabled until verified. The compass uses a separate I²C controller on GPIO15 (SDA) and GPIO16 (SCL), while the onboard touch controller and IMU remain on GPIO6/GPIO7. At 115200 baud, send `s` to scan the compass bus. After checking the physical QMC5883P marking, 3.3 V wiring, and sensor-axis alignment, send `v` to enable the detected `0x2C` device. The adapter also verifies chip identity. Successful verification is saved in NVS; on later boots the firmware probes the address and checks the chip again before enabling it. Send `u` to forget verification and calibration before replacing or remounting the sensor, then physically inspect, scan, and verify again. If storage reports a failure, do not replace the sensor until forgetting verification succeeds. Send `c` to collect calibration while rotating the assembled wearable through all axes, `w` to save, `x` to cancel, and `r` to toggle raw/heading logs. Calibration is stored per board in NVS. Recalibrate after changing the sensor, mounting, or enclosure.
 

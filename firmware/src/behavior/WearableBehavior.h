@@ -93,6 +93,8 @@ struct WearableOutput {
 
 class WearableBehavior {
  public:
+  void triggerJump(uint32_t nowMs) { movement_.triggerJump(nowMs); }
+
   WearableOutput update(const WearableInput& input) {
     return update(input, &input.discovery, 1);
   }
@@ -234,7 +236,7 @@ class WearableBehavior {
       {value(x.eyeWidth, y.eyeWidth), value(x.eyeOpen, y.eyeOpen),
        value(x.eyeOffsetX, y.eyeOffsetX),
        value(x.eyeOffsetY, y.eyeOffsetY), value(x.mouthWidth, y.mouthWidth),
-       value(x.mouthHeight, y.mouthHeight)}};
+       value(x.mouthHeight, y.mouthHeight), value(x.tongueOut, y.tongueOut)}};
   }
 
   void updateScreen(uint32_t elapsedMs, bool touchDown) {
@@ -273,8 +275,7 @@ class WearableBehavior {
 
   static void animate(ExpressionPreset& face, uint32_t elapsedMs) {
     const uint32_t phaseMs = elapsedMs % kBlinkPeriodMs;
-    const bool blinking = face.name != ExpressionName::Surprised &&
-                          face.name != ExpressionName::Excited &&
+    const bool blinking = face.name != ExpressionName::Excited &&
                           phaseMs >= kBlinkPeriodMs - kBlinkDurationMs;
     if (blinking) {
       const float openness = fabsf(float(phaseMs) - (kBlinkPeriodMs - kBlinkDurationMs / 2)) /
@@ -286,7 +287,7 @@ class WearableBehavior {
     if (face.name == ExpressionName::Idle || face.name == ExpressionName::Curious) {
       face.metrics.mouthHeight += lroundf(sinf(float(elapsedMs % 5600) * 6.2831853f / 5600));
     }
-    if (face.name == ExpressionName::Happy || face.name == ExpressionName::Excited) {
+    if (face.name == ExpressionName::Excited) {
       face.metrics.mouthHeight += lroundf(2 * sinf(float(elapsedMs % 1000) * 6.2831853f / 1000));
     }
   }

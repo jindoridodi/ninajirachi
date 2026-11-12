@@ -23,8 +23,7 @@ The expected QMC5883P I²C address is `0x2C` ([Adafruit reference](https://learn
 
 ### Wiring and mechanical constraints
 
-- Power the QMC5883P module from 3.3 V.
-- Connect the module's `SDA`, `SCL`, and `GND` to the ESP32-S3 I²C bus; use the board's documented 3.3 V supply pin for sensor power.
+- Connect the QMC5883P module's `SDA` to GPIO15 and `SCL` to GPIO16, `VCC` to the board's 3.3 V supply, and `GND` to board ground.
 - Confirm the exact Waveshare GPIO mapping, module pin labels, pull-ups, and detected I²C address before wiring.
 - Mount the magnetometer away from metal, permanent magnets, the battery, display speaker or motor if added later, and high-current battery wiring. Keep its sensing face and axis orientation fixed relative to the display.
 - Calibrate each physical wearable after the magnetometer is installed in its final enclosure. Repeat calibration if the enclosure, battery location, attachment hardware, or nearby wiring changes.
@@ -58,7 +57,7 @@ Render the face from parameters rather than maintaining separate images for ever
 
 The face is a white filled rounded triangle with black eyes and mouth on a black background, with its wide aspect ratio preserved inside 240×240. The previous blue face color was `#0000EE`, saved here for future reference. `shared/face_geometry.json` supplies the curves and eye proportions used by the firmware renderer, LVGL component, and desktop preview. After geometry edits, run `python3 tools/face_geometry.py`.
 
-An expression preset supplies eye openness, `eyeOffsetX/Y` gaze offsets, mouth width/depth, and colors. Jump overlays cycle the background through several colors. The face has no decorative dot above it. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes. Exported presets use only these current parameters; re-export any saved presets made with the placeholder model.
+An expression preset supplies eye openness, `eyeOffsetX/Y` gaze offsets, mouth width/depth, optional tongue extension (`tongueOut`), and colors. Jump overlays cycle the background through several colors. The face has no decorative dot above it. Interpolate between presets for smooth blinking, gaze, tilt, jump overlays, and interaction changes. Exported presets use only these current parameters; re-export any saved presets made with the placeholder model.
 
 ### Face authoring
 
@@ -74,8 +73,6 @@ The animation loop should keep input sampling, peer tracking, state selection, a
 
 - `idle`: gentle eye motion and occasional blink
 - `curious`: target-directed gaze and slightly wider eyes
-- `happy`: bright eyes, animated mouth, and positive effects
-- `surprised`: wide eyes and a deeper mouth curve
 - `excited`: heightened animation after one peer remains nearby for a sustained period
 
 Blink periodically, but let jump and excited reactions temporarily override the idle blink schedule. Keep animation timing non-blocking so sensor and wireless updates continue while frames are drawn.
@@ -92,7 +89,7 @@ The settings/battery screen is read-only initially. Show battery voltage, chargi
 Use the built-in QMI8658 accelerometer and gyroscope:
 
 - Detect a jump from a short-lived acceleration pattern followed by a change in vertical motion or orientation.
-- On a jump, flash or change the background and show surprised eyes.
+- On a jump, flash or change the background and show wider eyes.
 - Use gyroscope and accelerometer readings for tilt/orientation behavior, such as small expression or eye-offset adjustments.
 - Tune thresholds while the device is worn; a desk test is not enough.
 
@@ -171,7 +168,7 @@ Useful data records are a peer record (`id`, `rssi`, `lastSeen`, and optional di
 - The parameterized face renders correctly at 240×240 without visible layer artifacts.
 - The desktop face preview can inspect the same expression presets used by the wearable.
 - Blinking and expression transitions do not block sensor or wireless processing.
-- A single jump causes one debounced surprised reaction.
+- A single jump causes one debounced jump reaction.
 - Tilt changes behavior without causing unstable jitter.
 - A unit sees its own stable ID and ignores malformed or stale peer data.
 - Two units discover each other and select the stronger recent signal.

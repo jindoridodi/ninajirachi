@@ -36,6 +36,13 @@ class MovementBehavior {
  public:
   explicit MovementBehavior(MovementTuning tuning = kDefaultMovementTuning) : tuning_(tuning) {}
 
+  void triggerJump(uint32_t nowMs) {
+    ++jumpSequence_;
+    overlayStartedAtMs_ = cooldownStartedAtMs_ = nowMs;
+    overlayActive_ = cooldownActive_ = true;
+    jumpPending_ = false;
+  }
+
   MovementRenderState update(const MovementSnapshot& motion, const ExpressionPreset& underlying,
                              uint32_t nowMs, bool valid = true, bool accelerationValid = false,
                              float accelerationMagnitudeG = 0) {
@@ -51,9 +58,7 @@ class MovementBehavior {
     if (jumpPending_ && nowMs - jumpStartedAtMs_ > kJumpPatternWindowMs) jumpPending_ = false;
     if (jumpValid && jumpPending_ && jumpAcceleration >= tuning_.jumpAccelerationThresholdG &&
         !cooldownActive_) {
-      overlayStartedAtMs_ = cooldownStartedAtMs_ = nowMs;
-      overlayActive_ = cooldownActive_ = true;
-      jumpPending_ = false;
+      triggerJump(nowMs);
     }
 
     if (!tiltInitialized_) { filteredRoll_ = valid ? motion.rollDegrees : 0; tiltInitialized_ = true; }
@@ -63,7 +68,7 @@ class MovementBehavior {
     else filteredRoll_ = fmaxf(desiredRoll, filteredRoll_ - step);
     lastTiltMs_ = nowMs;
     MovementRenderState result = {withTilt({filteredRoll_, motion.verticalAccelerationG}, underlying), overlayActive_};
-    if (result.jumpOverlayActive) result.preset = surprisedOverlay(result.preset, nowMs - overlayStartedAtMs_);
+    if (result.jumpOverlayActive) result.preset = jumpOverlay(result.preset, nowMs - overlayStartedAtMs_, tuning_.jumpOverlayDurationMs, jumpSequence_);
     return result;
   }
 
@@ -77,15 +82,38 @@ class MovementBehavior {
     return adjusted;
   }
 
-  static ExpressionPreset surprisedOverlay(ExpressionPreset preset, uint32_t elapsedMs) {
-    constexpr uint32_t colors[] = {0xff0044, 0x0055ff, 0x00aa55, 0x9900cc, 0xdd7700, 0x00aaaa};
-    preset.colors.background.rgb = colors[(elapsedMs / 200) % (sizeof(colors) / sizeof(colors[0]))];
-    preset.metrics.eyeOpen += 24;
-    preset.metrics.mouthHeight += 26;
+  static ExpressionPreset jumpOverlay(ExpressionPreset preset, uint32_t elapsedMs, uint32_t durationMs, uint8_t sequence) {
+    constexpr uint32_t colors[] = {0xff315f, 0x00e5ff, 0xffdf00, 0xe050ff, 0x32ff65, 0xff9a10};
+    const float phase = durationMs ? float(elapsedMs) / durationMs : 1.0f;
+    const float release = fmaxf(0, (phase - 0.75f) / 0.25f);
+    const float strength = 1 - release * release * (3 - 2 * release);
+    const float attack = fminf(1, elapsedMs / 150.0f);
+    const float eyeStrength = strength * attack * attack * (3 - 2 * attack);
+    auto toward = [strength](int value, int target) {
+      return static_cast<int16_t>(lroundf(value + (target - value) * strength));
+    };
+    const uint32_t step = elapsedMs / 100;
+    const uint32_t flash = colors[(sequence + step * (sequence % 2 ? 1 : 5)) % 6];
+    uint32_t background = 0;
+    for (int shift = 16; shift >= 0; shift -= 8)
+      background |= uint32_t(toward((preset.colors.background.rgb >> shift) & 255,
+                                    (flash >> shift) & 255)) << shift;
+    preset.colors.background.rgb = background;
+    auto eyeToward = [eyeStrength](int value, int target) {
+      return static_cast<int16_t>(lroundf(value + (target - value) * eyeStrength));
+    };
+    preset.metrics.eyeWidth = eyeToward(preset.metrics.eyeWidth, 38);
+    preset.metrics.eyeOpen = eyeToward(preset.metrics.eyeOpen, 48);
+    preset.metrics.eyeOffsetY = eyeToward(preset.metrics.eyeOffsetY, 2);
+    const float tongueAttack = fminf(1, elapsedMs / 400.0f);
+    const float tongueStrength = strength * tongueAttack * tongueAttack * (3 - 2 * tongueAttack);
+    preset.metrics.tongueOut = static_cast<int16_t>(lroundf(preset.metrics.tongueOut +
+        (12 - preset.metrics.tongueOut) * tongueStrength));
     return preset;
   }
 
   MovementTuning tuning_;
+  uint8_t jumpSequence_ = 0;
   bool jumpPending_ = false;
   uint32_t jumpStartedAtMs_ = 0;
   bool tiltInitialized_ = false;

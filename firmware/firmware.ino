@@ -125,13 +125,14 @@ void serialCommands() {
     compass.cancelCalibration();
   } else if (command == 'r') {
     showRaw = !showRaw;
+  } else if (command == 't') {
+    behavior.triggerJump(millis());
+    Serial.println("Jump reaction triggered");
   } else if (command == 'j') {
     showJumpDebug = !showJumpDebug;
     Serial.println(showJumpDebug ? "[DEBUG-jump] enabled" : "[DEBUG-jump] disabled");
-  } else if (command >= '0' && command <= '4') {
-    const nina::ExpressionName names[] = {nina::ExpressionName::Idle, nina::ExpressionName::Curious,
-      nina::ExpressionName::Happy, nina::ExpressionName::Surprised, nina::ExpressionName::Excited};
-    expression = names[command - '0'];
+  } else if (command >= '0' && command <= '2') {
+    expression = static_cast<nina::ExpressionName>(command - '0');
   }
 }
 
@@ -157,7 +158,7 @@ void setup() {
   if (!radioReady) Serial.println("ESP-NOW initialization failed");
   snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
            unsigned(identity));
-  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; j jump debug; 0-4 expressions");
+  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; t test jump; j jump debug; 0 idle; 1 curious; 2 excited");
   renderer.render(surface, nina::idlePreset(), 240, 240);
   surface.present();
 }
