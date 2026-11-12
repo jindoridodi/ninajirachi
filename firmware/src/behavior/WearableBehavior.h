@@ -10,8 +10,8 @@
 
 namespace nina {
 
-constexpr uint32_t kFaceSettingsHoldMs = 5000;
-constexpr uint32_t kSettingsFaceHoldMs = 3000;
+constexpr uint32_t kTapMaxMs = 500;
+constexpr uint32_t kTapGapMs = 500;
 constexpr uint32_t kSettingsInactivityMs = 7000;
 constexpr uint32_t kExpressionTransitionMs = 300;
 constexpr uint32_t kBlinkPeriodMs = 4000;
@@ -134,31 +134,24 @@ class WearableBehavior {
   }
 
   void updateScreen(uint32_t elapsedMs, bool touchDown) {
-    if (touchDown) {
-      lastTouchMs_ = elapsedMs;
-      if (!wasTouchDown_) {
-        touchStartMs_ = elapsedMs;
-        gestureScreen_ = screen_;
-      }
-
-      if (!awaitTouchRelease_) {
-        const uint32_t heldMs = elapsedMs - touchStartMs_;
-        if (gestureScreen_ == ScreenName::Face && heldMs >= kFaceSettingsHoldMs) {
-          screen_ = ScreenName::SettingsBattery;
-          awaitTouchRelease_ = true;
-        } else if (gestureScreen_ == ScreenName::SettingsBattery &&
-                   heldMs >= kSettingsFaceHoldMs) {
-          screen_ = ScreenName::Face;
-          awaitTouchRelease_ = true;
+    if (touchDown && !wasTouchDown_) {
+      touchStartMs_ = elapsedMs;
+      if (tapCount_ && elapsedMs - lastTouchMs_ > kTapGapMs) tapCount_ = 0;
+    } else if (!touchDown && wasTouchDown_) {
+      if (elapsedMs - touchStartMs_ <= kTapMaxMs) {
+        ++tapCount_;
+        if (tapCount_ >= (screen_ == ScreenName::Face ? 10 : 5)) {
+          screen_ = screen_ == ScreenName::Face ? ScreenName::SettingsBattery : ScreenName::Face;
+          tapCount_ = 0;
         }
+      } else {
+        tapCount_ = 0;
       }
-    } else {
-      if (wasTouchDown_) lastTouchMs_ = elapsedMs;
-      awaitTouchRelease_ = false;
-      if (screen_ == ScreenName::SettingsBattery &&
-          elapsedMs - lastTouchMs_ >= kSettingsInactivityMs) {
-        screen_ = ScreenName::Face;
-      }
+      lastTouchMs_ = elapsedMs;
+    } else if (!touchDown && screen_ == ScreenName::SettingsBattery &&
+               elapsedMs - lastTouchMs_ >= kSettingsInactivityMs) {
+      screen_ = ScreenName::Face;
+      tapCount_ = 0;
     }
     wasTouchDown_ = touchDown;
   }
@@ -191,11 +184,10 @@ class WearableBehavior {
   float gazeOffset_ = 0;
   uint32_t gazeUpdatedMs_ = 0;
   ScreenName screen_ = ScreenName::Face;
-  ScreenName gestureScreen_ = ScreenName::Face;
   uint32_t touchStartMs_ = 0;
   uint32_t lastTouchMs_ = 0;
   bool wasTouchDown_ = false;
-  bool awaitTouchRelease_ = false;
+  uint8_t tapCount_ = 0;
   bool initialized_ = false;
   uint32_t transitionStartMs_ = 0;
   ExpressionPreset face_ = idlePreset();

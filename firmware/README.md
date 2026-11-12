@@ -2,7 +2,7 @@
 
 Open `firmware.ino` in Arduino IDE and target `ESP32S3 Dev Module` with `esp32 by Espressif Systems` 2.0.12. Select 16 MB Flash and enabled QSPI PSRAM.
 
-The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` driver, not LVGL or TFT_eSPI. Copy the driver files listed in `src/waveshare/README.md` from the official demo package before compiling. Those files provide the verified GC9A01A display definition: SPI GPIO 8/9/10/11/12/14 with active-high backlight GPIO 2. The runtime also reads the touch count for hold gestures and uses the QMI8658 driver for gravity measurements in compass tilt compensation.
+The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` driver, not LVGL or TFT_eSPI. Copy the driver files listed in `src/waveshare/README.md` from the official demo package before compiling. Those files provide the verified GC9A01A display definition: SPI GPIO 8/9/10/11/12/14 with active-high backlight GPIO 2. The runtime also reads the touch count for tap gestures and uses the QMI8658 driver for gravity measurements in compass tilt compensation.
 
 ## Face authoring
 
@@ -29,7 +29,7 @@ Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC mi
 
 ## Runtime controls
 
-Hold the face for 5 seconds to open battery/settings. Release, then hold for 3 seconds to return. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Serial commands `0`, `1`, and `2` select idle, curious, and excited presets for testing.
+Tap the face 10 times quickly to open battery/settings, then tap 5 times quickly to return. Each tap and the gap between taps must be no longer than 500 ms. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Serial commands `0`, `1`, and `2` select idle, curious, and excited presets for testing.
 
 At 115200 baud, send `t` to trigger the jump reaction without moving the wearable. Send `j` to toggle temporary jump diagnostic output. Each `[DEBUG-jump]` sample contains loop time, behavior time, sensor timestamp, fresh and motion-valid flags, vertical acceleration in g, raw acceleration in mg, gyro in degrees per second, and overlay state. Logging can slow sampling, so leave it off outside testing.
 

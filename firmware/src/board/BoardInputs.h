@@ -5,7 +5,7 @@
 
 namespace nina {
 
-// Read the touch count directly: interrupt events alone cannot measure a held finger.
+// Read the touch count directly to detect presses and releases.
 inline bool touchIsDown() {
   Wire.beginTransmission(0x15);
   Wire.write(0x02);
