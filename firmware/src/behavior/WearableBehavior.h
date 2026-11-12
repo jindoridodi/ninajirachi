@@ -5,9 +5,8 @@
 #include <math.h>
 
 #include "../face/ExpressionPreset.h"
-#include "DirectionEvidence.h"
+#include "NearbyInteraction.h"
 #include "MovementBehavior.h"
-#include "../discovery/BeaconProtocol.h"
 
 namespace nina {
 
@@ -39,18 +38,6 @@ struct BatterySnapshot {
 
 struct SettingsBatteryDisplay {
   BatterySnapshot battery;
-};
-
-constexpr uint32_t kPeerGraceMs = 3000;
-constexpr uint32_t kSustainedProximityMs = 10000;
-constexpr int kTargetSwitchMarginDb = 6;
-constexpr size_t kMaxPeers = 4;
-
-struct DirectionObservation {
-  uint64_t peerId;
-  int rssi;
-  float headingDegrees;
-  uint32_t observedMs;
 };
 
 struct WearableInput {
@@ -89,16 +76,11 @@ class WearableBehavior {
   WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count,
                         const DirectionObservation* directions = nullptr, size_t directionCount = 0) {
     updateScreen(input.elapsedMs, input.touchDown);
-    targetReset_ = false;
-    updatePeers(input.elapsedMs, input.localId, observations, count);
-    if (targetReset_) direction_.select(0);
-    direction_.select(targetId_);
-    for (size_t i = 0; i < directionCount; ++i)
-      direction_.observe(directions[i].peerId, directions[i].headingDegrees,
-                         directions[i].rssi, directions[i].observedMs);
-    const Gaze gaze = direction_.gaze(input.elapsedMs, input.headingValid, input.headingDegrees);
+    const auto nearby = nearby_.update(input.elapsedMs, input.localId, observations, count,
+                                       input.headingValid, input.headingDegrees, directions, directionCount);
+    const Gaze gaze = nearby.gaze;
     ExpressionName requested = input.expression;
-    if (targetId_) requested = input.elapsedMs - targetSinceMs_ >= kSustainedProximityMs
+    if (nearby.targetId) requested = nearby.sustainedProximity
         ? ExpressionName::Excited : ExpressionName::Curious;
     if (!initialized_) {
       face_ = from_ = expressionPreset(requested);
@@ -115,87 +97,23 @@ class WearableBehavior {
     ExpressionPreset face = expressionPreset(requested);
     animate(face, input.elapsedMs);
     face_ = blend(from_, face, t);
-    const float desiredGaze = targetId_ && gaze == Gaze::Left ? -8 :
-                              targetId_ && gaze == Gaze::Right ? 8 : 0;
+    const float desiredGaze = nearby.targetId && gaze == Gaze::Left ? -8 :
+                              nearby.targetId && gaze == Gaze::Right ? 8 : 0;
     const float step = float(input.elapsedMs - gazeUpdatedMs_) * (16.0f / kExpressionTransitionMs);
     if (desiredGaze > gazeOffset_) gazeOffset_ = fminf(desiredGaze, gazeOffset_ + step);
     else gazeOffset_ = fmaxf(desiredGaze, gazeOffset_ - step);
     gazeUpdatedMs_ = input.elapsedMs;
     ExpressionPreset visible = face_;
-    if (targetId_) {
+    if (nearby.targetId) {
       visible.metrics.eyeOffsetX = lroundf(gazeOffset_) + idleEyeMotion(input.elapsedMs);
     } else visible.metrics.eyeOffsetX += lroundf(gazeOffset_);
     const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid,
         input.accelerationValid, input.accelerationMagnitudeG);
-    return {screen_, motion.preset, {input.battery}, peerCount_, targetId_, gaze, motion.jumpOverlayActive};
+    return {screen_, motion.preset, {input.battery}, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive};
   }
 
  private:
-  struct Peer { uint64_t id; uint32_t seen; int rssi; };
-
-  static uint64_t observationId(const DiscoveryObservation& observation, uint32_t now, uint64_t localId) {
-    return now - observation.receivedMs < 0x80000000u && observation.rssi < 0 &&
-        observation.rssi >= -127 && observation.peerId != localId ? observation.peerId : 0;
-  }
-
-  void updatePeers(uint32_t now, uint64_t localId, const DiscoveryObservation* observations, size_t count) {
-    for (size_t i = 0; i < kMaxPeers; ++i) {
-      Peer& peer = peers_[i];
-      bool hasRecentObservation = false;
-      for (size_t j = 0; peer.id && j < count; ++j) {
-        const auto& observation = observations[j];
-        if (now - observation.receivedMs < kPeerGraceMs &&
-            observationId(observation, now, localId) == peer.id) {
-          hasRecentObservation = true;
-          break;
-        }
-      }
-      if (peer.id && now - peer.seen >= kPeerGraceMs && !hasRecentObservation) {
-        if (peer.id == targetId_) { targetId_ = 0; targetReset_ = true; }
-        peer.id = 0;
-      }
-    }
-    for (size_t j = 0; j < count; ++j) {
-      const auto& observation = observations[j];
-      const uint64_t id = observationId(observation, now, localId);
-      if (!id) continue;
-      Peer* slot = nullptr;
-      for (size_t i = 0; i < kMaxPeers; ++i) {
-        if (peers_[i].id == id) { slot = &peers_[i]; break; }
-        if (!peers_[i].id && !slot) slot = &peers_[i];
-      }
-      if (slot && !slot->id && now - observation.receivedMs >= kPeerGraceMs) continue;
-      if (slot && (!slot->id || now - observation.receivedMs <= now - slot->seen)) {
-        if (slot->id && observation.receivedMs - slot->seen >= kPeerGraceMs && id == targetId_) {
-          targetId_ = 0; targetReset_ = true;
-        }
-        *slot = {id, observation.receivedMs, observation.rssi};
-      }
-    }
-    for (size_t i = 0; i < kMaxPeers; ++i) {
-      Peer& peer = peers_[i];
-      if (peer.id && now - peer.seen >= kPeerGraceMs) {
-        if (peer.id == targetId_) { targetId_ = 0; targetReset_ = true; }
-        peer.id = 0;
-      }
-    }
-    Peer* current = nullptr;
-    Peer* strongest = nullptr;
-    peerCount_ = 0;
-    for (size_t i = 0; i < kMaxPeers; ++i) {
-      Peer& peer = peers_[i];
-      if (!peer.id) continue;
-      ++peerCount_;
-      if (peer.id == targetId_) current = &peer;
-      if (!strongest || peer.rssi > strongest->rssi) strongest = &peer;
-    }
-    if (!current || (strongest && strongest->rssi >= current->rssi + kTargetSwitchMarginDb)) {
-      targetId_ = strongest ? strongest->id : 0;
-      targetSinceMs_ = now;
-    }
-  }
-
   static ExpressionPreset blend(const ExpressionPreset& a, const ExpressionPreset& b, float t) {
     auto value = [t](int x, int y) { return static_cast<int16_t>(lroundf(x + (y - x) * t)); };
     auto color = [value](Color x, Color y) {
@@ -268,15 +186,10 @@ class WearableBehavior {
     }
   }
 
-  Peer peers_[kMaxPeers] = {};
-  DirectionEvidence direction_;
+  NearbyInteraction nearby_;
   MovementBehavior movement_;
   float gazeOffset_ = 0;
   uint32_t gazeUpdatedMs_ = 0;
-  size_t peerCount_ = 0;
-  uint64_t targetId_ = 0;
-  bool targetReset_ = false;
-  uint32_t targetSinceMs_ = 0;
   ScreenName screen_ = ScreenName::Face;
   ScreenName gestureScreen_ = ScreenName::Face;
   uint32_t touchStartMs_ = 0;
