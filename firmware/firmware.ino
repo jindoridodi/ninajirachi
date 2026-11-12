@@ -50,6 +50,9 @@ void renderDirection(const nina::WearableOutput& output, bool headingValid) {
   surface.fillRect(0, 0, 240, 240, {0});
   Paint_DrawString_EN(79, 35, "PEER TEST", &Font12, BLACK, WHITE);
   Paint_DrawString_EN(102, 60, "FRONT", &Font12, BLACK, WHITE);
+  const char* calibration = !compassReady ? "CAL UNKNOWN" :
+      compass.calibrated() ? "CAL SAVED" : "NO CAL SAVED";
+  Paint_DrawString_EN(75, 195, calibration, &Font12, BLACK, WHITE);
   surface.fillRect(116, 116, 8, 8, {0xffffff});
   if (isfinite(output.relativeDirection)) {
     const float radians = output.relativeDirection * 3.14159265f / 180.0f;
