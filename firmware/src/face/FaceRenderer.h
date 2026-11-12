@@ -46,9 +46,10 @@ class FaceRenderer {
   }
 
   static void drawTongue(DrawSurface& surface, const FaceMetrics& metrics, int ox, int oy) {
-    if (metrics.tongueOut <= 0) return;
-    const auto anchor = faceMouthPoint(kFaceMouth[sizeof(kFaceMouth) / sizeof(kFaceMouth[0]) / 2], metrics);
-    roundedRect(surface, ox + anchor.x - 9, oy + anchor.y + 8, 18, metrics.tongueOut + 4, 9, {0});
+    const auto tongue = faceTongue(metrics);
+    if (tongue.visible)
+      roundedRect(surface, ox + tongue.x, oy + tongue.y, tongue.width, tongue.height,
+                  tongue.radius, {0});
   }
 
   static void fillFace(DrawSurface& surface, int ox, int oy, Color color) {

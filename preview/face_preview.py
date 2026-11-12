@@ -3,62 +3,15 @@
 
 import json
 from pathlib import Path
-import os
 import sys
-import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools.generate_face_presets import COLOR_KEYS, METRIC_BOUNDS, SOURCE, OUTPUT, render
+from tools.generate_face_presets import COLOR_KEYS, METRIC_BOUNDS, SOURCE, render, export_presets
 from tools.face_geometry import display_geometry
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = json.loads((ROOT / "shared" / "expression_presets.json").read_text())["presets"]
-
-
-def export_presets(presets: list[dict], path: Path) -> None:
-    header = render(presets)  # Validate before replacing any existing file.
-    payload = json.dumps({"presets": presets}, indent=2) + "\n"
-    canonical = path.resolve() == SOURCE.resolve()
-    with tempfile.TemporaryDirectory(dir=path.parent) as source_dir:
-        staged_source = Path(source_dir) / "presets.json"
-        staged_source.write_text(payload)
-        if not canonical:
-            os.replace(staged_source, path)
-            return
-        with tempfile.TemporaryDirectory(dir=OUTPUT.parent) as header_dir:
-            staged_header = Path(header_dir) / "new.h"
-            staged_header.write_text(header)
-            backup = None
-            had_header = OUTPUT.exists()
-            if had_header:
-                descriptor, backup_name = tempfile.mkstemp(dir=OUTPUT.parent, suffix=".backup.h")
-                backup = Path(backup_name)
-                try:
-                    with os.fdopen(descriptor, "wb") as stream:
-                        stream.write(OUTPUT.read_bytes())
-                except BaseException:
-                    backup.unlink()
-                    raise
-            try:
-                os.replace(staged_header, OUTPUT)
-                try:
-                    os.replace(staged_source, path)
-                except OSError as error:
-                    try:
-                        if had_header:
-                            os.replace(backup, OUTPUT)
-                        else:
-                            OUTPUT.unlink()
-                    except OSError as rollback_error:
-                        recovery = f"Previous header saved at {backup}" if backup else "Remove the generated header"
-                        backup = None
-                        raise OSError(f"Export failed; rollback failed. {recovery}.") from rollback_error
-                    raise error
-            finally:
-                if backup and backup.exists():
-                    backup.unlink()
-
 
 
 def expression_geometry(geometry, preset):
@@ -73,6 +26,12 @@ def expression_geometry(geometry, preset):
               mouth_y + int((y-mouth_y)*preset["mouthHeight"]/14))
              for x, y in geometry["mouth"]]
     return eyes, mouth
+
+
+def tongue_geometry(mouth, preset):
+    x, y = mouth[len(mouth) // 2]
+    tongue = preset.get("tongueOut", 0)
+    return x - 9, y + 8, 18, max(1, tongue + 4), 9, tongue > 0
 
 
 def draw(canvas, preset: dict) -> None:
@@ -103,10 +62,9 @@ def draw(canvas, preset: dict) -> None:
     eyes, mouth = expression_geometry(geometry, preset)
     for x, y, width, height in eyes:
         rounded_rect(x, y, width, height, geometry["eyeRadius"], preset["eye"])
-    tongue = preset.get("tongueOut", 0)
-    if tongue > 0:
-        x, y = mouth[len(mouth) // 2]
-        rounded_rect(x - 9, y + 8, 18, tongue + 4, 9, "#000000")
+    x, y, width, height, radius, visible = tongue_geometry(mouth, preset)
+    if visible:
+        rounded_rect(x, y, width, height, radius, "#000000")
     stroke(mouth, preset["mouth"], geometry["mouthWidth"])
 
 

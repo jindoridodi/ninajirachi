@@ -6,6 +6,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <string.h>
+#include "BeaconProtocol.h"
 
 namespace nina {
 constexpr uint8_t kPeerWifiChannel = 1;
@@ -18,9 +19,7 @@ class EspNowDiscovery {
   bool begin(uint64_t identity) {
     queue_ = xQueueCreate(8, sizeof(RadioPacket));
     if (!queue_) return false;
-    payload_[0] = 'N'; payload_[1] = 'I'; payload_[2] = 'N'; payload_[3] = 'A';
-    payload_[4] = 1; payload_[5] = 2;
-    for (int i = 11; i >= 6; --i) { payload_[i] = identity & 0xff; identity >>= 8; }
+    encodeBeacon(payload_, BeaconType::Direction, identity);
     if (!WiFi.mode(WIFI_STA) || esp_wifi_set_channel(kPeerWifiChannel, WIFI_SECOND_CHAN_NONE) != ESP_OK ||
         esp_now_init() != ESP_OK) return false;
     esp_now_peer_info_t peer = {};
@@ -57,11 +56,8 @@ class EspNowDiscovery {
     for (int i = 16; i < 22; ++i) if (f[i] != 0xff) return;
     if (f[24] != 127 || f[25] != 0x18 || f[26] != 0xfe || f[27] != 0x34 ||
         f[32] != 221 || f[33] != 17 || f[34] != 0x18 || f[35] != 0xfe ||
-        f[36] != 0x34 || f[37] != 4 || f[38] != 1 ||
-        f[39] != 'N' || f[40] != 'I' || f[41] != 'N' || f[42] != 'A' ||
-        f[43] != 1 || f[44] != 2) return;
-    uint64_t identity = 0;
-    for (int i = 45; i < 51; ++i) identity = (identity << 8) | f[i];
+        f[36] != 0x34 || f[37] != 4 || f[38] != 1) return;
+    const uint64_t identity = decodeBeacon(f + 39, kBeaconSize, BeaconType::Direction);
     if (!identity || packet->rx_ctrl.rssi >= 0) return;
     RadioPacket observation = {identity, packet->rx_ctrl.rssi, millis()};
     xQueueSend(instance()->queue_, &observation, 0);

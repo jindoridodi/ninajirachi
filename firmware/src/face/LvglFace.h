@@ -32,7 +32,6 @@ class LvglFace {
     lv_obj_clear_flag(tongue_, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(tongue_, lv_color_hex(0), 0);
     lv_obj_set_style_bg_opa(tongue_, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(tongue_, 9, 0);
     mouth_ = line(mouthPoints_, sizeof(mouthPoints_) / sizeof(mouthPoints_[0]),
                   kFaceMouthWidth);
     render(preset);
@@ -58,11 +57,12 @@ class LvglFace {
       mouthPoints_[i].x = point.x;
       mouthPoints_[i].y = point.y;
     }
-    const auto anchor = faceMouthPoint(kFaceMouth[sizeof(kFaceMouth) / sizeof(kFaceMouth[0]) / 2], m);
-    if (m.tongueOut > 0) lv_obj_clear_flag(tongue_, LV_OBJ_FLAG_HIDDEN);
+    const auto tongue = faceTongue(m);
+    if (tongue.visible) lv_obj_clear_flag(tongue_, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(tongue_, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_set_pos(tongue_, anchor.x - 9, anchor.y + 8);
-    lv_obj_set_size(tongue_, 18, std::max(1, int(m.tongueOut) + 4));
+    lv_obj_set_pos(tongue_, tongue.x, tongue.y);
+    lv_obj_set_size(tongue_, tongue.width, tongue.height);
+    lv_obj_set_style_radius(tongue_, tongue.radius, 0);
     lv_line_set_points(mouth_, mouthPoints_, sizeof(mouthPoints_) / sizeof(mouthPoints_[0]));
     lv_obj_set_style_line_color(mouth_, lv_color_hex(preset.colors.mouth.rgb), 0);
     lv_obj_invalidate(mouth_);

@@ -7,6 +7,7 @@
 #include "../face/ExpressionPreset.h"
 #include "DirectionEvidence.h"
 #include "MovementBehavior.h"
+#include "../discovery/BeaconProtocol.h"
 
 namespace nina {
 
@@ -44,13 +45,6 @@ constexpr uint32_t kPeerGraceMs = 3000;
 constexpr uint32_t kSustainedProximityMs = 10000;
 constexpr int kTargetSwitchMarginDb = 6;
 constexpr size_t kMaxPeers = 4;
-
-struct DiscoveryObservation {
-  const uint8_t* data;
-  size_t size;
-  int rssi;
-  uint32_t receivedMs;
-};
 
 struct DirectionObservation {
   uint64_t peerId;
@@ -141,16 +135,8 @@ class WearableBehavior {
   struct Peer { uint64_t id; uint32_t seen; int rssi; };
 
   static uint64_t observationId(const DiscoveryObservation& observation, uint32_t now, uint64_t localId) {
-    uint64_t id = 0;
-    if (observation.data && now - observation.receivedMs < 0x80000000u &&
-        observation.size == 12 && observation.rssi < 0 &&
-        observation.rssi >= -127 && observation.data[0] == 'N' && observation.data[1] == 'I' &&
-        observation.data[2] == 'N' && observation.data[3] == 'A' &&
-        observation.data[4] == 1 && observation.data[5] == 1) {
-      for (size_t i = 6; i < 12; ++i) id = (id << 8) | observation.data[i];
-      if (id == localId) id = 0;
-    }
-    return id;
+    return now - observation.receivedMs < 0x80000000u && observation.rssi < 0 &&
+        observation.rssi >= -127 && observation.peerId != localId ? observation.peerId : 0;
   }
 
   void updatePeers(uint32_t now, uint64_t localId, const DiscoveryObservation* observations, size_t count) {

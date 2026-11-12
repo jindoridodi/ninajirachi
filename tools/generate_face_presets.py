@@ -5,6 +5,8 @@ import argparse
 import json
 from pathlib import Path
 import sys
+import os
+import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,6 +70,52 @@ def render(presets: list[dict]) -> str:
     return "\n".join(rows)
 
 
+def export_presets(presets: list[dict], path: Path, *, source: Path = SOURCE, output: Path = OUTPUT) -> None:
+    header = render(presets)  # Validate before replacing any existing file.
+    payload = json.dumps({"presets": presets}, indent=2) + "\n"
+    canonical = path.resolve() == source.resolve()
+    if canonical:
+        path = source.resolve()
+    with tempfile.TemporaryDirectory(dir=path.parent) as source_dir:
+        staged_source = Path(source_dir) / "presets.json"
+        staged_source.write_text(payload)
+        if not canonical:
+            os.replace(staged_source, path)
+            return
+        with tempfile.TemporaryDirectory(dir=output.parent) as header_dir:
+            staged_header = Path(header_dir) / "new.h"
+            staged_header.write_text(header)
+            backup = None
+            had_header = output.exists()
+            if had_header:
+                descriptor, backup_name = tempfile.mkstemp(dir=output.parent, suffix=".backup.h")
+                backup = Path(backup_name)
+                try:
+                    with os.fdopen(descriptor, "wb") as stream:
+                        stream.write(output.read_bytes())
+                except BaseException:
+                    backup.unlink()
+                    raise
+            try:
+                os.replace(staged_header, output)
+                try:
+                    os.replace(staged_source, path)
+                except OSError as error:
+                    try:
+                        if had_header:
+                            os.replace(backup, output)
+                        else:
+                            output.unlink()
+                    except OSError as rollback_error:
+                        recovery = f"Previous header saved at {backup}" if backup else "Remove the generated header"
+                        backup = None
+                        raise OSError(f"Export failed; rollback failed. {recovery}.") from rollback_error
+                    raise error
+            finally:
+                if backup and backup.exists():
+                    backup.unlink()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
@@ -80,7 +128,10 @@ def main() -> int:
         return 0 if OUTPUT.exists() and OUTPUT.read_text() == expected else 1
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(expected)
+    with tempfile.TemporaryDirectory(dir=OUTPUT.parent) as folder:
+        staged = Path(folder) / "header.h"
+        staged.write_text(expected)
+        os.replace(staged, OUTPUT)
     return 0
 
 
