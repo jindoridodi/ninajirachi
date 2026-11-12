@@ -1,4 +1,4 @@
-"""Shared reference geometry for Tk and LVGL v8 (no raster face assets)."""
+"""Shared reference geometry for the desktop preview and firmware renderer."""
 
 import argparse
 import json
