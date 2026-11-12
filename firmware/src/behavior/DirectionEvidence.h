@@ -41,12 +41,15 @@ class DirectionEvidence {
     }
   }
 
-  Gaze gaze(uint32_t now, bool validHeading, float heading) const {
+  float relativeDirection(uint32_t now, bool validHeading, float heading) const {
     if (!target_ || !validHeading || !isfinite(heading) || !hasConfidence_ ||
-        now - lastTurnMs_ >= kGazeFallbackMs) return Gaze::Center;
+        now - lastTurnMs_ >= kGazeFallbackMs) return NAN;
     int bestIndex;
-    if (!confident(now, bestIndex)) return Gaze::Center;
-    float difference = normalize(float(bestIndex * 45) - heading + 180) - 180;
+    if (!confident(now, bestIndex)) return NAN;
+    return normalize(float(bestIndex * 45) - heading + 180) - 180;
+  }
+
+  static Gaze gaze(float difference) {
     if (difference < -22.5f) return Gaze::Left;
     if (difference > 22.5f) return Gaze::Right;
     return Gaze::Center;

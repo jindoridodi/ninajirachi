@@ -15,16 +15,16 @@ inline FaceEye faceEye(const int16_t (&eye)[4], const FaceMetrics& metrics) {
           eye[1] + (eye[3] - height) / 2 + metrics.eyeOffsetY, width, height};
 }
 
-inline FacePoint faceMouthPoint(FacePoint point, const FaceMetrics& metrics) {
-  return {int16_t(120 + (point.x - 120) * metrics.mouthWidth / 42),
-          int16_t(kFaceMouth[0].y + (point.y - kFaceMouth[0].y) * metrics.mouthHeight / 14)};
+inline MouthPoint faceMouthPoint(MouthPoint point, const FaceMetrics& metrics) {
+  return {120 + (point.x - 120) * metrics.mouthWidth / 42,
+          kFaceMouth[0].y + (point.y - kFaceMouth[0].y) * metrics.mouthHeight / 14};
 }
 
 struct FaceTongue { int x, y, width, height, radius; bool visible; };
 
 inline FaceTongue faceTongue(const FaceMetrics& metrics) {
   const auto anchor = faceMouthPoint(kFaceMouth[sizeof(kFaceMouth) / sizeof(kFaceMouth[0]) / 2], metrics);
-  return {anchor.x - 9, anchor.y + 8, 18, std::max(1, int(metrics.tongueOut) + 4), 9,
+  return {int(anchor.x) - 9, int(anchor.y) + 8, 18, std::max(1, int(metrics.tongueOut) + 4), 9,
           metrics.tongueOut > 0};
 }
 

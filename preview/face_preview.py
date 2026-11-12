@@ -2,6 +2,7 @@
 """A 240x240 desktop preview for the parameterized Ninajirachi face."""
 
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -22,8 +23,8 @@ def expression_geometry(geometry, preset):
         eyes.append((x + int((base_width-width)/2) + preset["eyeOffsetX"],
                      y + int((base_height-height)/2) + preset["eyeOffsetY"], width, height))
     mouth_y = geometry["mouth"][0][1]
-    mouth = [(120 + int((x-120)*preset["mouthWidth"]/42),
-              mouth_y + int((y-mouth_y)*preset["mouthHeight"]/14))
+    mouth = [(120 + (x-120)*preset["mouthWidth"]/42,
+              mouth_y + (y-mouth_y)*preset["mouthHeight"]/14)
              for x, y in geometry["mouth"]]
     return eyes, mouth
 
@@ -31,7 +32,7 @@ def expression_geometry(geometry, preset):
 def tongue_geometry(mouth, preset):
     x, y = mouth[len(mouth) // 2]
     tongue = preset.get("tongueOut", 0)
-    return x - 9, y + 8, 18, max(1, tongue + 4), 9, tongue > 0
+    return int(x) - 9, int(y) + 8, 18, max(1, tongue + 4), 9, tongue > 0
 
 
 def draw(canvas, preset: dict) -> None:
@@ -64,18 +65,48 @@ def draw(canvas, preset: dict) -> None:
         rounded_rect(x, y, width, height, geometry["eyeRadius"], preset["eye"])
     x, y, width, height, radius, visible = tongue_geometry(mouth, preset)
     if visible:
-        rounded_rect(x, y, width, height, radius, "#000000")
+        radius = min(radius, width / 2, height / 2)
+        # Clip the tongue to the lower side of the current mouth curve.
+        for column in range(width * 4):
+            left = x + column / 4
+            center = left + 0.125
+            mouth_y = mouth[0][1]
+            clipped_y = []
+            for (ax, ay), (bx, by) in zip(mouth, mouth[1:]):
+                if bx > ax and ax <= left + 0.25 and bx >= left:
+                    for px in (max(ax, left), min(bx, left + 0.25)):
+                        clipped_y.append(ay + (by-ay) * (px-ax) / (bx-ax))
+            if clipped_y:
+                mouth_y = max(clipped_y)
+            dx = max(0, abs(center - (x + width / 2)) - (width / 2 - radius))
+            inset = radius - (max(0, radius*radius - dx*dx)) ** 0.5
+            top, bottom = math.ceil(max(y + inset, mouth_y) * 4) / 4, y + height - inset
+            if top < bottom:
+                # Pillow includes the right edge; keep strips in separate samples.
+                canvas.create_rectangle(left, top, left + 0.249, bottom,
+                                        fill="#000000", outline="")
     stroke(mouth, preset["mouth"], geometry["mouthWidth"])
 
 
 def main() -> None:
     import tkinter as tk
     from tkinter import filedialog, messagebox
+    from PIL import Image, ImageTk
+    from tools.render_face_preview import RasterCanvas
 
     root = tk.Tk()
     root.title("Ninajirachi face preview")
     canvas = tk.Canvas(root, width=240, height=240, highlightthickness=0)
     canvas.pack()
+
+    def render_preview(preset):
+        raster = RasterCanvas()
+        draw(raster, preset)
+        image = ImageTk.PhotoImage(raster.image.resize((240, 240), Image.Resampling.LANCZOS))
+        canvas.delete("all")
+        canvas.create_image(0, 0, anchor="nw", image=image)
+        canvas.image = image
+
     preset_by_name = {preset["name"]: preset for preset in PRESETS}
     selected = tk.StringVar(value=PRESETS[0]["name"])
     fields = tk.Frame(root)
@@ -93,7 +124,7 @@ def main() -> None:
             updated = [candidate if p["name"] == selected.get() else p for p in PRESETS]
             render(updated)
             preset_by_name[selected.get()].update(candidate)
-            draw(canvas, candidate)
+            render_preview(candidate)
             status.set("")
             return True
         except (ValueError, KeyError) as error:
@@ -103,7 +134,7 @@ def main() -> None:
     def select(name):
         for key, variable in variables.items():
             variable.set(str(preset_by_name[name][key]))
-        draw(canvas, preset_by_name[name])
+        render_preview(preset_by_name[name])
 
     def export():
         if not apply():
@@ -130,7 +161,7 @@ def main() -> None:
     tk.Button(root, text="Export presets JSON", command=export).pack()
     tk.Label(root, textvariable=status, wraplength=430).pack()
     select(selected.get())
-    draw(canvas, preset_by_name[selected.get()])
+    render_preview(preset_by_name[selected.get()])
     root.mainloop()
 
 

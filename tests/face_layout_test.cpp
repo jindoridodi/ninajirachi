@@ -12,7 +12,7 @@ int main() {
     }
     for (const auto& point : nina::kFaceMouth) {
       const auto result = nina::faceMouthPoint(point, metrics);
-      printf("%d %d ", result.x, result.y);
+      printf("%.6f %.6f ", result.x, result.y);
     }
     const auto t = nina::faceTongue(metrics);
     printf("%d %d %d %d %d %d", t.x, t.y, t.width, t.height, t.radius, t.visible);

@@ -67,6 +67,7 @@ struct WearableOutput {
   uint64_t targetId;
   Gaze gaze;
   bool jumpOverlayActive;
+  float relativeDirection;
 };
 
 class WearableBehavior {
@@ -110,7 +111,7 @@ class WearableBehavior {
     const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid,
         input.accelerationValid, input.accelerationMagnitudeG);
-    return {screen_, motion.preset, {input.battery}, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive};
+    return {screen_, motion.preset, {input.battery}, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive, nearby.relativeDirection};
   }
 
  private:

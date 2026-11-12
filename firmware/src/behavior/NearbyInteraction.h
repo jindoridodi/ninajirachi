@@ -24,6 +24,7 @@ struct NearbyInteractionState {
   uint64_t targetId;
   bool sustainedProximity;
   Gaze gaze;
+  float relativeDirection;
 };
 
 class NearbyInteraction {
@@ -37,8 +38,9 @@ class NearbyInteraction {
     for (size_t i = 0; i < directionCount; ++i)
       direction_.observe(directions[i].peerId, directions[i].headingDegrees,
                          directions[i].rssi, directions[i].observedMs);
+    const float direction = direction_.relativeDirection(now, headingValid, headingDegrees);
     return {peerCount_, targetId_, targetId_ && now - targetSinceMs_ >= kSustainedProximityMs,
-            direction_.gaze(now, headingValid, headingDegrees)};
+            DirectionEvidence::gaze(direction), direction};
   }
 
  private:
