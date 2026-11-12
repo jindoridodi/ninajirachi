@@ -80,7 +80,7 @@ Blink periodically, but let jump and excited reactions temporarily override the 
 The touch display has two screen modes:
 
 - `face`: the normal animated Ninajirachi screen
-- `settings/battery`: opened by holding the touchscreen for 5 seconds; a 3-second hold returns to the face, and 7 seconds without touch returns automatically
+- `settings/battery`: opened by 10 quick taps; 5 quick taps return to the face, and 7 seconds without touch returns automatically. Each tap and the gap between taps must be no longer than 500 ms
 
 The settings/battery screen is read-only initially. Show battery voltage, charging state, estimated percentage only when calibrated, and the firmware/device ID. Continue sensor and wireless processing while this screen is visible.
 

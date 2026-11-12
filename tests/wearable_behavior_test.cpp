@@ -92,54 +92,45 @@ bool transitionsFromVisibleBlink() {
                 "interrupted transition reaches its new expression");
 }
 
-bool opensAndClosesSettingsWithTheSpecifiedHolds() {
+nina::WearableOutput tap(TestBehavior& behavior, uint32_t time, nina::BatterySnapshot battery) {
+  behavior.update({time, true, nina::ExpressionName::Idle, battery});
+  return behavior.update({time + 50, false, nina::ExpressionName::Idle, battery});
+}
+
+bool opensAndClosesSettingsWithTaps() {
   TestBehavior behavior;
   const nina::BatterySnapshot battery = {3890, true, true, 72, "NINA-42"};
-
-  behavior.update({0, true, nina::ExpressionName::Idle, battery});
-  const nina::WearableOutput settings = behavior.update({5000, true, nina::ExpressionName::Idle, battery});
-  behavior.update({5100, false, nina::ExpressionName::Idle, battery});
-  behavior.update({6000, true, nina::ExpressionName::Idle, battery});
-  const nina::WearableOutput face = behavior.update({9000, true, nina::ExpressionName::Idle, battery});
-
-  return expect(settings.screen == nina::ScreenName::SettingsBattery,
-                "five-second face hold opens settings") &&
-         expect(settings.settings.battery.millivolts == 3890, "settings exposes battery voltage") &&
-         expect(settings.settings.battery.charging, "settings exposes charging state") &&
-         expect(settings.settings.battery.hasEstimatedPercent &&
-                    settings.settings.battery.estimatedPercent == 72,
-                "settings exposes only calibrated percentage") &&
-         expect(settings.settings.battery.deviceId == battery.deviceId,
-                "settings exposes the device ID") &&
-         expect(face.screen == nina::ScreenName::Face, "three-second settings hold returns to face");
+  for (int i = 0; i < 9; ++i) tap(behavior, i * 200, battery);
+  if (!expect(behavior.update({1750, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::Face, "nine taps do not open settings")) return false;
+  const auto settings = tap(behavior, 1800, battery);
+  if (!expect(settings.screen == nina::ScreenName::SettingsBattery &&
+              settings.settings.battery.millivolts == 3890 && settings.settings.battery.charging &&
+              settings.settings.battery.hasEstimatedPercent && settings.settings.battery.estimatedPercent == 72 &&
+              settings.settings.battery.deviceId == battery.deviceId, "ten taps open settings with battery data")) return false;
+  for (int i = 0; i < 4; ++i) tap(behavior, 2000 + i * 200, battery);
+  if (!expect(behavior.update({2700, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::SettingsBattery, "four taps do not close settings")) return false;
+  return expect(tap(behavior, 2800, battery).screen == nina::ScreenName::Face,
+                "five taps return to face");
 }
 
-bool returnsToFaceAfterSettingsInactivity() {
-  TestBehavior behavior;
-  const nina::BatterySnapshot battery = {3700, false, false, 0, "NINA-2"};
-
-  behavior.update({0, true, nina::ExpressionName::Idle, battery});
-  behavior.update({5000, true, nina::ExpressionName::Idle, battery});
-  behavior.update({5100, false, nina::ExpressionName::Idle, battery});
-  const nina::WearableOutput face = behavior.update({12100, false, nina::ExpressionName::Idle, battery});
-
-  return expect(face.screen == nina::ScreenName::Face,
-                "seven seconds without touch returns settings to face");
-}
-
-bool requiresReleaseAndExactTimeouts() {
+bool requiresQuickTapsAndExactTimeout() {
   TestBehavior behavior;
   nina::BatterySnapshot battery;
-  behavior.update({100, true, nina::ExpressionName::Idle, battery});
-  if (!expect(behavior.update({5099, true, nina::ExpressionName::Idle, battery}).screen ==
-              nina::ScreenName::Face, "settings requires full five-second hold")) return false;
-  behavior.update({5100, true, nina::ExpressionName::Idle, battery});
-  if (!expect(behavior.update({15100, true, nina::ExpressionName::Curious, battery}).screen ==
-              nina::ScreenName::SettingsBattery, "continuing entry hold cannot exit settings")) return false;
-  behavior.update({15200, false, nina::ExpressionName::Curious, battery});
-  if (!expect(behavior.update({22199, false, nina::ExpressionName::Curious, battery}).screen ==
-              nina::ScreenName::SettingsBattery, "idle timeout starts at touch release")) return false;
-  return expect(behavior.update({22200, false, nina::ExpressionName::Curious, battery}).screen ==
+  for (int i = 0; i < 9; ++i) tap(behavior, i * 200, battery);
+  if (!expect(tap(behavior, 2400, battery).screen == nina::ScreenName::Face,
+              "a long gap resets the tap sequence")) return false;
+  behavior.update({2600, true, nina::ExpressionName::Idle, battery});
+  behavior.update({3101, false, nina::ExpressionName::Idle, battery});
+  for (int i = 0; i < 9; ++i) tap(behavior, 3200 + i * 200, battery);
+  if (!expect(behavior.update({4900, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::Face, "a long press resets the tap sequence")) return false;
+  tap(behavior, 5000, battery);
+  tap(behavior, 5200, battery);
+  if (!expect(behavior.update({12249, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::SettingsBattery, "touch resets the inactivity timeout")) return false;
+  return expect(behavior.update({12250, false, nina::ExpressionName::Idle, battery}).screen ==
                 nina::ScreenName::Face, "settings times out at seven seconds");
 }
 
@@ -265,9 +256,8 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
   TestBehavior b;
   nina::BatterySnapshot battery;
   uint64_t p = 2;
-  TestInput in(0, true, nina::ExpressionName::Idle, battery, 1, {p, -50, 0});
-  b.update(in);
-  in.elapsedMs = 5000; in.discovery.receivedMs = 5000;
+  for (int i = 0; i < 10; ++i) tap(b, i * 200, battery);
+  TestInput in(1900, false, nina::ExpressionName::Idle, battery, 1, {p, -50, 1900});
   const auto settings = b.update(in);
   if (!expect(settings.screen == nina::ScreenName::SettingsBattery && settings.peerCount == 1,
               "discovery remains active on settings screen")) return false;
@@ -368,6 +358,5 @@ int main() {
   if (!expect(finished.face.metrics.eyeOpen == 48, "transition reaches requested expression")) return 1;
   return !(sustainedProximityChoosesExpression() && gazeUsesTargetEvidence() && discoveryContinuesInSettingsAndAcrossClockWrap() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
-           opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
-           requiresReleaseAndExactTimeouts());
+           opensAndClosesSettingsWithTaps() && requiresQuickTapsAndExactTimeout());
 }

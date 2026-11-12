@@ -27,7 +27,7 @@ inline SettingsBatteryLines settingsBatteryLines(const SettingsBatteryDisplay& s
     snprintf(result.lines[3], 48, "Battery: Uncalibrated");
   snprintf(result.lines[4], 48, "ID: %.20s", battery.deviceId ? battery.deviceId : "Unknown");
   snprintf(result.lines[5], 48, "FW: %.20s", battery.firmwareId ? battery.firmwareId : "Unknown");
-  snprintf(result.lines[6], 48, "Hold 3s to return");
+  snprintf(result.lines[6], 48, "Tap 5 times to return");
   return result;
 }
 
