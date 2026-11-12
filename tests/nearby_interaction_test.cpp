@@ -51,7 +51,7 @@ bool gazeDuringSteadyTurn() {
     const float angle = now * 20.0f / 1000;
     const float radians = angle * 0.0174532925f;
     const nina::MagneticSample field{int16_t(lroundf(1000 * cosf(radians))),
-                                      int16_t(lroundf(1000 * sinf(radians))), 0};
+                                      int16_t(lroundf(-1000 * sinf(radians))), 0};
     const auto down = gravity.update(now + 1, {0, 0, 1000}, {0, 0, 20}, now);
     heading = calibration.headingDegrees(field, down);
     const bool beacon = now >= nextBeaconMs;
