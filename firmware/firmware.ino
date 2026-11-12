@@ -30,8 +30,8 @@ uint32_t lastLogMs = 0;
 char deviceId[13];
 constexpr uint32_t kFramePeriodMs = 33;
 constexpr uint8_t kCompassAddress = 0x2C;
-constexpr uint8_t kCompassSdaPin = 15;
-constexpr uint8_t kCompassSclPin = 16;
+constexpr uint8_t kCompassSdaPin = 16;
+constexpr uint8_t kCompassSclPin = 15;
 
 void restoreCompass() {
   compassReady = compass.restore(compassBus, kCompassAddress);
@@ -49,7 +49,7 @@ void serialCommands() {
   if (!Serial.available()) return;
   const char command = Serial.read();
   if (command == 's') {
-    Serial.println("Scanning compass I2C bus on SDA15/SCL16...");
+    Serial.println("Scanning compass I2C bus on SDA16/SCL15...");
     scanned = false;
     uint8_t found = 0;
     for (uint8_t address = 1; address < 127; ++address) {

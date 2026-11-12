@@ -23,7 +23,7 @@ The expected QMC5883P I²C address is `0x2C` ([Adafruit reference](https://learn
 
 ### Wiring and mechanical constraints
 
-- Connect the QMC5883P module's `SDA` to GPIO15 and `SCL` to GPIO16, `VCC` to the board's 3.3 V supply, and `GND` to board ground.
+- Connect the QMC5883P module's `SDA` to GPIO16 and `SCL` to GPIO15, `VCC` to the board's 3.3 V supply, and `GND` to board ground.
 - Confirm the exact Waveshare GPIO mapping, module pin labels, pull-ups, and detected I²C address before wiring.
 - Mount the magnetometer away from metal, permanent magnets, the battery, display speaker or motor if added later, and high-current battery wiring. Keep its sensing face and axis orientation fixed relative to the display.
 - Calibrate each physical wearable after the magnetometer is installed in its final enclosure. Repeat calibration if the enclosure, battery location, attachment hardware, or nearby wiring changes.
