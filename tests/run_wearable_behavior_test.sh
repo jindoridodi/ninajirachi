@@ -9,3 +9,6 @@ c++ -std=gnu++11 -Wall -Wextra -Werror tests/settings_battery_renderer_test.cpp 
 
 c++ -std=gnu++11 -Wall -Wextra -Werror tests/nearby_interaction_test.cpp -o /tmp/ninajirachi-nearby-interaction-test
 /tmp/ninajirachi-nearby-interaction-test
+
+c++ -std=gnu++11 -Wall -Wextra -Werror tests/heading_history_test.cpp -o /tmp/ninajirachi-heading-history-test
+/tmp/ninajirachi-heading-history-test
