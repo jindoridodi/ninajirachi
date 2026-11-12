@@ -12,7 +12,8 @@
       "eyeOffsetX": 0,
       "eyeOffsetY": 0,
       "mouthWidth": 42,
-      "mouthHeight": 14
+      "mouthHeight": 14,
+      "tongueOut": 0
     },
     {
       "name": "curious",
@@ -26,35 +27,8 @@
       "eyeOffsetX": 4,
       "eyeOffsetY": -2,
       "mouthWidth": 30,
-      "mouthHeight": 8
-    },
-    {
-      "name": "happy",
-      "background": "#000000",
-      "face": "#FFFFFF",
-      "eye": "#000000",
-      "mouth": "#000000",
-      "effect": "#0000EE",
-      "eyeWidth": 38,
-      "eyeOpen": 38,
-      "eyeOffsetX": 0,
-      "eyeOffsetY": 1,
-      "mouthWidth": 48,
-      "mouthHeight": 20
-    },
-    {
-      "name": "surprised",
-      "background": "#000000",
-      "face": "#FFFFFF",
-      "eye": "#000000",
-      "mouth": "#000000",
-      "effect": "#0000EE",
-      "eyeWidth": 38,
-      "eyeOpen": 58,
-      "eyeOffsetX": 0,
-      "eyeOffsetY": 0,
-      "mouthWidth": 28,
-      "mouthHeight": 32
+      "mouthHeight": 8,
+      "tongueOut": 0
     },
     {
       "name": "excited",
@@ -68,7 +42,8 @@
       "eyeOffsetX": 0,
       "eyeOffsetY": -1,
       "mouthWidth": 52,
-      "mouthHeight": 26
+      "mouthHeight": 26,
+      "tongueOut": 0
     }
   ]
 }

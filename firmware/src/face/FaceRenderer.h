@@ -36,12 +36,19 @@ class FaceRenderer {
                   kFaceEyeRadius, c.eye);
     }
     surface.beginLayer(FaceLayer::Mouth);
+    drawTongue(surface, preset.metrics, ox, oy);
     FacePoint previous = faceMouthPoint(kFaceMouth[0], m);
     for (unsigned i = 1; i < sizeof(kFaceMouth) / sizeof(kFaceMouth[0]); ++i) {
       const FacePoint next = faceMouthPoint(kFaceMouth[i], m);
       stroke(surface, previous, next, ox, oy, kFaceMouthWidth, c.mouth);
       previous = next;
     }
+  }
+
+  static void drawTongue(DrawSurface& surface, const FaceMetrics& metrics, int ox, int oy) {
+    if (metrics.tongueOut <= 0) return;
+    const auto anchor = faceMouthPoint(kFaceMouth[sizeof(kFaceMouth) / sizeof(kFaceMouth[0]) / 2], metrics);
+    roundedRect(surface, ox + anchor.x - 9, oy + anchor.y + 8, 18, metrics.tongueOut + 4, 9, {0});
   }
 
   static void fillFace(DrawSurface& surface, int ox, int oy, Color color) {

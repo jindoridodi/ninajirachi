@@ -73,6 +73,10 @@ def draw(canvas, preset: dict) -> None:
     eyes, mouth = expression_geometry(geometry, preset)
     for x, y, width, height in eyes:
         rounded_rect(x, y, width, height, geometry["eyeRadius"], preset["eye"])
+    tongue = preset.get("tongueOut", 0)
+    if tongue > 0:
+        x, y = mouth[len(mouth) // 2]
+        rounded_rect(x - 9, y + 8, 18, tongue + 4, 9, "#000000")
     stroke(mouth, preset["mouth"], geometry["mouthWidth"])
 
 

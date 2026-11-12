@@ -67,7 +67,7 @@ The runtime face rendered from expression values such as eye openness, eye offse
 _Avoid_: sprite face, image state
 
 **Expression preset**:
-A named set of parameter values that defines a recognizable Ninajirachi emotion, such as idle, curious, happy, surprised, or excited.
+A named set of parameter values that defines a recognizable Ninajirachi emotion, such as idle, curious, or excited.
 _Avoid_: animation file, face asset
 
 **Desktop face preview**:

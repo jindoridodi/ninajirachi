@@ -53,11 +53,17 @@ int main(int argc, char** argv) {
     renderer.render(frame, jump.preset, 240, 240);
     assert(jump.jumpOverlayActive && frame.pixels[0][0] != 0 && frame.pixels[0][0] != 0xffffff);
     assert(frame.pixels[136][120] == 0xffffff);
+    assert(frame.pixels[75][69] == jump.preset.colors.background.rgb);
+    if (time >= 500) {
+      assert(frame.pixels[164][120] == 0);
+      assert(frame.pixels[160][113] == 0);
+    }
+    assert(frame.pixels[170][120] == 0xffffff);
   }
   // Every preset, including extreme authoring values, remains renderable.
-  for (int i = 0; i < 5; ++i) {
+  for (auto name : {nina::ExpressionName::Idle, nina::ExpressionName::Curious, nina::ExpressionName::Excited}) {
     Pixels frame;
-    const auto& expression = nina::expressionPreset(static_cast<nina::ExpressionName>(i));
+    const auto& expression = nina::expressionPreset(name);
     renderer.render(frame, expression, 240, 240);
     for (int y = 0; y < 60; ++y)
       for (int x = 0; x < 240; ++x)

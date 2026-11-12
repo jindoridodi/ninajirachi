@@ -12,6 +12,17 @@ from tools.generate_face_presets import render
 
 
 class PreviewEditorTest(unittest.TestCase):
+    def test_only_remaining_expressions_can_be_exported(self):
+        self.assertEqual([p["name"] for p in PRESETS], ["idle", "curious", "excited"])
+        for name in ("happy", "surprised"):
+            with self.subTest(removed=name), tempfile.TemporaryDirectory() as folder:
+                path = Path(folder) / "presets.json"
+                export_presets(PRESETS, path)
+                old = path.read_bytes()
+                with self.assertRaises(ValueError):
+                    export_presets([*PRESETS, {**PRESETS[0], "name": name}], path)
+                self.assertEqual(path.read_bytes(), old)
+
     def test_colors_require_six_ascii_hex_digits_before_export(self):
         presets = json.loads(json.dumps(PRESETS))
         presets[0]["face"] = "#aBcD09"

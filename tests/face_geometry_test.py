@@ -67,6 +67,15 @@ class FaceGeometryTest(unittest.TestCase):
         self.assertEqual(canvas.image.getpixel((120*4, 136*4)), (255, 255, 255))
         self.assertEqual(canvas.image.getpixel((120*4, 176*4)), (255, 255, 255))
 
+    def test_tongue_is_optional_and_visible(self):
+        normal, tongue = RasterCanvas(), RasterCanvas()
+        draw(normal, PRESETS[0])
+        draw(tongue, {**PRESETS[0], "tongueOut": 12})
+        self.assertEqual(normal.image.getpixel((120*4, 164*4)), (255, 255, 255))
+        self.assertEqual(tongue.image.getpixel((120*4, 164*4)), (0, 0, 0))
+        self.assertEqual(tongue.image.getpixel((113*4, 160*4)), (0, 0, 0))
+        self.assertEqual(tongue.image.getpixel((120*4, 170*4)), (255, 255, 255))
+
     def test_openness_control_changes_the_render(self):
         from PIL import ImageChops
         opened, closed = RasterCanvas(), RasterCanvas()

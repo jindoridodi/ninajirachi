@@ -14,7 +14,7 @@ COLOR_KEYS = ("background", "face", "eye", "mouth", "effect")
 METRIC_BOUNDS = {
     "eyeWidth": (1, 100), "eyeOpen": (1, 100),
     "eyeOffsetX": (-60, 60), "eyeOffsetY": (-60, 60),
-    "mouthWidth": (1, 100), "mouthHeight": (1, 100),
+    "mouthWidth": (1, 100), "mouthHeight": (1, 100), "tongueOut": (0, 20),
 }
 
 
@@ -27,8 +27,8 @@ def color(value: str) -> str:
 
 def render(presets: list[dict]) -> str:
     names = [preset.get("name") for preset in presets]
-    if names != ["idle", "curious", "happy", "surprised", "excited"]:
-        raise ValueError("expected idle, curious, happy, surprised, excited in order")
+    if names != ["idle", "curious", "excited"]:
+        raise ValueError("expected idle, curious, excited in order")
     for preset in presets:
         for key, (low, high) in METRIC_BOUNDS.items():
             value = preset[key]

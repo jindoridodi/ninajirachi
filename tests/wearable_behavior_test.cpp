@@ -30,19 +30,13 @@ bool keepsIdleFaceAlive() {
 
 bool rendersNamedExpressions() {
   nina::WearableBehavior behavior;
-  nina::WearableBehavior happyBehavior, surprisedBehavior, excitedBehavior;
+  nina::WearableBehavior excitedBehavior;
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
-
-  const nina::WearableOutput curious = behavior.update({1000, false, nina::ExpressionName::Curious, battery});
-  const nina::WearableOutput happy = happyBehavior.update({1000, false, nina::ExpressionName::Happy, battery});
-  const nina::WearableOutput surprised = surprisedBehavior.update({1000, false, nina::ExpressionName::Surprised, battery});
-  const nina::WearableOutput excited = excitedBehavior.update({1000, false, nina::ExpressionName::Excited, battery});
-
+  const auto curious = behavior.update({1000, false, nina::ExpressionName::Curious, battery});
+  const auto excited = excitedBehavior.update({1000, false, nina::ExpressionName::Excited, battery});
   return expect(curious.face.name == nina::ExpressionName::Curious, "renders curious") &&
-         expect(happy.face.name == nina::ExpressionName::Happy, "renders happy") &&
-         expect(surprised.face.name == nina::ExpressionName::Surprised, "renders surprised") &&
          expect(excited.face.name == nina::ExpressionName::Excited, "renders excited") &&
-         expect(happy.face.metrics.mouthHeight != curious.face.metrics.mouthHeight,
+         expect(excited.face.metrics.mouthHeight != curious.face.metrics.mouthHeight,
                 "expressions have distinct mouths");
 }
 
@@ -62,19 +56,19 @@ bool transitionsFromVisibleBlink() {
   nina::WearableBehavior behavior;
   nina::BatterySnapshot battery;
   const auto blink = behavior.update({3900, false, nina::ExpressionName::Idle, battery});
-  const auto change = behavior.update({3900, false, nina::ExpressionName::Surprised, battery});
+  const auto change = behavior.update({3900, false, nina::ExpressionName::Excited, battery});
   if (!expect(blink.face.metrics.eyeOpen == 3 && change.face.metrics.eyeOpen == 3 &&
               change.face.metrics.eyeOffsetX == blink.face.metrics.eyeOffsetX &&
               change.face.metrics.mouthHeight == blink.face.metrics.mouthHeight,
               "changing expression during blink preserves visible geometry")) return false;
-  const auto halfway = behavior.update({4050, false, nina::ExpressionName::Surprised, battery});
-  if (!expect(halfway.face.metrics.eyeOpen > 3 && halfway.face.metrics.eyeOpen < 58,
-              "blink opens smoothly into surprised eyes")) return false;
-  const auto changedAgain = behavior.update({4050, false, nina::ExpressionName::Happy, battery});
+  const auto halfway = behavior.update({4050, false, nina::ExpressionName::Excited, battery});
+  if (!expect(halfway.face.metrics.eyeOpen > 3 && halfway.face.metrics.eyeOpen < 48,
+              "blink opens smoothly into excited eyes")) return false;
+  const auto changedAgain = behavior.update({4050, false, nina::ExpressionName::Curious, battery});
   if (!expect(changedAgain.face.metrics.eyeOpen == halfway.face.metrics.eyeOpen,
               "interrupted transition also preserves visible eyes")) return false;
-  const auto finished = behavior.update({4350, false, nina::ExpressionName::Happy, battery});
-  return expect(finished.face.metrics.eyeOpen == nina::expressionPreset(nina::ExpressionName::Happy).metrics.eyeOpen,
+  const auto finished = behavior.update({4350, false, nina::ExpressionName::Curious, battery});
+  return expect(finished.face.metrics.eyeOpen == nina::expressionPreset(nina::ExpressionName::Curious).metrics.eyeOpen,
                 "interrupted transition reaches its new expression");
 }
 
@@ -120,12 +114,12 @@ bool requiresReleaseAndExactTimeouts() {
   if (!expect(behavior.update({5099, true, nina::ExpressionName::Idle, battery}).screen ==
               nina::ScreenName::Face, "settings requires full five-second hold")) return false;
   behavior.update({5100, true, nina::ExpressionName::Idle, battery});
-  if (!expect(behavior.update({15100, true, nina::ExpressionName::Happy, battery}).screen ==
+  if (!expect(behavior.update({15100, true, nina::ExpressionName::Curious, battery}).screen ==
               nina::ScreenName::SettingsBattery, "continuing entry hold cannot exit settings")) return false;
-  behavior.update({15200, false, nina::ExpressionName::Happy, battery});
-  if (!expect(behavior.update({22199, false, nina::ExpressionName::Happy, battery}).screen ==
+  behavior.update({15200, false, nina::ExpressionName::Curious, battery});
+  if (!expect(behavior.update({22199, false, nina::ExpressionName::Curious, battery}).screen ==
               nina::ScreenName::SettingsBattery, "idle timeout starts at touch release")) return false;
-  return expect(behavior.update({22200, false, nina::ExpressionName::Happy, battery}).screen ==
+  return expect(behavior.update({22200, false, nina::ExpressionName::Curious, battery}).screen ==
                 nina::ScreenName::Face, "settings times out at seven seconds");
 }
 
@@ -293,6 +287,8 @@ bool movementOverlaysFocusedInteraction() {
   const auto normal = b.update(in);
   in.elapsedMs = 550; in.verticalAccelerationG = 0; b.update(in);
   in.elapsedMs = 600; in.verticalAccelerationG = 2.1f;
+  b.update(in);
+  in.elapsedMs = 750; in.verticalAccelerationG = 1.0f;
   const auto jump = b.update(in);
   in.elapsedMs = 600 + nina::kDefaultMovementTuning.jumpOverlayDurationMs;
   in.discovery.receivedMs = in.elapsedMs;
@@ -327,6 +323,8 @@ bool jumpOverridesBlink() {
   nina::WearableInput in(3800, false, nina::ExpressionName::Idle, battery);
   in.motionValid = true; in.verticalAccelerationG = 0.4f; b.update(in);
   in.elapsedMs = 3900; in.verticalAccelerationG = 2.1f;
+  b.update(in);
+  in.elapsedMs = 3950;
   const auto jump = b.update(in);
   return expect(jump.jumpOverlayActive && jump.face.metrics.eyeOpen > 3,
                 "jump overrides a closed blink");
@@ -541,6 +539,20 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
 
 int main() {
   {
+    nina::WearableBehavior manual;
+    nina::WearableInput input(100, false, nina::ExpressionName::Idle, {});
+    manual.triggerJump(100);
+    manual.update(input);
+    input.elapsedMs = 500;
+    const auto jump = manual.update(input);
+    if (!expect(jump.jumpOverlayActive && jump.face.metrics.tongueOut == 12,
+                "manual jump shows the same transient reaction")) return 1;
+    input.elapsedMs = 2100;
+    if (!expect(!manual.update(input).jumpOverlayActive,
+                "manual jump expires normally")) return 1;
+  }
+
+  {
     nina::WearableBehavior batch;
     const uint8_t peer[] = {'N','I','N','A',1,1,0,0,0,0,0,2};
     nina::DiscoveryObservation discovery = {peer, 12, -40, 100};
@@ -598,15 +610,15 @@ int main() {
   const nina::BatterySnapshot battery = {3850, false, false, 0, "NINA-1"};
   transition.update({0, false, nina::ExpressionName::Idle, battery});
   const auto before = transition.update({100, false, nina::ExpressionName::Idle, battery});
-  const auto changed = transition.update({100, false, nina::ExpressionName::Surprised, battery});
+  const auto changed = transition.update({100, false, nina::ExpressionName::Excited, battery});
   if (!expect(changed.face.metrics.eyeOpen == before.face.metrics.eyeOpen,
               "expression change starts at the visible face")) return 1;
-  const auto halfway = transition.update({250, false, nina::ExpressionName::Surprised, battery});
+  const auto halfway = transition.update({250, false, nina::ExpressionName::Excited, battery});
   if (!expect(halfway.face.metrics.eyeOpen > before.face.metrics.eyeOpen &&
-              halfway.face.metrics.eyeOpen < nina::expressionPreset(nina::ExpressionName::Surprised).metrics.eyeOpen,
+              halfway.face.metrics.eyeOpen < nina::expressionPreset(nina::ExpressionName::Excited).metrics.eyeOpen,
               "expression passes through intermediate geometry")) return 1;
-  const auto finished = transition.update({400, false, nina::ExpressionName::Surprised, battery});
-  if (!expect(finished.face.metrics.eyeOpen == 58, "transition reaches requested expression")) return 1;
+  const auto finished = transition.update({400, false, nina::ExpressionName::Excited, battery});
+  if (!expect(finished.face.metrics.eyeOpen == 48, "transition reaches requested expression")) return 1;
   return !(gazeRejectsOtherPeerAndInsufficientCoverage() && samePeerReturnClearsGaze() && gazeAgesIndividualSamples() && gazeUsesAveragesAndStopsWhenStill() && gazeRejectsWeakAndUnstableEvidence() && gazeUsesTargetEvidence() && multiHopGapResetsContinuity() && multiHopQueuedContinuity(0) && multiHopQueuedContinuity(0xfffff800u) && batchDoesNotBridgeAGapOutOfOrder() && batchKeepsNewestSignal() && batchDoesNotReviveStalePeers() && batchedDelayedContinuity(false, 0) && batchedDelayedContinuity(true, 0) && batchedDelayedContinuity(false, 0xfffff800u) && delayedContinuousProximity(0) && delayedContinuousProximity(0xfffff800u) && olderObservationsDoNotReplaceNewerOnes() && delayedObservationsExpireFromReceiveTime() && discoveryContinuesInSettingsAndAcrossClockWrap() && returningPeerStartsFocusedAgain() && sustainedProximityAndCapacity() && selectsStableTargetsAndIgnoresInvalidPackets() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
            opensAndClosesSettingsWithTheSpecifiedHolds() && returnsToFaceAfterSettingsInactivity() &&
