@@ -10,12 +10,12 @@ namespace nina {
 class WaveshareSurface final : public DrawSurface {
  public:
   bool begin() {
-    if (DEV_Module_Init() != 0) return false;
+    if (DEV_Module_Init() != 0) return fail();
 
-    if (!psramInit()) return false;
+    if (!psramInit()) return fail();
 
     image_ = static_cast<UWORD*>(ps_malloc(LCD_1IN28_HEIGHT * LCD_1IN28_WIDTH * sizeof(UWORD)));
-    if (image_ == nullptr) return false;
+    if (image_ == nullptr) return fail();
 
     LCD_1IN28_Init(HORIZONTAL);
     Paint_NewImage(reinterpret_cast<UBYTE*>(image_), LCD_1IN28.WIDTH, LCD_1IN28.HEIGHT, 0, 0);
@@ -38,6 +38,12 @@ class WaveshareSurface final : public DrawSurface {
   }
 
  private:
+  static bool fail() {
+    digitalWrite(2, LOW);
+    pinMode(2, OUTPUT);
+    return false;
+  }
+
   static UWORD rgb565(Color color) {
     const uint8_t red = (color.rgb >> 16) & 0xFF;
     const uint8_t green = (color.rgb >> 8) & 0xFF;

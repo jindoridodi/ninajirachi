@@ -12,3 +12,6 @@ c++ -std=gnu++11 -Wall -Wextra -Werror tests/nearby_interaction_test.cpp -o /tmp
 
 c++ -std=gnu++11 -Wall -Wextra -Werror tests/heading_history_test.cpp -o /tmp/ninajirachi-heading-history-test
 /tmp/ninajirachi-heading-history-test
+
+c++ -std=gnu++11 -Wall -Wextra -Werror tests/sleep_runtime_test.cpp -o /tmp/ninajirachi-sleep-runtime-test
+/tmp/ninajirachi-sleep-runtime-test

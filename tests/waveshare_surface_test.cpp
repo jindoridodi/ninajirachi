@@ -1,6 +1,7 @@
 #include "../firmware/src/board/WaveshareSurface.h"
 #include <cassert>
 
+bool failPsram = false, failAllocation = false, backlight = false;
 LCD_1IN28_ATTRIBUTES LCD_1IN28{240, 240, 0};
 void LCD_1IN28_Init(UBYTE) {}
 void LCD_1IN28_Display(UWORD*) {}
@@ -12,6 +13,12 @@ static UWORD pixel(int x, int y) {
 }
 
 int main() {
+  nina::WaveshareSurface failed;
+  failPsram = true;
+  assert(!failed.begin() && !backlight);
+  failPsram = false; failAllocation = true;
+  assert(!failed.begin() && !backlight);
+  failAllocation = false;
   Paint_NewImage(pixels, 240, 240, ROTATE_0, 0);
   Paint_SetScale(65);
   nina::WaveshareSurface surface;
