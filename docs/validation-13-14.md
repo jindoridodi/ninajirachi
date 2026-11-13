@@ -18,10 +18,10 @@ python3 tests/preview_editor_test.py
 python3 tests/face_geometry_test.py
 python3 tools/face_geometry.py --check
 python3 tools/generate_face_presets.py --check
-arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled firmware
+arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled,PartitionScheme=app3M_fat9M_16MB firmware
 ```
 
-Host tests verify behavior and persistence using synthetic input. The compile check uses the actual ESP32 toolchain and official vendor source. Neither establishes physical operation.
+Host tests verify behavior and persistence using synthetic input. The compile check uses the actual ESP32 toolchain and official vendor source. Neither establishes physical operation. The original validation used the default partition; the command above now selects the wearable's 3 MB app partition for repeat runs.
 
 ## Hardware checks still required
 
