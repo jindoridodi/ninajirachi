@@ -28,7 +28,6 @@ TwoWire compassBus(1);
 nina::ExpressionName expression = nina::ExpressionName::Idle;
 bool displayReady = false;
 bool settingsVisible = false;
-bool compassReady = false;
 bool showRaw = false;
 bool showJumpDebug = false;
 bool scanned = false;
@@ -42,7 +41,7 @@ constexpr uint8_t kCompassSdaPin = 16;
 constexpr uint8_t kCompassSclPin = 15;
 
 void restoreCompass() {
-  compassReady = compass.restore(compassBus, kCompassAddress);
+  compass.restore(compassBus, kCompassAddress);
 }
 
 void renderSettings(const nina::SettingsBatteryLines& text) {
@@ -57,7 +56,7 @@ void renderDirection(const nina::WearableOutput& output, bool headingValid) {
   Paint_DrawString_EN(79, 35, "PEER TEST", &Font12, BLACK, WHITE);
   Paint_DrawString_EN(102, 60, "FRONT", &Font12, BLACK, WHITE);
   Paint_DrawString_EN(75, 195,
-      nina::calibrationStatusLabel(compass.calibrationAvailability(compassReady)),
+      nina::calibrationStatusLabel(compass.calibrationAvailability()),
       &Font12, BLACK, WHITE);
   surface.fillRect(116, 116, 8, 8, {0xffffff});
   if (isfinite(output.relativeDirection)) {
@@ -90,20 +89,26 @@ void serialCommands() {
     else if (!scanned) Serial.println("QMC5883P not found at 0x2C");
   } else if (command == 'v') {
     // User confirms physical QMC5883P marking, wiring, and aligned IMU/compass axes.
-    compassReady = compass.verify(compassBus, kCompassAddress, scanned);
-    Serial.println(compassReady ? "Compass enabled" : "Scan/verify QMC5883P first or check storage");
+    compass.verify(compassBus, kCompassAddress, scanned);
+    Serial.println(compass.ready() ? "Compass enabled" : "Scan/verify QMC5883P first or check storage");
   } else if (command == 'u') {
     bool cleared = false;
     if (!compass.forgetVerification(compassBus, cleared))
       Serial.println("Could not clear compass verification; do not replace sensor");
     else if (!cleared)
       Serial.println("Could not clear compass calibration; retry verification");
-    compassReady = false;
     scanned = false;
   } else if (command == 'c') {
     Serial.println(compass.startCalibration() ? "Rotate through all axes; w saves" : "Enable compass and check calibration storage first");
   } else if (command == 'w') {
-    Serial.println(compass.saveCalibration() ? "Calibration saved" : "Not enough coverage/samples or storage failed");
+    const bool saved = compass.saveCalibration();
+    const auto data = compass.collectionData();
+    Serial.printf("Calibration %s; samples %u; spans X=%d Y=%d Z=%d; status=%s\n", saved ? "saved" : "failed",
+                  unsigned(compass.calibrationSamples()), int(data.maximum.x) - data.minimum.x,
+                  int(data.maximum.y) - data.minimum.y, int(data.maximum.z) - data.minimum.z,
+                  compass.saveStatus() == nina::CalibrationSaveStatus::Ok ? "ok" :
+                  compass.saveStatus() == nina::CalibrationSaveStatus::NotReady ? "not collecting or insufficient samples" :
+                  compass.saveStatus() == nina::CalibrationSaveStatus::Coverage ? "insufficient coverage or invalid offset" : "storage write failed");
   } else if (command == 'x') {
     compass.cancelCalibration();
   } else if (command == 'r') {
@@ -202,16 +207,27 @@ void loop() {
   const auto& gyro = motion.gyro;
   const auto timestamp = motion.timestamp;
   const auto fresh = motion.fresh;
-  const bool sampled = compassReady && compass.update(now, gravity);
+  const bool sampled = compass.update(now, gravity);
   const auto sampledHeading = compass.heading(now);
   headingHistory.record(now, sampledHeading.valid, sampledHeading.degrees);
-  if (sampled && showRaw && now - lastLogMs >= 250) {
+  static bool sampledSinceLog = false;
+  sampledSinceLog = sampledSinceLog || sampled;
+  if (showRaw && now - lastLogMs >= 250) {
     lastLogMs = now;
+    if (!sampledSinceLog) {
+      const auto status = compass.readStatus();
+      Serial.printf("mag unavailable: %s\n", status == nina::CompassReadStatus::Disabled ? "disabled" :
+                    status == nina::CompassReadStatus::Communication ? "I2C error" :
+                    status == nina::CompassReadStatus::Overflow ? "overflow" :
+                    status == nina::CompassReadStatus::NoData ? "no new data" : "invalid sample");
+    } else {
     const auto raw = compass.raw();
     const auto heading = compass.heading(now);
     Serial.printf("mag %d %d %d heading %s %.1f samples %u\n", raw.x, raw.y, raw.z,
                   heading.valid ? "valid" : "unavailable", heading.degrees,
                   unsigned(compass.calibrationSamples()));
+    }
+    sampledSinceLog = false;
   }
   nina::WearableInput input(now, nina::touchIsDown(), expression,
       nina::BatterySnapshot(nina::batteryMillivolts(now), false, false, 0, deviceId,

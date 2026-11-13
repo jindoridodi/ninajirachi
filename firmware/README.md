@@ -23,6 +23,14 @@ python3 tools/prepare_waveshare.py /path/to/ESP32-S3-Touch-LCD-1.28-Demo.zip
 arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled,PartitionScheme=app3M_fat9M_16MB firmware
 ```
 
+With both boards connected, compile once and upload the same binary to both ports:
+
+```sh
+tools/upload_both.sh
+```
+
+The helper finds the two Waveshare USB serial ports automatically. Uploads run sequentially; a failed first upload stops before the second board is changed.
+
 Flash size and partition scheme are separate settings. Without the explicit partition scheme, this board package defaults to a 1.2 MB app partition and reports a different program-storage percentage.
 
 Installed vendor files are ignored by Git; the script retains their original copyright/license headers. It also installs the QMI8658 driver used to provide gravity measurements for compass tilt compensation.
@@ -31,11 +39,11 @@ Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC mi
 
 ## Runtime controls
 
-Tap the face 5 times quickly to open battery/settings, then tap once to cycle between battery/settings and peer direction or tap 5 times quickly to return to the face. Each tap and the gap between taps must be no longer than 500 ms. Seven seconds without touch on either screen returns to the face. Hold the screen for 7 seconds to enter deep sleep. After releasing it, hold for 7 seconds to wake; a shorter touch returns to sleep. The loop continues sampling while settings is visible. Send `b` over Serial to open settings immediately. Serial commands `0`, `1`, and `2` select idle, curious, and excited presets for testing.
+Tap the face 5 times quickly to open battery/settings, then tap once to cycle between battery/settings and peer direction or hold for 3 seconds to return to the face. Each tap and the gap between taps must be no longer than 500 ms. Seven seconds without touch on either screen returns to the face. Hold the screen for 7 seconds to enter deep sleep. After releasing it, hold for 7 seconds to wake; a shorter touch returns to sleep. The loop continues sampling while settings is visible. Send `b` over Serial to open settings immediately. Serial commands `0`, `1`, and `2` select idle, curious, and excited presets for testing.
 
 At 115200 baud, send `t` to trigger the jump reaction without moving the wearable. Send `j` to toggle temporary jump diagnostic output. Each `[DEBUG-jump]` sample contains loop time, behavior time, sensor timestamp, fresh and motion-valid flags, vertical acceleration in g, raw acceleration in mg, gyro in degrees per second, and overlay state. Logging can slow sampling, so leave it off outside testing.
 
-The external compass starts disabled until verified. The compass uses a separate I²C controller on GPIO16 (SDA) and GPIO15 (SCL), while the onboard touch controller and IMU remain on GPIO6/GPIO7. At 115200 baud, send `s` to scan the compass bus. After checking the physical QMC5883P marking, 3.3 V wiring, and sensor-axis alignment, send `v` to enable the detected `0x2C` device. The adapter also verifies chip identity. Successful verification is saved in NVS; on later boots the firmware probes the address and checks the chip again before enabling it. Send `u` to forget verification and calibration before replacing or remounting the sensor, then physically inspect, scan, and verify again. If storage reports a failure, do not replace the sensor until forgetting verification succeeds. Send `c` to collect calibration while rotating the assembled wearable through all axes, `w` to save, `x` to cancel, and `r` to toggle raw/heading logs. Collection requires available calibration storage. Calibration is stored per board in NVS. Recalibrate after changing the sensor, mounting, or enclosure.
+The external compass starts disabled until verified. The compass uses a separate I²C controller on GPIO16 (SDA) and GPIO15 (SCL), while the onboard touch controller and IMU remain on GPIO6/GPIO7. At 115200 baud, send `s` to scan the compass bus. After checking the physical QMC5883P marking, 3.3 V wiring, and sensor-axis alignment, send `v` to enable the detected `0x2C` device. The adapter also verifies chip identity. Successful verification is saved in NVS; on later boots the firmware probes the address and checks the chip again before enabling it. Send `u` to forget verification and calibration before replacing or remounting the sensor, then physically inspect, scan, and verify again. If storage reports a failure, do not replace the sensor until forgetting verification succeeds. Send `c` to collect calibration while rotating the assembled wearable through all axes, `w` to save, `x` to cancel, and `r` to toggle raw/heading logs. Save reports the sample count, axis spans, and failure reason; raw logging reports read failures at the same rate. Collection requires available calibration storage. Calibration is stored per board in NVS. Recalibrate after changing the sensor, mounting, or enclosure.
 
 The IMU and magnetometer gravity vectors must use the same axes. Confirm the external module mounting before enabling; a rotated mounting needs an explicit axis transform. Invalid or stale headings stay unavailable. See `../docs/compass-bench.md` for the calibration limits and acceptance checklist.
 

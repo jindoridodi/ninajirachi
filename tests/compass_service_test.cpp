@@ -11,7 +11,7 @@ bool Preferences::verifiedKey = false;
 uint8_t Preferences::verifiedAddress = 0;
 
 static void expectLabel(nina::CompassService& compass, bool enabled, const char* label) {
-  assert(std::strcmp(nina::calibrationStatusLabel(compass.calibrationAvailability(enabled)),
+  assert(std::strcmp(nina::calibrationStatusLabel((enabled ? compass.calibrationAvailability() : nina::CalibrationAvailability::Unknown)),
                      label) == 0);
 }
 
@@ -70,10 +70,16 @@ int main() {
   bus.sample(1000, 1000, 0);
   assert(restored.update(300, {0, 0, 1}));
   assert(restored.heading(300).valid);
+  assert(!restored.verify(bus, 0x2c, false));
+  assert(!restored.heading(300).valid);
+  assert(!restored.startCalibration());
+  assert(restored.begin(bus, {true, 0x2c}));
+  assert(restored.update(300, {0, 0, 1}));
   assert(std::fabs(restored.heading(300).degrees - 315) < 0.01f);
   assert(!restored.heading(551).valid);
   bus.registers[9] = 3;
   assert(!restored.update(301, {0, 0, 1}));
+  assert(restored.readStatus() == nina::CompassReadStatus::Overflow);
   assert(!restored.heading(301).valid); // Never reuse a heading after overflow.
   bus.sample(0, 0, 0);
   assert(!restored.update(302, {0, 0, 1}));
@@ -82,12 +88,14 @@ int main() {
   bus.sample(1000, 0, 0);
   bus.shortRead = true;
   assert(!restored.update(304, {0, 0, 1}));
+  assert(restored.readStatus() == nina::CompassReadStatus::Communication);
   bus.shortRead = false;
   bus.badRead = true;
   assert(!restored.update(305, {0, 0, 1}));
   bus.badRead = false;
   bus.registers[9] = 0;
   assert(!restored.update(306, {0, 0, 1}));
+  assert(restored.readStatus() == nina::CompassReadStatus::NoData);
   bus.registers[9] = 1;
   assert(restored.update(307, {0, 0, 2}));
   assert(!restored.heading(307).valid);
@@ -106,6 +114,7 @@ int main() {
   assert(!restored.heading(519).valid);
   Preferences::failWrite = true;
   assert(!restored.saveCalibration());
+  assert(restored.saveStatus() == nina::CalibrationSaveStatus::Storage);
   Preferences::failWrite = false;
   assert(!restored.saveCalibration(NAN));
   restored.cancelCalibration();
@@ -120,6 +129,7 @@ int main() {
     restored.update(700 + i, {0, 0, 1});
   }
   assert(!restored.saveCalibration()); // Repeated/one-axis movement is insufficient.
+  assert(restored.saveStatus() == nina::CalibrationSaveStatus::Coverage);
   restored.cancelCalibration();
 
   nina::CompassService invalid;
