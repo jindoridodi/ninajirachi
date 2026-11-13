@@ -77,7 +77,7 @@ class WearableBehavior {
     t = t * t * (3 - 2 * t);
     ExpressionPreset face = expressionPreset(requested);
     animate(face, input.elapsedMs);
-    face_ = blend(from_, face, t);
+    face_ = age >= kExpressionTransitionMs ? face : blend(from_, face, t);
     const float desiredGaze = nearby.targetId && gaze == Gaze::Left ? -8 :
                               nearby.targetId && gaze == Gaze::Right ? 8 : 0;
     const float step = float(input.elapsedMs - gazeUpdatedMs_) * (16.0f / kExpressionTransitionMs);

@@ -7,12 +7,9 @@
 
 namespace nina {
 
-enum class FaceLayer { Background, Face, Eyes, Mouth };
-
 class DrawSurface {
  public:
   virtual ~DrawSurface() = default;
-  virtual void beginLayer(FaceLayer layer) = 0;
   virtual void fillRect(int x, int y, int width, int height, Color color) = 0;
 };
 
@@ -22,35 +19,39 @@ class FaceRenderer {
     const int ox = (width - 240) / 2, oy = (height - 240) / 2;
     const auto& m = preset.metrics;
     const auto& c = preset.colors;
-    surface.beginLayer(FaceLayer::Background);
     surface.fillRect(0, 0, width, height, c.background);
-    surface.beginLayer(FaceLayer::Face);
     fillFace(surface, ox, oy, c.face);
     for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i)
       stroke(surface, kFaceOutline[i-1], kFaceOutline[i], ox, oy, kFaceOutlineWidth, c.face);
 
-    surface.beginLayer(FaceLayer::Eyes);
     for (const auto& eye : kFaceEyes) {
       const auto layout = faceEye(eye, m);
       roundedRect(surface, ox + layout.x, oy + layout.y, layout.width, layout.height,
                   kFaceEyeRadius, c.eye);
     }
-    surface.beginLayer(FaceLayer::Mouth);
     drawMouth(surface, preset, ox, oy, width, height);
   }
 
   static void fillFace(DrawSurface& surface, int ox, int oy, Color color) {
-    for (int y = 0; y < 240; ++y) {
-      int left = 240, right = -1;
-      for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i) {
-        const FacePoint a = kFaceOutline[i-1], b = kFaceOutline[i];
-        if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) {
-          const int x = a.x + (y-a.y)*(b.x-a.x)/(b.y-a.y);
-          left = std::min(left, x); right = std::max(right, x);
+    struct Spans {
+      int16_t left[240], right[240];
+      Spans() {
+        for (int y = 0; y < 240; ++y) {
+          left[y] = 240; right[y] = -1;
+          for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i) {
+            const FacePoint a = kFaceOutline[i-1], b = kFaceOutline[i];
+            if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) {
+              const int x = a.x + (y-a.y)*(b.x-a.x)/(b.y-a.y);
+              left[y] = std::min(int(left[y]), x); right[y] = std::max(int(right[y]), x);
+            }
+          }
         }
       }
-      if (right >= left) surface.fillRect(ox + left, oy + y, right-left+1, 1, color);
-    }
+    };
+    static const Spans spans;
+    for (int y = 0; y < 240; ++y)
+      if (spans.right[y] >= spans.left[y])
+        surface.fillRect(ox + spans.left[y], oy + y, spans.right[y]-spans.left[y]+1, 1, color);
   }
 
  private:
@@ -99,6 +100,8 @@ class FaceRenderer {
         float distanceSquared = 1e9f;
         for (unsigned i = 1; i < sizeof(points)/sizeof(points[0]); ++i) {
           const auto a = points[i-1], b = points[i];
+          if (px < std::min(a.x, b.x) - radius - 0.5f ||
+              px > std::max(a.x, b.x) + radius + 0.5f) continue;
           const float dx = b.x-a.x, dy = b.y-a.y, lengthSquared = dx*dx + dy*dy;
           const float t = lengthSquared > 0 ? std::max(0.0f, std::min(1.0f,
               ((px-a.x)*dx + (py-a.y)*dy)/lengthSquared)) : 0;

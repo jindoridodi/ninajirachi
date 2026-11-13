@@ -5,7 +5,6 @@
 
 struct Pixels final : nina::DrawSurface {
   uint32_t pixels[240][240] = {};
-  void beginLayer(nina::FaceLayer) override {}
   void fillRect(int x, int y, int w, int h, nina::Color c) override {
     for (int row = std::max(0, y); row < std::min(240, y+h); ++row)
       for (int col = std::max(0, x); col < std::min(240, x+w); ++col)
@@ -13,7 +12,37 @@ struct Pixels final : nina::DrawSurface {
   }
 };
 
+void preservesReferenceFrames() {
+  // Captured from the original renderer before optimizing its geometry work.
+  constexpr uint64_t expected[] = {
+    13820374116385628818ULL, 15470676808309722200ULL, 9627484902246168821ULL,
+    12325516582070104337ULL, 5968290619142240653ULL, 3904333700595754622ULL,
+    7671733331946929656ULL,
+  };
+  nina::FaceRenderer renderer;
+  Pixels frame;
+  for (int i = 0; i < 7; ++i) {
+    auto preset = nina::expressionPreset(static_cast<nina::ExpressionName>(i % 3));
+    int size = 240;
+    if (i >= 3) {
+      constexpr int metrics[][3] = {{1,1,1}, {100,100,20}, {12,70,12}, {80,35,0}};
+      preset.metrics.mouthWidth = metrics[i-3][0];
+      preset.metrics.mouthHeight = metrics[i-3][1];
+      preset.metrics.tongueOut = metrics[i-3][2];
+      preset.colors.face = {0x83c723};
+      preset.colors.mouth = {0xb65aff};
+      if (i == 6) size = 200;
+    }
+    renderer.render(frame, preset, size, size);
+    uint64_t hash = 1469598103934665603ULL;
+    for (const auto& row : frame.pixels)
+      for (uint32_t pixel : row) hash = (hash ^ pixel) * 1099511628211ULL;
+    assert(hash == expected[i]);
+  }
+}
+
 int main(int argc, char** argv) {
+  preservesReferenceFrames();
   nina::FaceRenderer renderer;
   auto preset = nina::idlePreset();
   Pixels idle;

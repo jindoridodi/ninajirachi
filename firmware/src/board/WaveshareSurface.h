@@ -26,8 +26,6 @@ class WaveshareSurface final : public DrawSurface {
 
   void present() { LCD_1IN28_Display(image_); }
 
-  void beginLayer(FaceLayer) override {}
-
   void fillRect(int x, int y, int width, int height, Color color) override {
     if (width <= 0 || height <= 0 || x >= 240 || y >= 240) return;
     const int endX = min(239, x + width - 1);

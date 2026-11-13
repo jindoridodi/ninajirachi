@@ -12,7 +12,7 @@ Run `python3 preview/face_preview.py` to tune eye width/openness, `eyeOffsetX/Y`
 
 For a headless visual check, `python3 tools/render_face_preview.py /tmp/face.png` draws the same preview to PNG (requires Pillow). Use `--preset excited` to inspect another preset. Run `python3 tests/face_geometry_test.py` to check the reference proportions, valid canvas options, and generated geometry.
 
-The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up.
+The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_malloc`; confirm PSRAM on the physical board during bring-up. The renderer caches the fixed face outline as horizontal spans using 960 bytes of RAM; expression parameters and colors remain dynamic.
 
 Movement uses the driver's configured ±8 g and ±512°/s IMU scales. Tilt follows a settled gravity estimate and holds its last value while movement prevents a reliable estimate. A low-acceleration phase followed by an impact triggers a jump overlay. When gravity is unavailable, jump detection uses a stricter acceleration magnitude threshold to reduce walking reactions; other movement may still trigger it or gentler jumps may be missed. Tune the thresholds on the assembled wearable in #15.
 
@@ -25,7 +25,7 @@ arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled firmw
 
 Installed vendor files are ignored by Git; the script retains their original copyright/license headers. It also installs the QMI8658 driver used to provide gravity measurements for compass tilt compensation.
 
-Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC millivolts. Charging state remains unknown: the [board documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) documents battery voltage on GPIO1 but does not identify a software-readable charger status GPIO; the [schematic](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Sch.pdf) labels the charger STAT pin but does not establish a documented firmware input. Confirm the actual board revision and wiring before adding charge detection. Percentage stays unavailable until a battery-specific calibration is supplied. Confirm readings against a meter before relying on them.
+Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC millivolts. Readings are cached for one second and refreshed immediately when the settings/battery screen opens. Charging state remains unknown: the [board documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) documents battery voltage on GPIO1 but does not identify a software-readable charger status GPIO; the [schematic](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Sch.pdf) labels the charger STAT pin but does not establish a documented firmware input. Confirm the actual board revision and wiring before adding charge detection. Percentage stays unavailable until a battery-specific calibration is supplied. Confirm readings against a meter before relying on them.
 
 ## Runtime controls
 
