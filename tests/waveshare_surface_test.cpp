@@ -1,4 +1,5 @@
 #include "../firmware/src/board/WaveshareSurface.h"
+#include "../firmware/src/board/Runtime.h"
 #include <cassert>
 #include <climits>
 
@@ -15,11 +16,23 @@ static UWORD pixel(int x, int y) {
 
 int main() {
   nina::WaveshareSurface failed;
+  nina::Runtime runtime;
+  int initialized = 0, updated = 0, idled = 0;
+  auto initialize = [&]() { ++initialized; };
+  auto update = [&]() { ++updated; };
+  auto idle = [&]() { ++idled; };
   failPsram = true;
-  assert(!failed.begin() && !backlight);
+  assert(!runtime.start(failed, initialize) && !backlight);
+  runtime.update(update, idle);
+  assert(initialized == 0 && updated == 0 && idled == 1);
   failPsram = false; failAllocation = true;
-  assert(!failed.begin() && !backlight);
+  assert(!runtime.start(failed, initialize) && !backlight);
+  runtime.update(update, idle);
+  assert(initialized == 0 && updated == 0 && idled == 2);
   failAllocation = false;
+  assert(runtime.start(failed, initialize));
+  runtime.update(update, idle);
+  assert(initialized == 1 && updated == 1 && idled == 2);
   Paint_NewImage(pixels, 240, 240, ROTATE_0, 0);
   Paint_SetScale(65);
   nina::WaveshareSurface surface;
