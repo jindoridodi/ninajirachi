@@ -16,7 +16,7 @@ The driver allocates one 240×240 RGB565 frame buffer (115,200 bytes) with `ps_m
 
 Movement uses the driver's configured ±8 g and ±512°/s IMU scales. Tilt follows a settled gravity estimate and holds its last value while movement prevents a reliable estimate. A low-acceleration phase followed by an impact triggers a jump overlay. When gravity is unavailable, jump detection uses a stricter acceleration magnitude threshold to reduce walking reactions; other movement may still trigger it or gentler jumps may be missed. Tune the thresholds on the assembled wearable in #15.
 
-Download the [official demo ZIP](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Demo.zip), then install the required unmodified drivers from the repository root:
+Download the [official demo ZIP](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Demo.zip), then install the required drivers from the repository root:
 
 ```sh
 python3 tools/prepare_waveshare.py /path/to/ESP32-S3-Touch-LCD-1.28-Demo.zip
@@ -33,7 +33,7 @@ The helper finds the two Waveshare USB serial ports automatically. Uploads run s
 
 Flash size and partition scheme are separate settings. Without the explicit partition scheme, this board package defaults to a 1.2 MB app partition and reports a different program-storage percentage.
 
-Installed vendor files are ignored by Git; the script retains their original copyright/license headers. It also installs the QMI8658 driver used to provide gravity measurements for compass tilt compensation.
+Installed vendor files are ignored by Git; the script retains their original copyright/license headers and adapts the multi-byte SPI transfer to a write-only call so presentation preserves the framebuffer. The script fails before installing files if the expected vendor call changes. It also installs the QMI8658 driver used to provide gravity measurements for compass tilt compensation.
 
 Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC millivolts. Readings are cached for one second and refreshed immediately when the settings/battery screen opens. Charging state remains unknown: the [board documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) documents battery voltage on GPIO1 but does not identify a software-readable charger status GPIO; the [schematic](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-1.28/ESP32-S3-Touch-LCD-1.28-Sch.pdf) labels the charger STAT pin but does not establish a documented firmware input. Confirm the actual board revision and wiring before adding charge detection. Percentage stays unavailable until a battery-specific calibration is supplied. Confirm readings against a meter before relying on them.
 
@@ -87,3 +87,9 @@ BLE scans with a 40% configured window and advertises every 160–180 ms. ESP-NO
 Before relying on these settings, compare battery current with and without a nearby peer, and test two wearables for discovery latency, missed observations, repeated radio restarts, and gaze after worn compass calibration. Confirm 50 Hz raw readings and heading stability on each assembled wearable; the host tests cannot establish physical sensor or radio performance.
 
 Deep sleep uses the touch controller interrupt on GPIO5 for wake and turns off the backlight. The touch controller remains in standby, and the external compass remains powered. The processor briefly wakes on a timer while waiting for the sleep-triggering touch to be released, then arms touch wake. On the assembled board, verify sustained touch reporting, wake after brief and long touches, no immediate re-wake on release, and battery current; neither wake reliability nor total sleep current can be confirmed by host tests.
+
+## Display transfer comparison
+
+The baseline is commit ddf1bfdda41b52dc3620844e715d063f10b2a03f; compare it with this revision using the same official demo ZIP and ESP32 Arduino 2.0.12. In separate clean worktrees, run `python3 tools/prepare_waveshare.py /path/to/demo.zip` and compile the firmware with the documented board options. For a host check, install the baseline-prepared driver in the current tree and run `sh tests/run_display_transfer_test.sh`: its buffer-preservation assertion fails because the simulated SPI transfer overwrites its input. Re-run preparation with this revision and the same ZIP, then run the test again: it checks all 240 writes of 480 bytes, their row order and byte values, and the unchanged frame. It also checks preparation on a fresh synthetic archive and rejects an unexpected upstream driver before replacing installed files.
+
+Physical timing and current remain unmeasured. Under #15, measure repeated presentations of the same frame and board configuration for both revisions, separately recording SPI transfer duration (median, p95 and worst), panel behavior, and battery current. Reapply this revision's preparation after any baseline comparison; do not infer hardware FPS or current from the host test.
