@@ -15,3 +15,6 @@ c++ -std=gnu++11 -Wall -Wextra -Werror tests/heading_history_test.cpp -o /tmp/ni
 
 c++ -std=gnu++11 -Wall -Wextra -Werror tests/sleep_runtime_test.cpp -o /tmp/ninajirachi-sleep-runtime-test
 /tmp/ninajirachi-sleep-runtime-test
+
+c++ -std=gnu++11 -Wall -Wextra -Werror tests/runtime_schedule_test.cpp -o /tmp/ninajirachi-runtime-schedule-test
+/tmp/ninajirachi-runtime-schedule-test

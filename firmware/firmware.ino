@@ -4,6 +4,7 @@
 #include "src/board/WaveshareSurface.h"
 #include "src/board/BoardInputs.h"
 #include "src/board/SleepRuntime.h"
+#include "src/board/RuntimeSchedule.h"
 #include "src/behavior/WearableBehavior.h"
 #include "src/behavior/HeadingHistory.h"
 #include "src/face/SettingsBatteryRenderer.h"
@@ -32,11 +33,12 @@ bool settingsVisible = false;
 bool showRaw = false;
 bool showJumpDebug = false;
 bool scanned = false;
-uint32_t lastFrameMs = 0;
+nina::RuntimeSchedule runtimeSchedule;
+nina::WearableOutput latestOutput{};
+bool latestHeadingValid = false;
 uint32_t lastLogMs = 0;
 char deviceId[13];
 RTC_DATA_ATTR bool waitingForSleepRelease = false;
-constexpr uint32_t kFramePeriodMs = 33;
 constexpr uint8_t kCompassAddress = 0x2C;
 constexpr uint8_t kCompassSdaPin = 16;
 constexpr uint8_t kCompassSclPin = 15;
@@ -189,12 +191,7 @@ void setup() {
   surface.present();
 }
 
-void loop() {
-  if (!displayReady) { delay(100); return; }
-  serialCommands();
-  const uint32_t now = millis();
-  if (now - lastFrameMs < kFramePeriodMs) { delay(1); return; }
-  lastFrameMs = now;
+void updateInputs(uint32_t now) {
   const auto motion = motionSampler.update(now);
   const auto& gravity = motion.gravity;
   const auto& acceleration = motion.acceleration;
@@ -270,11 +267,16 @@ void loop() {
                   acceleration[0], acceleration[1], acceleration[2], gyro[0], gyro[1], gyro[2],
                   output.jumpOverlayActive);
   }
-  if (!displayReady) return;
+  latestOutput = output;
+  latestHeadingValid = input.headingValid;
+}
+
+void renderFrame() {
+  const auto& output = latestOutput;
   static nina::SettingsBatteryRefresh settingsRefresh;
   if (output.screen == nina::ScreenName::PeerDirection) {
     settingsRefresh.invalidate();
-    renderDirection(output, input.headingValid);
+    renderDirection(output, latestHeadingValid);
   } else if (output.screen == nina::ScreenName::Face) {
     settingsRefresh.invalidate();
     renderer.render(surface, output.face, 240, 240);
@@ -284,4 +286,18 @@ void loop() {
     renderSettings(lines);
   }
   surface.present();
+}
+
+struct RuntimeBoard {
+  uint32_t now() const { return millis(); }
+  void update(uint32_t time) { updateInputs(time); }
+  void render() { renderFrame(); }
+};
+
+void loop() {
+  if (!displayReady) { delay(100); return; }
+  serialCommands();
+  static RuntimeBoard board;
+  runtimeSchedule.run(board);
+  delay(1);
 }
