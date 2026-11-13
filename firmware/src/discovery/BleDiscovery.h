@@ -62,7 +62,7 @@ class BleDiscovery : public BLEAdvertisedDeviceCallbacks {
       static esp_ble_adv_params_t params = {};
       params.adv_int_min = 0x100;
       params.adv_int_max = 0x120;
-      params.adv_type = ADV_TYPE_IND;
+      params.adv_type = ADV_TYPE_NONCONN_IND;
       params.own_addr_type = BLE_ADDR_TYPE_PUBLIC;
       params.channel_map = ADV_CHNL_ALL;
       params.adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY;
