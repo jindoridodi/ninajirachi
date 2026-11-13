@@ -18,7 +18,9 @@ constexpr uint32_t kExpressionTransitionMs = 300;
 constexpr uint32_t kBlinkPeriodMs = 4000;
 constexpr uint32_t kBlinkDurationMs = 200;
 
-enum class ScreenName { Face, SettingsBattery };
+constexpr uint32_t kSleepHoldMs = 10000;
+
+enum class ScreenName { Face, SettingsBattery, PeerDirection };
 
 struct WearableInput {
   WearableInput(uint32_t time, bool touch, ExpressionName requested, BatterySnapshot power,
@@ -48,6 +50,7 @@ struct WearableOutput {
   Gaze gaze;
   bool jumpOverlayActive;
   float relativeDirection;
+  bool sleepRequested;
 };
 
 class WearableBehavior {
@@ -56,8 +59,16 @@ class WearableBehavior {
 
   void showSettings(uint32_t nowMs) {
     screen_ = ScreenName::SettingsBattery;
+    serialDirection_ = false;
     tapCount_ = 0;
     lastTouchMs_ = nowMs;
+  }
+
+  void toggleDirection(uint32_t nowMs) {
+    screen_ = screen_ == ScreenName::PeerDirection ? ScreenName::Face : ScreenName::PeerDirection;
+    lastTouchMs_ = nowMs;
+    serialDirection_ = screen_ == ScreenName::PeerDirection;
+    tapCount_ = 0;
   }
 
   WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count,
@@ -97,7 +108,8 @@ class WearableBehavior {
     const auto motion = movement_.update({input.motionValid ? input.rollDegrees : 0,
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid,
         input.accelerationValid, input.accelerationMagnitudeG);
-    return {screen_, motion.preset, input.battery, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive, nearby.relativeDirection};
+    return {screen_, motion.preset, input.battery, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive, nearby.relativeDirection,
+            input.touchDown && input.elapsedMs - touchStartMs_ >= kSleepHoldMs};
   }
 
  private:
@@ -126,16 +138,17 @@ class WearableBehavior {
       if (tapCount_ && elapsedMs - lastTouchMs_ > kTapGapMs) tapCount_ = 0;
     } else if (!touchDown && wasTouchDown_) {
       if (elapsedMs - touchStartMs_ <= kTapMaxMs) {
-        ++tapCount_;
-        if (tapCount_ >= (screen_ == ScreenName::Face ? 10 : 5)) {
-          screen_ = screen_ == ScreenName::Face ? ScreenName::SettingsBattery : ScreenName::Face;
-          tapCount_ = 0;
+        if (screen_ == ScreenName::Face) {
+          if (++tapCount_ >= 5) { screen_ = ScreenName::SettingsBattery; tapCount_ = 0; }
+        } else {
+          screen_ = screen_ == ScreenName::SettingsBattery ? ScreenName::PeerDirection : ScreenName::SettingsBattery;
+          serialDirection_ = false;
         }
       } else {
         tapCount_ = 0;
       }
       lastTouchMs_ = elapsedMs;
-    } else if (!touchDown && screen_ == ScreenName::SettingsBattery &&
+    } else if (!touchDown && screen_ != ScreenName::Face && !serialDirection_ &&
                elapsedMs - lastTouchMs_ >= kSettingsInactivityMs) {
       screen_ = ScreenName::Face;
       tapCount_ = 0;
@@ -174,6 +187,7 @@ class WearableBehavior {
   uint32_t touchStartMs_ = 0;
   uint32_t lastTouchMs_ = 0;
   bool wasTouchDown_ = false;
+  bool serialDirection_ = false;
   uint8_t tapCount_ = 0;
   bool initialized_ = false;
   uint32_t transitionStartMs_ = 0;

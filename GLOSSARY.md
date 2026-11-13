@@ -55,7 +55,7 @@ Compass-heading and signal-strength observations used to make an approximate gaz
 _Avoid_: position, bearing, localization
 
 **Settings/battery screen**:
-A temporary screen opened by tapping the touchscreen ten times quickly to inspect wearable settings and battery state.
+A temporary screen for inspecting wearable settings and battery state.
 _Avoid_: debug screen, touch mode
 
 **Face screen**:

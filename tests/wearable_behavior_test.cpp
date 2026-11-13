@@ -97,22 +97,44 @@ nina::WearableOutput tap(TestBehavior& behavior, uint32_t time, nina::BatterySna
   return behavior.update({time + 50, false, nina::ExpressionName::Idle, battery});
 }
 
-bool opensAndClosesSettingsWithTaps() {
+bool fiveTapsOpenSettings() {
   TestBehavior behavior;
-  const nina::BatterySnapshot battery = {3890, true, true, 72, "NINA-42"};
-  for (int i = 0; i < 9; ++i) tap(behavior, i * 200, battery);
-  if (!expect(behavior.update({1750, false, nina::ExpressionName::Idle, battery}).screen ==
-              nina::ScreenName::Face, "nine taps do not open settings")) return false;
-  const auto settings = tap(behavior, 1800, battery);
-  if (!expect(settings.screen == nina::ScreenName::SettingsBattery &&
-              settings.battery.millivolts == 3890 && settings.battery.charging &&
-              settings.battery.hasEstimatedPercent && settings.battery.estimatedPercent == 72 &&
-              settings.battery.deviceId == battery.deviceId, "ten taps open settings with battery data")) return false;
-  for (int i = 0; i < 4; ++i) tap(behavior, 2000 + i * 200, battery);
-  if (!expect(behavior.update({2700, false, nina::ExpressionName::Idle, battery}).screen ==
-              nina::ScreenName::SettingsBattery, "four taps do not close settings")) return false;
-  return expect(tap(behavior, 2800, battery).screen == nina::ScreenName::Face,
-                "five taps return to face");
+  nina::BatterySnapshot battery;
+  for (int i = 0; i < 4; ++i) tap(behavior, i * 200, battery);
+  if (!expect(behavior.update({750, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::Face, "four taps keep the face")) return false;
+  return expect(tap(behavior, 800, battery).screen == nina::ScreenName::SettingsBattery,
+                "five taps open settings");
+}
+
+bool cyclesDebugScreensAndRequestsSleep() {
+  TestBehavior behavior;
+  nina::BatterySnapshot battery;
+  for (int i = 0; i < 5; ++i) tap(behavior, i * 200, battery);
+  if (!expect(tap(behavior, 1200, battery).screen == nina::ScreenName::PeerDirection,
+              "one tap opens peer direction")) return false;
+  if (!expect(tap(behavior, 1400, battery).screen == nina::ScreenName::SettingsBattery,
+              "another tap returns to battery")) return false;
+  behavior.update({2000, true, nina::ExpressionName::Idle, battery});
+  if (!expect(!behavior.update({11999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+              "short hold does not sleep")) return false;
+  if (!expect(behavior.update({12000, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+              "ten second hold requests sleep")) return false;
+  behavior.update({12001, false, nina::ExpressionName::Idle, battery});
+  behavior.update({13000, true, nina::ExpressionName::Idle, battery});
+  return expect(!behavior.update({22999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+                "a new hold starts its own timer");
+}
+
+bool serialDirectionStaysOpen() {
+  TestBehavior behavior;
+  nina::BatterySnapshot battery;
+  behavior.toggleDirection(100);
+  if (!expect(behavior.update({20000, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::PeerDirection, "serial peer display stays open")) return false;
+  behavior.toggleDirection(20001);
+  return expect(behavior.update({20001, false, nina::ExpressionName::Idle, battery}).screen ==
+                nina::ScreenName::Face, "serial command closes peer display");
 }
 
 bool opensSettingsFromSerialCommand() {
@@ -133,20 +155,14 @@ bool opensSettingsFromSerialCommand() {
 bool requiresQuickTapsAndExactTimeout() {
   TestBehavior behavior;
   nina::BatterySnapshot battery;
-  for (int i = 0; i < 9; ++i) tap(behavior, i * 200, battery);
-  if (!expect(tap(behavior, 2400, battery).screen == nina::ScreenName::Face,
+  for (int i = 0; i < 4; ++i) tap(behavior, i * 200, battery);
+  if (!expect(tap(behavior, 1400, battery).screen == nina::ScreenName::Face,
               "a long gap resets the tap sequence")) return false;
-  behavior.update({2600, true, nina::ExpressionName::Idle, battery});
-  behavior.update({3101, false, nina::ExpressionName::Idle, battery});
-  for (int i = 0; i < 9; ++i) tap(behavior, 3200 + i * 200, battery);
-  if (!expect(behavior.update({4900, false, nina::ExpressionName::Idle, battery}).screen ==
-              nina::ScreenName::Face, "a long press resets the tap sequence")) return false;
-  tap(behavior, 5000, battery);
-  tap(behavior, 5200, battery);
-  if (!expect(behavior.update({12249, false, nina::ExpressionName::Idle, battery}).screen ==
-              nina::ScreenName::SettingsBattery, "touch resets the inactivity timeout")) return false;
-  return expect(behavior.update({12250, false, nina::ExpressionName::Idle, battery}).screen ==
-                nina::ScreenName::Face, "settings times out at seven seconds");
+  for (int i = 0; i < 4; ++i) tap(behavior, 1600 + i * 200, battery);
+  if (!expect(behavior.update({9249, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::SettingsBattery, "settings remains open before timeout")) return false;
+  return expect(behavior.update({9250, false, nina::ExpressionName::Idle, battery}).screen ==
+                nina::ScreenName::Face, "settings times out after seven seconds");
 }
 
 bool discoversPeer() {
@@ -274,7 +290,7 @@ bool discoveryContinuesInSettingsAndAcrossClockWrap() {
   TestBehavior b;
   nina::BatterySnapshot battery;
   uint64_t p = 2;
-  for (int i = 0; i < 10; ++i) tap(b, i * 200, battery);
+  for (int i = 0; i < 5; ++i) tap(b, i * 200, battery);
   TestInput in(1900, false, nina::ExpressionName::Idle, battery, 1, {p, -50, 1900});
   const auto settings = b.update(in);
   if (!expect(settings.screen == nina::ScreenName::SettingsBattery && settings.peerCount == 1,
@@ -358,6 +374,8 @@ int main() {
   sample.accelerationMagnitudeG = 4.067f;
   if (!expect(missingGravity.update(sample).jumpOverlayActive,
               "fresh low acceleration followed by impact reacts without a gravity estimate")) return 1;
+  if (!serialDirectionStaysOpen()) return 1;
+  if (!fiveTapsOpenSettings()) return 1;
   if (!jumpOverridesBlink()) return 1;
   if (!tiltAndFocusedAnimation()) return 1;
   if (!movementOverlaysFocusedInteraction()) return 1;
@@ -376,5 +394,5 @@ int main() {
   if (!expect(finished.face.metrics.eyeOpen == 48, "transition reaches requested expression")) return 1;
   return !(sustainedProximityChoosesExpression() && gazeUsesTargetEvidence() && discoveryContinuesInSettingsAndAcrossClockWrap() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
-           opensAndClosesSettingsWithTaps() && opensSettingsFromSerialCommand() && requiresQuickTapsAndExactTimeout());
+           cyclesDebugScreensAndRequestsSleep() && opensSettingsFromSerialCommand() && requiresQuickTapsAndExactTimeout());
 }

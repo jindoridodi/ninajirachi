@@ -29,7 +29,7 @@ Battery voltage uses GPIO1 and the documented 3:1 divider with calibrated ADC mi
 
 ## Runtime controls
 
-Tap the face 10 times quickly to open battery/settings, then tap 5 times quickly to return. Each tap and the gap between taps must be no longer than 500 ms. Seven seconds without touch returns automatically. The loop continues sampling while settings is visible. Send `b` over Serial to open settings immediately. Serial commands `0`, `1`, and `2` select idle, curious, and excited presets for testing.
+Tap the face 5 times quickly to open battery/settings, then tap once to cycle between battery/settings and peer direction. Each tap and the gap between taps must be no longer than 500 ms. Seven seconds without touch on either screen returns to the face. Hold the screen for 10 seconds, then release it, to enter deep sleep. Hold it for 10 seconds to wake; a shorter touch returns to sleep. The loop continues sampling while settings is visible. Send `b` over Serial to open settings immediately. Serial commands `0`, `1`, and `2` select idle, curious, and excited presets for testing.
 
 At 115200 baud, send `t` to trigger the jump reaction without moving the wearable. Send `j` to toggle temporary jump diagnostic output. Each `[DEBUG-jump]` sample contains loop time, behavior time, sensor timestamp, fresh and motion-valid flags, vertical acceleration in g, raw acceleration in mg, gyro in degrees per second, and overlay state. Logging can slow sampling, so leave it off outside testing.
 
@@ -75,3 +75,5 @@ For a bench visual, send `d` at 115200 baud to toggle the peer direction display
 BLE scans with a 40% configured window and advertises every 160–180 ms. ESP-NOW starts after BLE discovers a peer and stops when the last peer expires (after the existing three-second grace period); failed starts retry every three seconds while a peer remains. The compass runs at 50 Hz. The settings screen redraws when its displayed text changes, while sampling and discovery continue.
 
 Before relying on these settings, compare battery current with and without a nearby peer, and test two wearables for discovery latency, missed observations, repeated radio restarts, and gaze after worn compass calibration. Confirm 50 Hz raw readings and heading stability on each assembled wearable; the host tests cannot establish physical sensor or radio performance.
+
+Deep sleep uses the touch controller interrupt on GPIO5 for wake and turns off the backlight. The touch controller remains in standby, and the external compass remains powered. On the assembled board, verify sustained touch reporting, wake after brief and long touches, no immediate re-wake on release, and battery current; neither wake reliability nor total sleep current can be confirmed by host tests.
