@@ -8,7 +8,7 @@
 #include "src/board/Runtime.h"
 #include "src/behavior/WearableBehavior.h"
 #include "src/behavior/HeadingHistory.h"
-#include "src/face/SettingsBatteryRenderer.h"
+#include "src/face/FramePresenter.h"
 #include "src/compass/CompassService.h"
 #include "src/board/MotionSampler.h"
 #include "src/discovery/BleDiscovery.h"
@@ -55,12 +55,12 @@ void renderSettings(const nina::SettingsBatteryLines& text) {
     Paint_DrawString_EN(32, 50 + line * 20, text.lines[line], &Font12, BLACK, WHITE);
 }
 
-void renderDirection(const nina::WearableOutput& output, bool headingValid) {
+void renderDirection(const nina::WearableOutput& output, bool headingValid, const char* calibrationLabel) {
   surface.fillRect(0, 0, 240, 240, {0});
   Paint_DrawString_EN(79, 35, "PEER TEST", &Font12, BLACK, WHITE);
   Paint_DrawString_EN(102, 60, "FRONT", &Font12, BLACK, WHITE);
   Paint_DrawString_EN(75, 195,
-      nina::calibrationStatusLabel(compass.calibrationAvailability()),
+      calibrationLabel,
       &Font12, BLACK, WHITE);
   surface.fillRect(116, 116, 8, 8, {0xffffff});
   if (isfinite(output.relativeDirection)) {
@@ -269,22 +269,23 @@ void updateInputs(uint32_t now) {
   latestHeadingValid = input.headingValid;
 }
 
-void renderFrame() {
-  const auto& output = latestOutput;
-
-  static nina::SettingsBatteryRefresh settingsRefresh;
-  if (output.screen == nina::ScreenName::PeerDirection) {
-    settingsRefresh.invalidate();
-    renderDirection(output, latestHeadingValid);
-  } else if (output.screen == nina::ScreenName::Face) {
-    settingsRefresh.invalidate();
-    renderer.render(surface, output.face, 240, 240);
-  } else {
-    const auto lines = nina::settingsBatteryLines(output.battery);
-    if (!settingsRefresh.changed(lines)) return;
-    renderSettings(lines);
+struct DisplayBoard {
+  void draw(const nina::WearableOutput& output, bool headingValid, const char* calibrationLabel) {
+    if (output.screen == nina::ScreenName::PeerDirection)
+      renderDirection(output, headingValid, calibrationLabel);
+    else if (output.screen == nina::ScreenName::Face)
+      renderer.render(surface, output.face, 240, 240);
+    else
+      renderSettings(nina::settingsBatteryLines(output.battery));
   }
-  surface.present();
+  void present() { surface.present(); }
+};
+
+void renderFrame() {
+  static nina::FramePresenter presenter;
+  static DisplayBoard display;
+  presenter.present(display, latestOutput, latestHeadingValid,
+                    nina::calibrationStatusLabel(compass.calibrationAvailability()));
 }
 
 struct RuntimeBoard {
