@@ -3,6 +3,7 @@
 #include <driver/rtc_io.h>
 #include "src/board/WaveshareSurface.h"
 #include "src/board/BoardInputs.h"
+#include "src/board/SleepRuntime.h"
 #include "src/behavior/WearableBehavior.h"
 #include "src/behavior/HeadingHistory.h"
 #include "src/face/SettingsBatteryRenderer.h"
@@ -132,49 +133,41 @@ void serialCommands() {
 
 }  // namespace
 
-void enterDeepSleep(bool waitForRelease) {
-  digitalWrite(2, LOW);
-  pinMode(2, OUTPUT);
-  gpio_hold_en(GPIO_NUM_2);
-  gpio_deep_sleep_hold_en();
-  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-  waitingForSleepRelease = waitForRelease;
-  if (waitForRelease) {
-    // The IRQ can pulse during a hold, so check release before arming touch wake.
-    esp_sleep_enable_timer_wakeup(250000);
-  } else {
-    rtc_gpio_pullup_en(GPIO_NUM_5);
-    rtc_gpio_pulldown_dis(GPIO_NUM_5);
+struct SleepBoard {
+  void prepareWake() {
+    gpio_deep_sleep_hold_dis(); gpio_hold_dis(GPIO_NUM_2);
+    rtc_gpio_deinit(GPIO_NUM_5); pinMode(5, INPUT_PULLUP);
+  }
+  int wakeCause() {
+    const auto cause = esp_sleep_get_wakeup_cause();
+    return cause == ESP_SLEEP_WAKEUP_TIMER ? 1 : cause == ESP_SLEEP_WAKEUP_EXT0 ? 2 : 0;
+  }
+  void beginTouch() { Wire.begin(6, 7); }
+  bool touchDown() { return nina::touchIsDown(); }
+  bool touchIrqLow() { return digitalRead(5) == LOW; }
+  void darken() { digitalWrite(2, LOW); pinMode(2, OUTPUT); }
+  void holdBacklight() { gpio_hold_en(GPIO_NUM_2); gpio_deep_sleep_hold_en(); }
+  void disableWake() { esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL); }
+  void timerWake() { esp_sleep_enable_timer_wakeup(250000); }
+  void touchWake() {
+    rtc_gpio_pullup_en(GPIO_NUM_5); rtc_gpio_pulldown_dis(GPIO_NUM_5);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_5, 0);
   }
-  esp_deep_sleep_start();
-}
+  void deepSleep() { esp_deep_sleep_start(); }
+  uint32_t now() { return millis(); }
+  void wait() { delay(20); }
+  void suppressTouch() { behavior.ignoreTouchUntilRelease(); }
+  void restoreTouchPower() { digitalWrite(13, HIGH); pinMode(13, OUTPUT); }
+};
+SleepBoard sleepBoard;
 
+void enterDeepSleep(bool waitForRelease) {
+  nina::enterSleep(sleepBoard, waitingForSleepRelease, waitForRelease);
+}
 void setup() {
   Serial.begin(115200);
-  gpio_deep_sleep_hold_dis();
-  gpio_hold_dis(GPIO_NUM_2);
-  rtc_gpio_deinit(GPIO_NUM_5);
-  pinMode(5, INPUT_PULLUP);
   const auto wakeCause = esp_sleep_get_wakeup_cause();
-  if (wakeCause == ESP_SLEEP_WAKEUP_TIMER && waitingForSleepRelease) {
-    Wire.begin(6, 7);
-    enterDeepSleep(nina::touchIsDown() || digitalRead(5) == LOW);
-  }
-  waitingForSleepRelease = false;
-  if (wakeCause == ESP_SLEEP_WAKEUP_EXT0) {
-    pinMode(2, OUTPUT);
-    digitalWrite(2, LOW);
-    Wire.begin(6, 7);
-    const uint32_t started = millis();
-    while (millis() - started < nina::kSleepHoldMs) {
-      if (!nina::touchIsDown()) enterDeepSleep(true);
-      delay(20);
-    }
-    behavior.ignoreTouchUntilRelease();
-    digitalWrite(13, HIGH);
-    pinMode(13, OUTPUT);
-  }
+  if (!nina::wakeRuntime(sleepBoard, waitingForSleepRelease, nina::kSleepHoldMs)) return;
   if (!surface.begin()) {
     Serial.println("Display initialization failed");
     return;
@@ -197,6 +190,7 @@ void setup() {
 }
 
 void loop() {
+  if (!displayReady) { delay(100); return; }
   serialCommands();
   const uint32_t now = millis();
   if (now - lastFrameMs < kFramePeriodMs) { delay(1); return; }
