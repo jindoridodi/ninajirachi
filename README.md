@@ -80,8 +80,8 @@ Blink periodically, but let jump and excited reactions temporarily override the 
 The touch display has three screen modes:
 
 - `face`: the normal animated Ninajirachi screen
-- `settings/battery`: opened by 5 quick taps; one tap cycles to peer direction; 5 quick taps return to the face. Each tap and the gap between taps must be no longer than 500 ms.
-- `peer direction`: one tap cycles back to settings/battery; 5 quick taps return to the face. Seven seconds without touch on either screen returns to the face.
+- `settings/battery`: opened by 5 quick taps; one tap cycles to peer direction; a 3-second hold returns to the face. Each tap and the gap between taps must be no longer than 500 ms.
+- `peer direction`: one tap cycles back to settings/battery; a 3-second hold returns to the face. Seven seconds without touch on either screen returns to the face.
 
 Hold the touchscreen for 7 seconds to enter deep sleep without releasing. After releasing it, hold it for 7 seconds again to wake. A shorter wake touch returns to sleep.
 

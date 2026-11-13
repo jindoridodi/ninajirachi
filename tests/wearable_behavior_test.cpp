@@ -126,19 +126,23 @@ bool cyclesDebugScreensAndRequestsSleep() {
                 "a new hold starts its own timer");
 }
 
-bool fiveTapsCloseEitherDebugScreen() {
+bool holdClosesEitherDebugScreen() {
   nina::BatterySnapshot battery;
   for (int start = 0; start < 2; ++start) {
     TestBehavior behavior;
     behavior.showSettings(0);
     if (start == 1) tap(behavior, 100, battery);
-    uint32_t base = start ? 1000 : 100;
-    for (int i = 0; i < 4; ++i) {
-      if (!expect(tap(behavior, base + i * 200, battery).screen != nina::ScreenName::Face,
-                  "fewer than five taps cycle debug screens")) return false;
+    for (int i = 0; i < 5; ++i) {
+      if (!expect(tap(behavior, 1000 + i * 200, battery).screen != nina::ScreenName::Face,
+                  "five taps keep cycling debug screens")) return false;
     }
-    if (!expect(tap(behavior, base + 800, battery).screen == nina::ScreenName::Face,
-                "five taps close either debug screen")) return false;
+    behavior.update({2500, true, nina::ExpressionName::Idle, battery});
+    if (!expect(behavior.update({5499, true, nina::ExpressionName::Idle, battery}).screen != nina::ScreenName::Face,
+                "short hold keeps debug screen open")) return false;
+    if (!expect(behavior.update({5500, true, nina::ExpressionName::Idle, battery}).screen == nina::ScreenName::Face,
+                "three second hold closes debug screen")) return false;
+    if (!expect(behavior.update({9500, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+                "continuing the same hold requests sleep at seven seconds")) return false;
   }
   return true;
 }
@@ -404,7 +408,7 @@ int main() {
   if (!expect(missingGravity.update(sample).jumpOverlayActive,
               "fresh low acceleration followed by impact reacts without a gravity estimate")) return 1;
   if (!wakeHoldIsIgnoredUntilReleased()) return 1;
-  if (!fiveTapsCloseEitherDebugScreen()) return 1;
+  if (!holdClosesEitherDebugScreen()) return 1;
   if (!serialDirectionTimesOut()) return 1;
   if (!fiveTapsOpenSettings()) return 1;
   if (!jumpOverridesBlink()) return 1;

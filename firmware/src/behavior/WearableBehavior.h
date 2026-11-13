@@ -18,6 +18,7 @@ constexpr uint32_t kExpressionTransitionMs = 300;
 constexpr uint32_t kBlinkPeriodMs = 4000;
 constexpr uint32_t kBlinkDurationMs = 200;
 
+constexpr uint32_t kDebugExitHoldMs = 3000;
 constexpr uint32_t kSleepHoldMs = 7000;
 
 enum class ScreenName { Face, SettingsBattery, PeerDirection };
@@ -142,9 +143,6 @@ class WearableBehavior {
       if (elapsedMs - touchStartMs_ <= kTapMaxMs) {
         if (screen_ == ScreenName::Face) {
           if (++tapCount_ >= 5) { screen_ = ScreenName::SettingsBattery; tapCount_ = 0; }
-        } else if (++tapCount_ >= 5) {
-          screen_ = ScreenName::Face;
-          tapCount_ = 0;
         } else {
           screen_ = screen_ == ScreenName::SettingsBattery ? ScreenName::PeerDirection : ScreenName::SettingsBattery;
         }
@@ -152,6 +150,10 @@ class WearableBehavior {
         tapCount_ = 0;
       }
       lastTouchMs_ = elapsedMs;
+    } else if (touchDown && screen_ != ScreenName::Face &&
+               elapsedMs - touchStartMs_ >= kDebugExitHoldMs) {
+      screen_ = ScreenName::Face;
+      tapCount_ = 0;
     } else if (!touchDown && screen_ != ScreenName::Face &&
                elapsedMs - lastTouchMs_ >= kSettingsInactivityMs) {
       screen_ = ScreenName::Face;
