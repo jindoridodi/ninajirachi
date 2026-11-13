@@ -35,6 +35,7 @@ bool scanned = false;
 uint32_t lastFrameMs = 0;
 uint32_t lastLogMs = 0;
 char deviceId[13];
+RTC_DATA_ATTR bool waitingForSleepRelease = false;
 constexpr uint32_t kFramePeriodMs = 33;
 constexpr uint8_t kCompassAddress = 0x2C;
 constexpr uint8_t kCompassSdaPin = 16;
@@ -126,16 +127,21 @@ void serialCommands() {
 
 }  // namespace
 
-void enterDeepSleep() {
+void enterDeepSleep(bool waitForRelease) {
   digitalWrite(2, LOW);
   pinMode(2, OUTPUT);
-  // Wait for release so the touch used to sleep cannot immediately wake the board.
-  while (nina::touchIsDown() || digitalRead(5) == LOW) delay(20);
   gpio_hold_en(GPIO_NUM_2);
   gpio_deep_sleep_hold_en();
-  rtc_gpio_pullup_en(GPIO_NUM_5);
-  rtc_gpio_pulldown_dis(GPIO_NUM_5);
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_5, 0);
+  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+  waitingForSleepRelease = waitForRelease;
+  if (waitForRelease) {
+    // The IRQ can pulse during a hold, so check release before arming touch wake.
+    esp_sleep_enable_timer_wakeup(250000);
+  } else {
+    rtc_gpio_pullup_en(GPIO_NUM_5);
+    rtc_gpio_pulldown_dis(GPIO_NUM_5);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_5, 0);
+  }
   esp_deep_sleep_start();
 }
 
@@ -145,16 +151,24 @@ void setup() {
   gpio_hold_dis(GPIO_NUM_2);
   rtc_gpio_deinit(GPIO_NUM_5);
   pinMode(5, INPUT_PULLUP);
-  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
+  const auto wakeCause = esp_sleep_get_wakeup_cause();
+  if (wakeCause == ESP_SLEEP_WAKEUP_TIMER && waitingForSleepRelease) {
+    Wire.begin(6, 7);
+    enterDeepSleep(nina::touchIsDown() || digitalRead(5) == LOW);
+  }
+  waitingForSleepRelease = false;
+  if (wakeCause == ESP_SLEEP_WAKEUP_EXT0) {
     pinMode(2, OUTPUT);
     digitalWrite(2, LOW);
     Wire.begin(6, 7);
     const uint32_t started = millis();
     while (millis() - started < nina::kSleepHoldMs) {
-      if (!nina::touchIsDown()) enterDeepSleep();
+      if (!nina::touchIsDown()) enterDeepSleep(true);
       delay(20);
     }
-    while (nina::touchIsDown()) delay(20);
+    behavior.ignoreTouchUntilRelease();
+    digitalWrite(13, HIGH);
+    pinMode(13, OUTPUT);
   }
   if (!surface.begin()) {
     Serial.println("Display initialization failed");
@@ -162,7 +176,7 @@ void setup() {
   }
   displayReady = true;
   compassBus.begin(kCompassSdaPin, kCompassSclPin, 400000);
-  nina::resetTouch();
+  if (wakeCause != ESP_SLEEP_WAKEUP_EXT0) nina::resetTouch();
   analogReadResolution(12);
   analogSetPinAttenuation(1, ADC_11db);
   if (!motionSampler.begin()) Serial.println("QMI8658 motion initialization failed");
@@ -225,7 +239,7 @@ void loop() {
   input.headingValid = heading.valid;
   input.headingDegrees = heading.degrees;
   auto output = behavior.update(input, observations, count, directions, directionCount);
-  if (output.sleepRequested) enterDeepSleep();
+  if (output.sleepRequested) enterDeepSleep(true);
   if (output.screen == nina::ScreenName::SettingsBattery && !settingsVisible)
     output.battery.millivolts = nina::batteryMillivolts(input.elapsedMs, true);
   settingsVisible = output.screen == nina::ScreenName::SettingsBattery;
