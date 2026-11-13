@@ -116,25 +116,54 @@ bool cyclesDebugScreensAndRequestsSleep() {
   if (!expect(tap(behavior, 1400, battery).screen == nina::ScreenName::SettingsBattery,
               "another tap returns to battery")) return false;
   behavior.update({2000, true, nina::ExpressionName::Idle, battery});
-  if (!expect(!behavior.update({11999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+  if (!expect(!behavior.update({8999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
               "short hold does not sleep")) return false;
-  if (!expect(behavior.update({12000, true, nina::ExpressionName::Idle, battery}).sleepRequested,
-              "ten second hold requests sleep")) return false;
-  behavior.update({12001, false, nina::ExpressionName::Idle, battery});
-  behavior.update({13000, true, nina::ExpressionName::Idle, battery});
-  return expect(!behavior.update({22999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+  if (!expect(behavior.update({9000, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+              "seven second hold requests sleep")) return false;
+  behavior.update({9001, false, nina::ExpressionName::Idle, battery});
+  behavior.update({10000, true, nina::ExpressionName::Idle, battery});
+  return expect(!behavior.update({16999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
                 "a new hold starts its own timer");
 }
 
-bool serialDirectionStaysOpen() {
+bool fiveTapsCloseEitherDebugScreen() {
+  nina::BatterySnapshot battery;
+  for (int start = 0; start < 2; ++start) {
+    TestBehavior behavior;
+    behavior.showSettings(0);
+    if (start == 1) tap(behavior, 100, battery);
+    uint32_t base = start ? 1000 : 100;
+    for (int i = 0; i < 4; ++i) {
+      if (!expect(tap(behavior, base + i * 200, battery).screen != nina::ScreenName::Face,
+                  "fewer than five taps cycle debug screens")) return false;
+    }
+    if (!expect(tap(behavior, base + 800, battery).screen == nina::ScreenName::Face,
+                "five taps close either debug screen")) return false;
+  }
+  return true;
+}
+
+bool wakeHoldIsIgnoredUntilReleased() {
+  TestBehavior behavior;
+  nina::BatterySnapshot battery;
+  behavior.ignoreTouchUntilRelease();
+  behavior.update({0, true, nina::ExpressionName::Idle, battery});
+  if (!expect(!behavior.update({8000, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+              "the wake hold cannot immediately sleep again")) return false;
+  behavior.update({8100, false, nina::ExpressionName::Idle, battery});
+  behavior.update({8200, true, nina::ExpressionName::Idle, battery});
+  return expect(behavior.update({15200, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+                "a new hold after release can request sleep");
+}
+
+bool serialDirectionTimesOut() {
   TestBehavior behavior;
   nina::BatterySnapshot battery;
   behavior.toggleDirection(100);
-  if (!expect(behavior.update({20000, false, nina::ExpressionName::Idle, battery}).screen ==
-              nina::ScreenName::PeerDirection, "serial peer display stays open")) return false;
-  behavior.toggleDirection(20001);
-  return expect(behavior.update({20001, false, nina::ExpressionName::Idle, battery}).screen ==
-                nina::ScreenName::Face, "serial command closes peer display");
+  if (!expect(behavior.update({7099, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::PeerDirection, "serial peer display stays open before timeout")) return false;
+  return expect(behavior.update({7100, false, nina::ExpressionName::Idle, battery}).screen ==
+                nina::ScreenName::Face, "serial peer display returns to face after seven seconds");
 }
 
 bool opensSettingsFromSerialCommand() {
@@ -374,7 +403,9 @@ int main() {
   sample.accelerationMagnitudeG = 4.067f;
   if (!expect(missingGravity.update(sample).jumpOverlayActive,
               "fresh low acceleration followed by impact reacts without a gravity estimate")) return 1;
-  if (!serialDirectionStaysOpen()) return 1;
+  if (!wakeHoldIsIgnoredUntilReleased()) return 1;
+  if (!fiveTapsCloseEitherDebugScreen()) return 1;
+  if (!serialDirectionTimesOut()) return 1;
   if (!fiveTapsOpenSettings()) return 1;
   if (!jumpOverridesBlink()) return 1;
   if (!tiltAndFocusedAnimation()) return 1;
