@@ -26,6 +26,14 @@ class WaveshareSurface final : public DrawSurface {
 
   void present() { LCD_1IN28_Display(image_); }
 
+  Color pixel(int x, int y) const override {
+    const int offset = (y * 240 + x) * 2;
+    const uint16_t value = uint16_t(Paint.Image[offset]) << 8 | Paint.Image[offset + 1];
+    const uint8_t r = (value >> 11) & 31, g = (value >> 5) & 63, b = value & 31;
+    return {uint32_t((r << 3) | (r >> 2)) << 16 | uint32_t((g << 2) | (g >> 4)) << 8 |
+            uint32_t((b << 3) | (b >> 2))};
+  }
+
   void fillRect(int x, int y, int width, int height, Color color) override {
     if (width <= 0 || height <= 0 || x >= 240 || y >= 240) return;
     const int endX = min(239, x + width - 1);

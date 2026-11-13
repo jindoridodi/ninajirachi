@@ -11,6 +11,7 @@ class DrawSurface {
  public:
   virtual ~DrawSurface() = default;
   virtual void fillRect(int x, int y, int width, int height, Color color) = 0;
+  virtual Color pixel(int x, int y) const = 0;
 };
 
 class FaceRenderer {
@@ -120,7 +121,7 @@ class FaceRenderer {
           tongueAlpha = std::min(coverage(distance), coverage(mouthY-py));
         }
         if (mouthAlpha > 0 || tongueAlpha > 0) {
-          const Color under = blend({0}, preset.colors.face, tongueAlpha);
+          const Color under = blend({0}, surface.pixel(ox+x, oy+y), tongueAlpha);
           surface.fillRect(ox+x, oy+y, 1, 1, blend(preset.colors.mouth, under, mouthAlpha));
         }
       }

@@ -22,6 +22,8 @@ int main() {
   Paint_NewImage(pixels, 240, 240, ROTATE_0, 0);
   Paint_SetScale(65);
   nina::WaveshareSurface surface;
+  surface.fillRect(8, 20, 1, 1, {0xF80000});
+  assert(surface.pixel(8, 20).rgb == 0xff0000);
   surface.fillRect(10, 20, 3, 1, {0xFFFFFF});
   assert(pixel(10, 20) == WHITE && pixel(12, 20) == WHITE);
   assert(pixel(9, 20) == BLACK && pixel(13, 20) == BLACK && pixel(10, 21) == BLACK);
