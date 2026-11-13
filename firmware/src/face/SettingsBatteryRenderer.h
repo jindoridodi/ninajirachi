@@ -1,12 +1,27 @@
 #pragma once
 
 #include <stdio.h>
+#include <string.h>
 #include "../behavior/BatterySnapshot.h"
 
 namespace nina {
 
 struct SettingsBatteryLines {
   char lines[7][48];
+};
+
+class SettingsBatteryRefresh {
+ public:
+  bool changed(const SettingsBatteryLines& lines) {
+    if (valid_ && memcmp(&last_, &lines, sizeof(lines)) == 0) return false;
+    last_ = lines;
+    valid_ = true;
+    return true;
+  }
+  void invalidate() { valid_ = false; }
+ private:
+  SettingsBatteryLines last_{};
+  bool valid_ = false;
 };
 
 // The board draws these lines using its existing text API.

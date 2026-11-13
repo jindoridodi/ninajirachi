@@ -27,7 +27,7 @@ int main() {
   nina::encodeBeacon(encoded, nina::BeaconType::Discovery, 0);
   assert(!nina::decodeBeacon(encoded, 12, nina::BeaconType::Discovery));
   nina::EspNowDiscovery radio;
-  assert(radio.begin(1) && radioCallback);
+  assert(radio.begin(1) && radioCallback && WiFi.current == WIFI_STA);
   wifi_promiscuous_pkt_t frame{};
   frame.rx_ctrl.sig_len = 55; frame.rx_ctrl.rssi = -45;
   auto* f = frame.payload;
@@ -48,12 +48,21 @@ int main() {
   }
   assert(!radio.receive(packet));
 
+  radio.end();
+  assert(WiFi.current == WIFI_OFF);
+  assert(radio.begin(1));
+  assert(!radio.receive(packet));
+  radioCallback(&frame, WIFI_PKT_MGMT);
+  assert(radio.receive(packet));
+  radio.end();
+
   nina::BleDiscovery ble;
   bleStartup.configResult = 1;
   assert(!ble.begin(1));
   bleStartup.configResult = ESP_OK;
   assert(ble.begin(0x123456789abcULL));
   const unsigned char expected[] = {255,255,'N','I','N','A',1,1,0x12,0x34,0x56,0x78,0x9a,0xbc};
+  assert(BLEDevice::getScan()->interval == 100 && BLEDevice::getScan()->window == 40);
   assert(bleStartup.payload == std::string(reinterpret_cast<const char*>(expected), sizeof(expected)));
   assert(bleStartup.callback && bleStartup.starts == 0);
   esp_ble_gap_cb_param_t event{};
@@ -69,6 +78,7 @@ int main() {
   bleStartup.startResult = ESP_OK;
   bleStartup.callback(ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT, &event);
   assert(bleStartup.starts == 2);
+  assert(bleStartup.advMin == 0x100 && bleStartup.advMax == 0x120);
   event.adv_start_cmpl.status = 1;
   logs = Serial.messages;
   bleStartup.callback(ESP_GAP_BLE_ADV_START_COMPLETE_EVT, &event);
