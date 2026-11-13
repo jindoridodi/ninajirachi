@@ -36,13 +36,20 @@ class WaveshareSurface final : public DrawSurface {
 
   void fillRect(int x, int y, int width, int height, Color color) override {
     if (width <= 0 || height <= 0 || x >= 240 || y >= 240) return;
-    const int endX = min(239, x + width - 1);
-    const int endY = min(239, y + height - 1);
+    const int64_t right = int64_t(x) + width, bottom = int64_t(y) + height;
+    if (right <= 0 || bottom <= 0) return;
+    const int endX = right < 240 ? int(right) : 240;
+    const int endY = bottom < 240 ? int(bottom) : 240;
     x = max(0, x);
     y = max(0, y);
-    if (endX < x || endY < y) return;
-    // ClearWindows uses exclusive endpoints and avoids DrawPoint's one-pixel offset.
-    Paint_ClearWindows(x, y, endX + 1, endY + 1, rgb565(color));
+    const UWORD pixel = rgb565(color);
+    for (int row = y; row < endY; ++row) {
+      UBYTE* out = Paint.Image + (row * 240 + x) * 2;
+      for (int col = x; col < endX; ++col) {
+        *out++ = pixel >> 8;
+        *out++ = pixel & 0xff;
+      }
+    }
   }
 
  private:
