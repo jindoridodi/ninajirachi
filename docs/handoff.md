@@ -1,5 +1,15 @@
 # Implementation handoff
 
+## Compass verification, 2026-11-12
+
+Both peer-direction screens alternated between NO HEADING and TURN TO SAMPLE. A temporary diagnostic on port ending 1891 showed successful magnetometer reads but frequent zero gravity estimates during a controlled, flat turn; tilt rotation repeatedly crossed the 10-degree/second gate and restarted the 250 ms settling window. With the wearable stationary, three consecutive two-second windows reported valid headings throughout. The normal firmware was restored after testing. Investigate motion handling without weakening the rejection of unreliable gravity; peer-direction sampling remains unverified. To identify a wearable for the user, send serial `t` to trigger its jump reaction before asking them to move or inspect it.
+
+The normal-turn trace is `tests/fixtures/2026-11-12-normal-turn.txt`. Each line is `nowMs sensorTimestamp axMg ayMg azMg gxDps gyDps gzDps recordedFlag`. `sh tools/replay_gravity_trace.sh` replays that file through `GravityEstimator` and reports 347 of 478 samples without gravity (exit 1). The trailing flag is from the capture and is ignored. Tilt rate exceeded 10 degrees/second in 188 samples; 13 acceleration magnitudes were outside the accepted 0.9–1.1 g range. Some tilt rates were much higher than the threshold. The diagnostic firmware was removed from the wearable. The bias and tilt-average experiments below were offline checks of this trace; the replay tool does not repeat them.
+
+The final 96 recorded samples, after the user set the wearable down, averaged gyro X=5.27, Y=-6.18, Z=-0.01 degrees/second (standard deviations 0.62, 0.65, 0.71). Subtracting an approximate fixed bias (5, -6, 0) for an offline experiment reduced unavailable gravity from 347/478 to 310/478; gyro offset contributes but does not explain the whole failure. A two- to eight-sample tilt-rate average also left at least 66.5% unavailable. Neither is a sufficient fix; avoid hard-coding this board's bias or weakening motion rejection based on this trace alone.
+
+The user replaced a faulty QMC5883P. Both wearables scanned at 0x2C and produced nonzero raw readings. After earlier rejected saves, the replacement on port ending 0621 was calibrated successfully: 836 samples, spans X=2574, Y=2967, Z=2772, and save status ok. Once stationary it reported a heading near 70 degrees, with 28 of 31 readings valid. The other wearable on port ending 1891 previously produced 27 valid heading samples. Heading accuracy, intermittent validity, and two-wearable gaze remain to be checked.
+
 ## Current baseline
 
 `main` contains the parameterized reference face, movement behavior, compass service, expression/settings screen, BLE peer discovery, and ESP-NOW direction evidence. Software integration is present; physical operation still needs the checks below.
