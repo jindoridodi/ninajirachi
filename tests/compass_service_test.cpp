@@ -76,7 +76,15 @@ int main() {
   assert(restored.begin(bus, {true, 0x2c}));
   assert(restored.update(300, {0, 0, 1}));
   assert(std::fabs(restored.heading(300).degrees - 315) < 0.01f);
+  bus.registers[9] = 0;
+  assert(!restored.update(320, {0, 0, 1}));
+  assert(restored.readStatus() == nina::CompassReadStatus::NoData);
+  assert(restored.heading(320).valid && restored.heading(320).sampledAtMs == 300);
   assert(!restored.heading(551).valid);
+  assert(!restored.update(321, {0, 0, 0}));
+  assert(!restored.heading(321).valid);
+  bus.sample(1000, 1000, 0);
+  assert(restored.update(300, {0, 0, 1}));
   bus.registers[9] = 3;
   assert(!restored.update(301, {0, 0, 1}));
   assert(restored.readStatus() == nina::CompassReadStatus::Overflow);

@@ -28,7 +28,7 @@ Include `src/compass/CompassService.h` and keep one `nina::CompassService` insta
 
 - `bool begin(TwoWire&, CompassConfig = {})`: disabled by default; `CompassConfig{true, scannedAddress}` is the explicit user-verified enable gate. Returns sensor configuration success; raw mode can succeed without saved calibration or working storage.
 - `bool update(uint32_t nowMs, MagneticVector gravityInG)`: poll for a new accepted XYZ sample. Returns raw-read success, independently of heading validity.
-- `CompassHeading heading(uint32_t nowMs)`: `{valid, degrees, sampledAtMs}`. Consume degrees only when valid. Heading expires after 250 ms, including across `millis()` wraparound, and becomes invalid immediately on a failed read or during calibration.
+- `CompassHeading heading(uint32_t nowMs)`: `{valid, degrees, sampledAtMs}`. Consume degrees only when valid. Heading expires after 250 ms, including across `millis()` wraparound, and becomes invalid immediately on communication errors, overflow, invalid readings or gravity, and during calibration. A no-data status retains only the previous still-fresh heading and its original timestamp; it never creates a new direction-evidence sample.
 - `MagneticSample raw()`: last accepted signed XYZ; log only after `update` returns true to avoid presenting old values as fresh.
 - `bool startCalibration()`, `bool saveCalibration(float headingOffsetDegrees = 0)`, `void cancelCalibration()`.
 - `bool calibrated()`, `bool collecting()`, `uint32_t calibrationSamples()`: inspect calibration status. `calibrated()` reports an installed calibration; heading is still invalid during collection.

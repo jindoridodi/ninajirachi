@@ -109,8 +109,13 @@ class CompassService {
   }
 
   bool update(uint32_t nowMs, MagneticVector gravityInG) {
+    if (!enabled_) { valid_ = false; return false; }
+    if (!sensor_.read(raw_)) {
+      if (sensor_.status() != CompassReadStatus::NoData ||
+          !std::isfinite(calibration_.headingDegrees(raw_, gravityInG))) valid_ = false;
+      return false;
+    }
     valid_ = false;
-    if (!enabled_ || !sensor_.read(raw_)) return false;
     sampledAtMs_ = nowMs;
     if (collecting_) {
       collection_.observe(raw_);
