@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the required unmodified drivers from the official Waveshare demo ZIP."""
+"""Install the Waveshare demo drivers with the write-only SPI adaptation."""
 import argparse
 from pathlib import Path
 from zipfile import ZipFile
@@ -17,6 +17,12 @@ def main():
     target = ROOT / 'firmware/src/waveshare'
     with ZipFile(args.zip) as archive:
         sources = {name: archive.read(PREFIX + name) for name in FILES}
+    # Arduino 2.0.12 transfer(buffer, length) overwrites the input with RX data.
+    old = b'vspi->transfer(pData, Len);'
+    if sources['DEV_Config.cpp'].count(old) != 1:
+        raise ValueError('Unexpected Waveshare SPI driver; write-only adaptation not applied')
+    sources['DEV_Config.cpp'] = sources['DEV_Config.cpp'].replace(
+        old, b'vspi->writeBytes(pData, Len);')
     for name, data in sources.items():
         (target / name).write_bytes(data)
 
