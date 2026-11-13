@@ -21,3 +21,6 @@ c++ -std=gnu++11 -Wall -Wextra -Werror tests/runtime_schedule_test.cpp -o /tmp/n
 
 c++ -std=gnu++11 -Wall -Wextra -Werror tests/frame_presenter_test.cpp -o /tmp/ninajirachi-frame-presenter-test
 /tmp/ninajirachi-frame-presenter-test
+
+c++ -std=gnu++11 -Wall -Wextra -Werror -I tests/compass_support tests/runtime_inputs_test.cpp -o /tmp/ninajirachi-runtime-inputs-test
+/tmp/ninajirachi-runtime-inputs-test
