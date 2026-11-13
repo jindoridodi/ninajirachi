@@ -114,6 +114,9 @@ void serialCommands() {
   } else if (command == 'j') {
     showJumpDebug = !showJumpDebug;
     Serial.println(showJumpDebug ? "[DEBUG-jump] enabled" : "[DEBUG-jump] disabled");
+  } else if (command == 'b') {
+    behavior.showSettings(millis());
+    Serial.println("Settings screen enabled");
   } else if (command >= '0' && command <= '2') {
     expression = static_cast<nina::ExpressionName>(command - '0');
   }
@@ -141,7 +144,7 @@ void setup() {
   if (!radioReady) Serial.println("ESP-NOW initialization failed");
   snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
            unsigned(identity));
-  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; 0 idle; 1 curious; 2 excited");
+  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; b settings; 0 idle; 1 curious; 2 excited");
   renderer.render(surface, nina::idlePreset(), 240, 240);
   surface.present();
 }

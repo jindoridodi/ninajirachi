@@ -115,6 +115,21 @@ bool opensAndClosesSettingsWithTaps() {
                 "five taps return to face");
 }
 
+bool opensSettingsFromSerialCommand() {
+  TestBehavior behavior;
+  nina::BatterySnapshot battery;
+  behavior.update({0, false, nina::ExpressionName::Idle, battery});
+  behavior.showSettings(1000);
+  if (!expect(behavior.update({1000, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::SettingsBattery, "serial command opens settings")) return false;
+  return expect(behavior.update({7999, false, nina::ExpressionName::Idle, battery}).screen ==
+                    nina::ScreenName::SettingsBattery,
+                "serial command starts the settings timeout") &&
+         expect(behavior.update({8000, false, nina::ExpressionName::Idle, battery}).screen ==
+                    nina::ScreenName::Face,
+                "serial-opened settings times out");
+}
+
 bool requiresQuickTapsAndExactTimeout() {
   TestBehavior behavior;
   nina::BatterySnapshot battery;
@@ -361,5 +376,5 @@ int main() {
   if (!expect(finished.face.metrics.eyeOpen == 48, "transition reaches requested expression")) return 1;
   return !(sustainedProximityChoosesExpression() && gazeUsesTargetEvidence() && discoveryContinuesInSettingsAndAcrossClockWrap() && discoversPeer() && animatesIdleMouth() && transitionsFromVisibleBlink() &&
            keepsIdleFaceAlive() && rendersNamedExpressions() &&
-           opensAndClosesSettingsWithTaps() && requiresQuickTapsAndExactTimeout());
+           opensAndClosesSettingsWithTaps() && opensSettingsFromSerialCommand() && requiresQuickTapsAndExactTimeout());
 }

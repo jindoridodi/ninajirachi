@@ -53,8 +53,11 @@ class MotionSampler {
       result.gravity = estimator_.update(result.timestamp,
           {result.acceleration[0], result.acceleration[1], result.acceleration[2]},
           {result.gyro[0], result.gyro[1], result.gyro[2]}, now);
+      compassGravity_ = result.gravity;
+    } else if (readOk && haveTimestamp_ && now - lastSuccessMs_ <= 100) {
+      result.gravity = compassGravity_;
     }
-    if (result.gravity.x != 0 || result.gravity.y != 0 || result.gravity.z != 0) {
+    if (result.fresh && (result.gravity.x != 0 || result.gravity.y != 0 || result.gravity.z != 0)) {
       movementGravity_ = result.gravity;
       movementGravityAtMs_ = now;
       haveGravity_ = true;
@@ -82,6 +85,7 @@ class MotionSampler {
   }
   TwoWire& bus_;
   GravityEstimator estimator_;
+  MagneticVector compassGravity_{0, 0, 0};
   MagneticVector movementGravity_{0, 0, 0};
   uint32_t movementGravityAtMs_ = 0, lastTimestamp_ = 0, lastSuccessMs_ = 0;
   uint8_t address_ = 0;
