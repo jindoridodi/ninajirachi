@@ -18,3 +18,6 @@ c++ -std=gnu++11 -Wall -Wextra -Werror tests/sleep_runtime_test.cpp -o /tmp/nina
 
 c++ -std=gnu++11 -Wall -Wextra -Werror tests/runtime_schedule_test.cpp -o /tmp/ninajirachi-runtime-schedule-test
 /tmp/ninajirachi-runtime-schedule-test
+
+c++ -std=gnu++11 -Wall -Wextra -Werror tests/frame_presenter_test.cpp -o /tmp/ninajirachi-frame-presenter-test
+/tmp/ninajirachi-frame-presenter-test
