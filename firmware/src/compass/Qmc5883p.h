@@ -23,9 +23,9 @@ class Qmc5883p {
     uint8_t chipId = 0;
     if (!readRegister(kChipIdRegister, chipId) || chipId != kExpectedChipId) return false;
 
-    // QST Rev E section 7.1: axis signs, set/reset on + 8 G, normal 200 Hz.
+    // QST Rev E section 7.1: axis signs, set/reset on + 8 G, normal 50 Hz.
     initialized_ = writeVerified(0x29, 0x06) && writeVerified(0x0B, 0x08) &&
-                   writeVerified(kControl1Register, 0xCD);
+                   writeVerified(kControl1Register, 0xC5);
     return initialized_;
   }
 

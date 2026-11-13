@@ -31,7 +31,7 @@ class BleDiscovery : public BLEAdvertisedDeviceCallbacks {
     scan->setAdvertisedDeviceCallbacks(this, true);
     scan->setActiveScan(false);
     scan->setInterval(100);
-    scan->setWindow(80);
+    scan->setWindow(40);
     return scan->start(0, scanComplete, false);
   }
 
@@ -60,8 +60,8 @@ class BleDiscovery : public BLEAdvertisedDeviceCallbacks {
         return;
       }
       static esp_ble_adv_params_t params = {};
-      params.adv_int_min = 0x20;
-      params.adv_int_max = 0x40;
+      params.adv_int_min = 0x100;
+      params.adv_int_max = 0x120;
       params.adv_type = ADV_TYPE_IND;
       params.own_addr_type = BLE_ADDR_TYPE_PUBLIC;
       params.channel_map = ADV_CHNL_ALL;

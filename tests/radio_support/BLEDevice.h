@@ -10,13 +10,15 @@ struct BleStartup {
   void (*callback)(int, esp_ble_gap_cb_param_t*) = nullptr;
   std::string payload;
   int configResult = ESP_OK, startResult = ESP_OK, starts = 0;
+  int advMin = 0, advMax = 0;
 };
 extern BleStartup bleStartup;
 inline int esp_ble_gap_config_adv_data_raw(uint8_t* data, size_t size) {
   bleStartup.payload.assign(reinterpret_cast<char*>(data), size);
   return bleStartup.configResult;
 }
-inline int esp_ble_gap_start_advertising(esp_ble_adv_params_t*) {
+inline int esp_ble_gap_start_advertising(esp_ble_adv_params_t* params) {
+  bleStartup.advMin = params->adv_int_min; bleStartup.advMax = params->adv_int_max;
   ++bleStartup.starts;
   return bleStartup.startResult;
 }
@@ -32,8 +34,9 @@ struct BLEAdvertisementData { std::string data; void setFlags(int) {} void setMa
 struct BLEScanResults {};
 struct BLEScan {
   BLEAdvertisedDeviceCallbacks* callback = nullptr;
+  int interval = 0, window = 0;
   void setAdvertisedDeviceCallbacks(BLEAdvertisedDeviceCallbacks* cb, bool) { callback = cb; }
-  void setActiveScan(bool) {} void setInterval(int) {} void setWindow(int) {}
+  void setActiveScan(bool) {} void setInterval(int value) { interval = value; } void setWindow(int value) { window = value; }
   bool start(int, void (*)(BLEScanResults), bool) { return true; }
 };
 struct BLEDevice {

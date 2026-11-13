@@ -13,6 +13,15 @@ struct Surface {
 };
 
 int main() {
+  nina::SettingsBatteryRefresh refresh;
+  nina::SettingsBatteryLines lines{};
+  assert(refresh.changed(lines));
+  assert(!refresh.changed(lines));
+  lines.lines[1][0] = '1';
+  assert(refresh.changed(lines));
+  refresh.invalidate();
+  assert(refresh.changed(lines));
+
   Surface surface;
   nina::BatterySnapshot battery{3890, true, false, 72, "NINA-42", true, false, "v1"};
   surface.render(battery);

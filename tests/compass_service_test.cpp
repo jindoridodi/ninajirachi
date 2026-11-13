@@ -48,7 +48,7 @@ int main() {
   expectLabel(compass, true, "NO CAL SAVED");
   assert(bus.registers[0x29] == 0x06);
   assert(bus.registers[0x0b] == 0x08);
-  assert(bus.registers[0x0a] == 0xcd);
+  assert(bus.registers[0x0a] == 0xc5);
   bus.sample(100, 200, -300);
   assert(compass.update(100, {0, 0, 1}));
   assert(compass.raw().z == -300);

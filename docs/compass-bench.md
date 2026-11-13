@@ -8,7 +8,7 @@ The compass adapter only accepts an I²C bus and address supplied by its caller.
 2. Power the confirmed QMC5883P breakout from the 3.3 V path and connect ground.
 3. Choose physically verified I²C pins. The Waveshare board documentation says its onboard I²C bus uses GPIO 6 (SDA) and GPIO 7 (SCL) for the IMU and touch controller; do not assume those signals are exposed at the intended enclosure connection point. The current firmware uses its second I²C controller on GPIO 16 (SDA) and GPIO 15 (SCL) for the external compass.
 4. Configure the chosen `TwoWire` bus in the board setup, then run an I²C scan. Record the responding address before constructing `Qmc5883p`.
-5. `CompassService::begin(bus)` is disabled by default and performs no I²C transactions. Only after physical inspection and the scan, call `begin(bus, CompassConfig{true, scannedAddress})`. It checks chip ID `0x80`, writes the QST Rev E section 7.1 normal-mode setup (axis signs `0x29=0x06`, set/reset on and ±8 G `0x0B=0x08`, normal 200 Hz `0x0A=0xCD`), and verifies each write by reading it back. A responding address alone is insufficient.
+5. `CompassService::begin(bus)` is disabled by default and performs no I²C transactions. Only after physical inspection and the scan, call `begin(bus, CompassConfig{true, scannedAddress})`. It checks chip ID `0x80`, writes the QST Rev E normal-mode setup (axis signs `0x29=0x06`, set/reset on and ±8 G `0x0B=0x08`, normal 50 Hz `0x0A=0xC5`), and verifies each write by reading it back. A responding address alone is insufficient.
 
 Sources: [Waveshare board documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) and the [QST QMC5883P datasheet](https://www.qstcorp.com/upload/pdf/202512/13-52-19%20QMC5883P%20Datasheet%20Rev.E.pdf).
 

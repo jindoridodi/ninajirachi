@@ -15,22 +15,32 @@ constexpr uint32_t kBeaconPeriodMs = 250;
 class EspNowDiscovery {
  public:
   bool begin(uint64_t identity) {
-    queue_ = xQueueCreate(8, sizeof(RadioPacket));
+    if (!queue_) queue_ = xQueueCreate(8, sizeof(RadioPacket));
     if (!queue_) return false;
     encodeBeacon(payload_, BeaconType::Direction, identity);
-    if (!WiFi.mode(WIFI_STA) || esp_wifi_set_channel(kPeerWifiChannel, WIFI_SECOND_CHAN_NONE) != ESP_OK ||
-        esp_now_init() != ESP_OK) return false;
+    if (!WiFi.mode(WIFI_STA)) return false;
+    if (esp_wifi_set_channel(kPeerWifiChannel, WIFI_SECOND_CHAN_NONE) != ESP_OK ||
+        esp_now_init() != ESP_OK) { WiFi.mode(WIFI_OFF); return false; }
     esp_now_peer_info_t peer = {};
     memset(peer.peer_addr, 0xff, 6);
     peer.channel = kPeerWifiChannel;
     peer.ifidx = WIFI_IF_STA;
-    if (esp_now_add_peer(&peer) != ESP_OK) return false;
+    if (esp_now_add_peer(&peer) != ESP_OK) { end(); return false; }
     instance() = this;
     wifi_promiscuous_filter_t filter = {};
     filter.filter_mask = WIFI_PROMIS_FILTER_MASK_MGMT;
-    return esp_wifi_set_promiscuous_filter(&filter) == ESP_OK &&
-           esp_wifi_set_promiscuous_rx_cb(received) == ESP_OK &&
-           esp_wifi_set_promiscuous(true) == ESP_OK;
+    if (esp_wifi_set_promiscuous_filter(&filter) != ESP_OK ||
+        esp_wifi_set_promiscuous_rx_cb(received) != ESP_OK ||
+        esp_wifi_set_promiscuous(true) != ESP_OK) { end(); return false; }
+    return true;
+  }
+  void end() {
+    instance() = nullptr;
+    esp_wifi_set_promiscuous(false);
+    esp_now_deinit();
+    WiFi.mode(WIFI_OFF);
+    RadioPacket packet;
+    while (receive(packet)) {}
   }
   void update(uint32_t now) {
     if (now - lastSentMs_ < kBeaconPeriodMs) return;

@@ -16,6 +16,7 @@ nina::WearableBehavior behavior;
 nina::BleDiscovery discovery;
 nina::EspNowDiscovery radio;
 bool radioReady = false;
+uint32_t lastRadioAttemptMs = 0;
 uint64_t localIdentity = 0;
 nina::CompassService compass;
 nina::HeadingHistory headingHistory;
@@ -41,8 +42,7 @@ void restoreCompass() {
   compassReady = compass.restore(compassBus, kCompassAddress);
 }
 
-void renderSettings(const nina::BatterySnapshot& battery) {
-  const auto text = nina::settingsBatteryLines(battery);
+void renderSettings(const nina::SettingsBatteryLines& text) {
   surface.fillRect(0, 0, 240, 240, {0});
   for (int line = 0; line < 7; ++line)
     // The Waveshare string wrapper passes these two colors to Paint_DrawChar in reverse.
@@ -140,8 +140,6 @@ void setup() {
   const uint64_t identity = ESP.getEfuseMac();
   localIdentity = identity & 0xffffffffffffULL;
   if (!discovery.begin(localIdentity)) Serial.println("BLE discovery initialization failed");
-  radioReady = radio.begin(localIdentity);
-  if (!radioReady) Serial.println("ESP-NOW initialization failed");
   snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
            unsigned(identity));
   Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; b settings; 0 idle; 1 curious; 2 excited");
@@ -200,6 +198,16 @@ void loop() {
   if (output.screen == nina::ScreenName::SettingsBattery && !settingsVisible)
     output.battery.millivolts = nina::batteryMillivolts(input.elapsedMs, true);
   settingsVisible = output.screen == nina::ScreenName::SettingsBattery;
+  if (output.peerCount && !radioReady &&
+      (lastRadioAttemptMs == 0 || input.elapsedMs - lastRadioAttemptMs >= 3000)) {
+    lastRadioAttemptMs = input.elapsedMs ? input.elapsedMs : 1;
+    radioReady = radio.begin(localIdentity);
+    if (!radioReady) Serial.println("ESP-NOW initialization failed; will retry");
+  } else if (!output.peerCount) {
+    if (radioReady) radio.end();
+    radioReady = false;
+    lastRadioAttemptMs = 0;
+  }
   if (showJumpDebug) {
     Serial.printf("[DEBUG-jump] %lu %lu %lu %d %d %.3f %.1f %.1f %.1f %.1f %.1f %.1f %d\n",
                   (unsigned long)now, (unsigned long)input.elapsedMs, (unsigned long)timestamp,
@@ -208,8 +216,17 @@ void loop() {
                   output.jumpOverlayActive);
   }
   if (!displayReady) return;
-  if (showDirection) renderDirection(output, input.headingValid);
-  else if (output.screen == nina::ScreenName::Face) renderer.render(surface, output.face, 240, 240);
-  else renderSettings(output.battery);
+  static nina::SettingsBatteryRefresh settingsRefresh;
+  if (showDirection) {
+    settingsRefresh.invalidate();
+    renderDirection(output, input.headingValid);
+  } else if (output.screen == nina::ScreenName::Face) {
+    settingsRefresh.invalidate();
+    renderer.render(surface, output.face, 240, 240);
+  } else {
+    const auto lines = nina::settingsBatteryLines(output.battery);
+    if (!settingsRefresh.changed(lines)) return;
+    renderSettings(lines);
+  }
   surface.present();
 }
