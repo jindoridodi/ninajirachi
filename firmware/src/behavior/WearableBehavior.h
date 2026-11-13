@@ -54,6 +54,12 @@ class WearableBehavior {
  public:
   void triggerJump(uint32_t nowMs) { movement_.triggerJump(nowMs); }
 
+  void showSettings(uint32_t nowMs) {
+    screen_ = ScreenName::SettingsBattery;
+    tapCount_ = 0;
+    lastTouchMs_ = nowMs;
+  }
+
   WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count,
                         const DirectionObservation* directions = nullptr, size_t directionCount = 0) {
     updateScreen(input.elapsedMs, input.touchDown);

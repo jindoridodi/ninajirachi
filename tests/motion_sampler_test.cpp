@@ -23,9 +23,10 @@ int main() {
   sample = sampler.update(250);
   assert(sample.fresh && sample.motionValid && sample.gravity.z == 1);
   sample = sampler.update(300);
-  assert(!sample.fresh && !sample.motionValid && sample.gravity.z == 0);
+  assert(!sample.fresh && !sample.motionValid && sample.gravity.z == 1);
+  assert(sampler.update(351).gravity.z == 0);
   bus.nack = true;
-  assert(!sampler.update(600).fresh);
+  assert(!sampler.update(600).fresh && sampler.update(600).gravity.z == 0);
   bus.nack = false;
   bus.registers[48] = 3;
   sample = sampler.update(601);
@@ -38,6 +39,7 @@ int main() {
     bus.registers[48] = 4 + i;
     sample = sampler.update(851 + i * 200);
     assert(sample.fresh && sample.gravity.z == 0);
+    assert(sampler.update(852 + i * 200).gravity.z == 0);
     assert(sample.motionValid == (i < 10));
   }
   TwoWire wrapBus;
