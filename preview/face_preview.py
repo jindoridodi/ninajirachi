@@ -161,7 +161,6 @@ def main() -> None:
     tk.Button(root, text="Export presets JSON", command=export).pack()
     tk.Label(root, textvariable=status, wraplength=430).pack()
     select(selected.get())
-    render_preview(preset_by_name[selected.get()])
     root.mainloop()
 
 

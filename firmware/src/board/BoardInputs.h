@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Wire.h>
-#include "../waveshare/QMI8658.h"
 
 namespace nina {
 
@@ -21,9 +20,17 @@ inline void resetTouch() {
   delay(50);
 }
 
-inline uint16_t batteryMillivolts() {
-  // The documented divider is 200k/100k; calibrated ADC millivolts avoid assuming 3.3V full scale.
-  return static_cast<uint16_t>(analogReadMilliVolts(1) * 3);
+inline uint16_t batteryMillivolts(uint32_t nowMs, bool refresh = false) {
+  static uint16_t voltage = 0;
+  static uint32_t sampledAtMs = 0;
+  static bool sampled = false;
+  if (refresh || !sampled || nowMs - sampledAtMs >= 1000) {
+    // The documented divider is 200k/100k; use calibrated ADC millivolts.
+    voltage = static_cast<uint16_t>(analogReadMilliVolts(1) * 3);
+    sampledAtMs = nowMs;
+    sampled = true;
+  }
+  return voltage;
 }
 
 }  // namespace nina

@@ -23,6 +23,7 @@ nina::MotionSampler motionSampler(Wire);
 TwoWire compassBus(1);
 nina::ExpressionName expression = nina::ExpressionName::Idle;
 bool displayReady = false;
+bool settingsVisible = false;
 bool compassReady = false;
 bool showRaw = false;
 bool showJumpDebug = false;
@@ -168,7 +169,7 @@ void loop() {
                   unsigned(compass.calibrationSamples()));
   }
   nina::WearableInput input(now, nina::touchIsDown(), expression,
-      nina::BatterySnapshot(nina::batteryMillivolts(), false, false, 0, deviceId,
+      nina::BatterySnapshot(nina::batteryMillivolts(now), false, false, 0, deviceId,
                             true, false, "prototype-13-14"), localIdentity);
   input.motionValid = motion.motionValid;
   input.accelerationValid = fresh;
@@ -192,7 +193,10 @@ void loop() {
   const auto heading = compass.heading(input.elapsedMs);
   input.headingValid = heading.valid;
   input.headingDegrees = heading.degrees;
-  const auto output = behavior.update(input, observations, count, directions, directionCount);
+  auto output = behavior.update(input, observations, count, directions, directionCount);
+  if (output.screen == nina::ScreenName::SettingsBattery && !settingsVisible)
+    output.battery.millivolts = nina::batteryMillivolts(input.elapsedMs, true);
+  settingsVisible = output.screen == nina::ScreenName::SettingsBattery;
   if (showJumpDebug) {
     Serial.printf("[DEBUG-jump] %lu %lu %lu %d %d %.3f %.1f %.1f %.1f %.1f %.1f %.1f %d\n",
                   (unsigned long)now, (unsigned long)input.elapsedMs, (unsigned long)timestamp,
