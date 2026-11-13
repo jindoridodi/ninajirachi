@@ -94,3 +94,9 @@ The baseline is commit ddf1bfdda41b52dc3620844e715d063f10b2a03f; compare it with
 
 Physical timing and current remain unmeasured. Under #15, measure repeated presentations of the same frame and board configuration for both revisions, separately recording SPI transfer duration (median, p95 and worst), panel behavior, and battery current. Reapply this revision's preparation after any baseline comparison; do not infer hardware FPS or current from the host test.
 For physical comparison, run two wearables with identical firmware and settings while a phone actively scans and attempts to connect; compare peer discovery continuity and battery current against the previous connectable advertising build. Record results under #15; host checks do not establish physical compatibility or power savings.
+
+## Renderer comparison
+
+`tests/face_renderer_benchmark.cpp` renders 54 combinations of presets, mouth width and height extremes, tongue states, overlapping eyes, and contrasting colors. Its default run checks the corrected renderer's pixel hash. To compare revisions, compile the same benchmark with `c++ -std=c++17 -O2 tests/face_renderer_benchmark.cpp -o /tmp/face-bench` in this revision and in a clean worktree at `a55e197` after copying this benchmark file into that worktree. Run `/tmp/face-bench 20` in each worktree on the same machine. The hash must match; elapsed time includes hashing and is host-only, not a wearable FPS or current measurement.
+
+On one Windows x64 GCC 16.2 run, the corrected baseline took 3.28 s and 2.70 s for 1,080 renders; the optimized renderer took 1.55 s and 1.32 s. Results vary with host load. On ESP32 the 48 cached mouth segments and per-column pointers use approximately 1,536 additional stack bytes while rendering; the outline still uses the existing 960-byte static span cache. The actual device speed and stack margin remain to be checked on hardware.
