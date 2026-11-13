@@ -10,6 +10,7 @@ void LCD_1IN28_Display(UWORD*) {}
 
 class VendorSurface : public nina::DrawSurface {
  public:
+  nina::Color pixel(int x, int y) const override { return readback_.pixel(x, y); }
   void fillRect(int x, int y, int width, int height, nina::Color color) override {
     if (width <= 0 || height <= 0 || x >= 240 || y >= 240) return;
     const int endX = min(239, x + width - 1), endY = min(239, y + height - 1);
@@ -19,6 +20,8 @@ class VendorSurface : public nina::DrawSurface {
     const UWORD pixel = ((rgb >> 8) & 0xf800) | ((rgb >> 5) & 0x07e0) | ((rgb >> 3) & 0x001f);
     Paint_ClearWindows(x, y, endX + 1, endY + 1, pixel);
   }
+ private:
+  nina::WaveshareSurface readback_;
 };
 
 static UBYTE vendorPixels[240 * 240 * 2];
