@@ -5,6 +5,7 @@
 #include "src/board/BoardInputs.h"
 #include "src/board/SleepRuntime.h"
 #include "src/board/RuntimeSchedule.h"
+#include "src/board/Runtime.h"
 #include "src/behavior/WearableBehavior.h"
 #include "src/behavior/HeadingHistory.h"
 #include "src/face/SettingsBatteryRenderer.h"
@@ -28,7 +29,7 @@ nina::HeadingHistory headingHistory;
 nina::MotionSampler motionSampler(Wire);
 TwoWire compassBus(1);
 nina::ExpressionName expression = nina::ExpressionName::Idle;
-bool displayReady = false;
+nina::Runtime runtime;
 bool settingsVisible = false;
 bool showRaw = false;
 bool showJumpDebug = false;
@@ -170,25 +171,22 @@ void setup() {
   Serial.begin(115200);
   const auto wakeCause = esp_sleep_get_wakeup_cause();
   if (!nina::wakeRuntime(sleepBoard, waitingForSleepRelease, nina::kSleepHoldMs)) return;
-  if (!surface.begin()) {
-    Serial.println("Display initialization failed");
-    return;
-  }
-  displayReady = true;
-  compassBus.begin(kCompassSdaPin, kCompassSclPin, 400000);
-  if (wakeCause != ESP_SLEEP_WAKEUP_EXT0) nina::resetTouch();
-  analogReadResolution(12);
-  analogSetPinAttenuation(1, ADC_11db);
-  if (!motionSampler.begin()) Serial.println("QMI8658 motion initialization failed");
-  restoreCompass();
-  const uint64_t identity = ESP.getEfuseMac();
-  localIdentity = identity & 0xffffffffffffULL;
-  if (!discovery.begin(localIdentity)) Serial.println("BLE discovery initialization failed");
-  snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
-           unsigned(identity));
-  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; b settings; 0 idle; 1 curious; 2 excited");
-  renderer.render(surface, nina::idlePreset(), 240, 240);
-  surface.present();
+  if (!runtime.start(surface, [&]() {
+    compassBus.begin(kCompassSdaPin, kCompassSclPin, 400000);
+    if (wakeCause != ESP_SLEEP_WAKEUP_EXT0) nina::resetTouch();
+    analogReadResolution(12);
+    analogSetPinAttenuation(1, ADC_11db);
+    if (!motionSampler.begin()) Serial.println("QMI8658 motion initialization failed");
+    restoreCompass();
+    const uint64_t identity = ESP.getEfuseMac();
+    localIdentity = identity & 0xffffffffffffULL;
+    if (!discovery.begin(localIdentity)) Serial.println("BLE discovery initialization failed");
+    snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
+             unsigned(identity));
+    Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; b settings; 0 idle; 1 curious; 2 excited");
+    renderer.render(surface, nina::idlePreset(), 240, 240);
+    surface.present();
+  })) Serial.println("Display initialization failed");
 }
 
 void updateInputs(uint32_t now) {
@@ -273,6 +271,7 @@ void updateInputs(uint32_t now) {
 
 void renderFrame() {
   const auto& output = latestOutput;
+
   static nina::SettingsBatteryRefresh settingsRefresh;
   if (output.screen == nina::ScreenName::PeerDirection) {
     settingsRefresh.invalidate();
@@ -295,9 +294,10 @@ struct RuntimeBoard {
 };
 
 void loop() {
-  if (!displayReady) { delay(100); return; }
-  serialCommands();
-  static RuntimeBoard board;
-  runtimeSchedule.run(board);
-  delay(1);
+  runtime.update([]() {
+    serialCommands();
+    static RuntimeBoard board;
+    runtimeSchedule.run(board);
+    delay(1);
+  }, []() { delay(100); });
 }
