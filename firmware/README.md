@@ -1,6 +1,6 @@
 # Firmware setup
 
-Open `firmware.ino` in Arduino IDE and target `ESP32S3 Dev Module` with `esp32 by Espressif Systems` 2.0.12. Select 16 MB Flash and enabled QSPI PSRAM.
+Open `firmware.ino` in Arduino IDE and target `ESP32S3 Dev Module` with `esp32 by Espressif Systems` 2.0.12. Select 16 MB Flash, QSPI PSRAM, and partition scheme `16M Flash (3MB APP/9.9MB FATFS)`.
 
 The first face renderer uses Waveshare's direct `ESP32-S3-Touch-LCD-1.28-Test` driver, not LVGL or TFT_eSPI. Copy the driver files listed in `src/waveshare/README.md` from the official demo package before compiling. Those files provide the verified GC9A01A display definition: SPI GPIO 8/9/10/11/12/14 with active-high backlight GPIO 2. The runtime also reads the touch count for tap gestures and uses the QMI8658 driver for gravity measurements in compass tilt compensation.
 
@@ -20,8 +20,10 @@ Download the [official demo ZIP](https://files.waveshare.com/wiki/ESP32-S3-Touch
 
 ```sh
 python3 tools/prepare_waveshare.py /path/to/ESP32-S3-Touch-LCD-1.28-Demo.zip
-arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled firmware
+arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=16M,PSRAM=enabled,PartitionScheme=app3M_fat9M_16MB firmware
 ```
+
+Flash size and partition scheme are separate settings. Without the explicit partition scheme, this board package defaults to a 1.2 MB app partition and reports a different program-storage percentage.
 
 Installed vendor files are ignored by Git; the script retains their original copyright/license headers. It also installs the QMI8658 driver used to provide gravity measurements for compass tilt compensation.
 
