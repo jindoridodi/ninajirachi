@@ -77,10 +77,13 @@ The animation loop should keep input sampling, peer tracking, state selection, a
 
 Blink periodically, but let jump and excited reactions temporarily override the idle blink schedule. Keep animation timing non-blocking so sensor and wireless updates continue while frames are drawn.
 
-The touch display has two screen modes:
+The touch display has three screen modes:
 
 - `face`: the normal animated Ninajirachi screen
-- `settings/battery`: opened by 10 quick taps; 5 quick taps return to the face, and 7 seconds without touch returns automatically. Each tap and the gap between taps must be no longer than 500 ms
+- `settings/battery`: opened by 5 quick taps; one tap cycles to peer direction. Each tap and the gap between taps must be no longer than 500 ms.
+- `peer direction`: one tap cycles back to settings/battery. Seven seconds without touch on either screen returns to the face.
+
+Hold the touchscreen for 10 seconds to enter deep sleep. After releasing it, hold it for 10 seconds again to wake. A shorter wake touch returns to sleep.
 
 The settings/battery screen is read-only initially. Show battery voltage, charging state, estimated percentage only when calibrated, and the firmware/device ID. Continue sensor and wireless processing while this screen is visible.
 

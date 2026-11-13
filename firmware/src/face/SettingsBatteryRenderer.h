@@ -41,7 +41,7 @@ inline SettingsBatteryLines settingsBatteryLines(const BatterySnapshot& battery)
     snprintf(result.lines[3], 48, "Battery: Uncalibrated");
   snprintf(result.lines[4], 48, "ID: %.20s", battery.deviceId ? battery.deviceId : "Unknown");
   snprintf(result.lines[5], 48, "FW: %.20s", battery.firmwareId ? battery.firmwareId : "Unknown");
-  snprintf(result.lines[6], 48, "Tap 5 times to return");
+  snprintf(result.lines[6], 48, "Tap for peer direction");
   return result;
 }
 

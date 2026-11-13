@@ -1,3 +1,6 @@
+#include <esp_sleep.h>
+#include <driver/gpio.h>
+#include <driver/rtc_io.h>
 #include "src/board/WaveshareSurface.h"
 #include "src/board/BoardInputs.h"
 #include "src/behavior/WearableBehavior.h"
@@ -28,7 +31,6 @@ bool settingsVisible = false;
 bool compassReady = false;
 bool showRaw = false;
 bool showJumpDebug = false;
-bool showDirection = false;
 bool scanned = false;
 uint32_t lastFrameMs = 0;
 uint32_t lastLogMs = 0;
@@ -106,8 +108,8 @@ void serialCommands() {
   } else if (command == 'r') {
     showRaw = !showRaw;
   } else if (command == 'd') {
-    showDirection = !showDirection;
-    Serial.println(showDirection ? "Peer direction display enabled" : "Peer direction display disabled");
+    behavior.toggleDirection(millis());
+    Serial.println("Peer direction display toggled");
   } else if (command == 't') {
     behavior.triggerJump(millis());
     Serial.println("Jump reaction triggered");
@@ -124,8 +126,36 @@ void serialCommands() {
 
 }  // namespace
 
+void enterDeepSleep() {
+  digitalWrite(2, LOW);
+  pinMode(2, OUTPUT);
+  // Wait for release so the touch used to sleep cannot immediately wake the board.
+  while (nina::touchIsDown() || digitalRead(5) == LOW) delay(20);
+  gpio_hold_en(GPIO_NUM_2);
+  gpio_deep_sleep_hold_en();
+  rtc_gpio_pullup_en(GPIO_NUM_5);
+  rtc_gpio_pulldown_dis(GPIO_NUM_5);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_5, 0);
+  esp_deep_sleep_start();
+}
+
 void setup() {
   Serial.begin(115200);
+  gpio_deep_sleep_hold_dis();
+  gpio_hold_dis(GPIO_NUM_2);
+  rtc_gpio_deinit(GPIO_NUM_5);
+  pinMode(5, INPUT_PULLUP);
+  if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
+    pinMode(2, OUTPUT);
+    digitalWrite(2, LOW);
+    Wire.begin(6, 7);
+    const uint32_t started = millis();
+    while (millis() - started < nina::kSleepHoldMs) {
+      if (!nina::touchIsDown()) enterDeepSleep();
+      delay(20);
+    }
+    while (nina::touchIsDown()) delay(20);
+  }
   if (!surface.begin()) {
     Serial.println("Display initialization failed");
     return;
@@ -195,6 +225,7 @@ void loop() {
   input.headingValid = heading.valid;
   input.headingDegrees = heading.degrees;
   auto output = behavior.update(input, observations, count, directions, directionCount);
+  if (output.sleepRequested) enterDeepSleep();
   if (output.screen == nina::ScreenName::SettingsBattery && !settingsVisible)
     output.battery.millivolts = nina::batteryMillivolts(input.elapsedMs, true);
   settingsVisible = output.screen == nina::ScreenName::SettingsBattery;
@@ -217,7 +248,7 @@ void loop() {
   }
   if (!displayReady) return;
   static nina::SettingsBatteryRefresh settingsRefresh;
-  if (showDirection) {
+  if (output.screen == nina::ScreenName::PeerDirection) {
     settingsRefresh.invalidate();
     renderDirection(output, input.headingValid);
   } else if (output.screen == nina::ScreenName::Face) {
