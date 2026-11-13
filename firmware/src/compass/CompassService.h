@@ -18,6 +18,8 @@ struct CompassHeading {
   uint32_t sampledAtMs;
 };
 
+enum class CalibrationSaveStatus { Ok, NotReady, Coverage, Storage };
+
 enum class CalibrationAvailability {
   Unknown,
   Collecting,
@@ -48,6 +50,7 @@ class CompassService {
   }
 
   bool verify(TwoWire& bus, uint8_t address, bool scanned) {
+    begin(bus);
     if (!scanned) return false;
     Preferences prefs;
     if (!prefs.begin("nina-verified", false)) return false;
@@ -138,14 +141,18 @@ class CompassService {
   }
 
   bool saveCalibration(float headingOffsetDegrees = 0) {
+    saveStatus_ = CalibrationSaveStatus::NotReady;
     if (!collecting_ || samples_ < kCalibrationMinSamples || !storageOpen_) return false;
     CompassCalibrationData data = collection_.data();
     data.headingOffsetDegrees = headingOffsetDegrees;
+    saveStatus_ = CalibrationSaveStatus::Coverage;
     if (!usable(data)) return false;
     Record record{};
     record.version = kStorageVersion;
     record.data = data;
+    saveStatus_ = CalibrationSaveStatus::Storage;
     if (storage_.putBytes("cal-v1", &record, sizeof(record)) != sizeof(record)) return false;
+    saveStatus_ = CalibrationSaveStatus::Ok;
     calibration_ = CompassCalibration(data);
     storageLoad_ = StorageLoad::Saved;
     collecting_ = false;
@@ -154,12 +161,16 @@ class CompassService {
   }
 
   void cancelCalibration() { collecting_ = false; valid_ = false; }
+  CompassReadStatus readStatus() const { return enabled_ ? sensor_.status() : CompassReadStatus::Disabled; }
+  CalibrationSaveStatus saveStatus() const { return saveStatus_; }
+  CompassCalibrationData collectionData() const { return collection_.data(); }
+  bool ready() const { return enabled_; }
   bool calibrated() const { return usable(calibration_.data()); }
   bool collecting() const { return collecting_; }
   uint32_t calibrationSamples() const { return samples_; }
 
-  CalibrationAvailability calibrationAvailability(bool compassEnabled) const {
-    if (!compassEnabled || !storageOpen_ || storageLoad_ == StorageLoad::Unread)
+  CalibrationAvailability calibrationAvailability() const {
+    if (!enabled_ || !storageOpen_ || storageLoad_ == StorageLoad::Unread)
       return CalibrationAvailability::Unknown;
     if (collecting_) return CalibrationAvailability::Collecting;
     if (storageLoad_ == StorageLoad::Saved || calibrated())
@@ -186,6 +197,7 @@ class CompassService {
            static_cast<int>(data.maximum.y) - data.minimum.y >= kCalibrationMinSpan &&
            static_cast<int>(data.maximum.z) - data.minimum.z >= kCalibrationMinSpan;
   }
+  CalibrationSaveStatus saveStatus_ = CalibrationSaveStatus::NotReady;
   Preferences storage_;
   Qmc5883p sensor_;
   CompassCalibration calibration_, collection_;

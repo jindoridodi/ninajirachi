@@ -7,6 +7,8 @@
 
 namespace nina {
 
+enum class CompassReadStatus { Ok, Disabled, Communication, Overflow, NoData, InvalidSample };
+
 class Qmc5883p {
  public:
   static bool probe(TwoWire& bus, uint8_t address) {
@@ -30,23 +32,28 @@ class Qmc5883p {
   }
 
   bool read(MagneticSample& sample) {
+    status_ = CompassReadStatus::Disabled;
     if (!initialized_) return false;
     uint8_t status = 0;
-    if (!readRegister(kStatusRegister, status) || (status & kOverflowMask) != 0 ||
-        (status & kDataReadyMask) == 0) {
-      return false;
-    }
+    status_ = CompassReadStatus::Communication;
+    if (!readRegister(kStatusRegister, status)) return false;
+    if (status & kOverflowMask) { status_ = CompassReadStatus::Overflow; return false; }
+    if (!(status & kDataReadyMask)) { status_ = CompassReadStatus::NoData; return false; }
 
     uint8_t bytes[6] = {};
     if (!readRegisters(kDataRegister, bytes, sizeof(bytes))) return false;
 
     const MagneticSample next{toInt16(bytes[0], bytes[1]), toInt16(bytes[2], bytes[3]),
                               toInt16(bytes[4], bytes[5])};
+    status_ = CompassReadStatus::InvalidSample;
     if ((next.x == 0 && next.y == 0 && next.z == 0) ||
         saturated(next.x) || saturated(next.y) || saturated(next.z)) return false;
     sample = next;
+    status_ = CompassReadStatus::Ok;
     return true;
   }
+
+  CompassReadStatus status() const { return status_; }
 
  private:
   static constexpr uint8_t kExpectedChipId = 0x80;
@@ -96,6 +103,7 @@ class Qmc5883p {
     return bus_->endTransmission() == 0;
   }
 
+  CompassReadStatus status_ = CompassReadStatus::Disabled;
   TwoWire* bus_ = nullptr;
   uint8_t address_ = 0;
   bool initialized_ = false;

@@ -6,6 +6,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <string.h>
+#include <atomic>
 #include "BeaconProtocol.h"
 
 namespace nina {
@@ -37,6 +38,7 @@ class EspNowDiscovery {
   void end() {
     instance() = nullptr;
     esp_wifi_set_promiscuous(false);
+    while (activeCallbacks().load() != 0) delay(1);
     esp_now_deinit();
     WiFi.mode(WIFI_OFF);
     RadioPacket packet;
@@ -51,9 +53,16 @@ class EspNowDiscovery {
   }
   bool receive(RadioPacket& packet) { return queue_ && xQueueReceive(queue_, &packet, 0) == pdTRUE; }
  private:
-  static EspNowDiscovery*& instance() { static EspNowDiscovery* value = nullptr; return value; }
+  static std::atomic<EspNowDiscovery*>& instance() { static std::atomic<EspNowDiscovery*> value{nullptr}; return value; }
+  static std::atomic<unsigned>& activeCallbacks() { static std::atomic<unsigned> count{0}; return count; }
+  struct CallbackGuard {
+    CallbackGuard() { ++activeCallbacks(); }
+    ~CallbackGuard() { --activeCallbacks(); }
+  };
   static void received(void* buffer, wifi_promiscuous_pkt_type_t type) {
-    if (!instance() || type != WIFI_PKT_MGMT || !buffer) return;
+    CallbackGuard guard;
+    EspNowDiscovery* const current = instance().load();
+    if (!current || type != WIFI_PKT_MGMT || !buffer) return;
     const auto* packet = static_cast<const wifi_promiscuous_pkt_t*>(buffer);
     const uint8_t* f = packet->payload;
     const size_t length = packet->rx_ctrl.sig_len;
@@ -68,7 +77,7 @@ class EspNowDiscovery {
     const uint64_t identity = decodeBeacon(f + 39, kBeaconSize, BeaconType::Direction);
     if (!identity || packet->rx_ctrl.rssi >= 0) return;
     RadioPacket observation = {identity, packet->rx_ctrl.rssi, millis()};
-    xQueueSend(instance()->queue_, &observation, 0);
+    xQueueSend(current->queue_, &observation, 0);
   }
   QueueHandle_t queue_ = nullptr;
   uint8_t payload_[12] = {};
