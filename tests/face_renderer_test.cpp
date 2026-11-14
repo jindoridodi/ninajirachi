@@ -43,11 +43,11 @@ void mouthUsesUnderlyingLayers() {
   assert(overlapped);
 }
 void preservesReferenceFrames() {
-  // Captured from the original renderer before optimizing its geometry work.
+  // Reference frames include antialiased face edges.
   constexpr uint64_t expected[] = {
-    13820374116385628818ULL, 15470676808309722200ULL, 9627484902246168821ULL,
-    12325516582070104337ULL, 15159256350060502617ULL, 249019282035727317ULL,
-    2778128891817469351ULL,
+    1354789032751390873ULL, 1881792169736876619ULL, 7527349015552436810ULL,
+    3213750995984830420ULL, 16357019019362284817ULL, 4818167370165692566ULL,
+    555730956877164813ULL,
   };
   nina::FaceRenderer renderer;
   Pixels frame;
@@ -117,6 +117,11 @@ int main(int argc, char** argv) {
       }
     }
   }
+  bool softenedFaceEdge = false;
+  for (int y = 80; y < 190; ++y)
+    for (int x = 0; x < 60; ++x)
+      softenedFaceEdge |= idle.pixels[y][x] != 0 && idle.pixels[y][x] != 0xffffff;
+  assert(softenedFaceEdge && "face edges should have partial pixel coverage");
   bool softenedEdge = false;
   for (int y = 140; y < 170; ++y)
     for (int x = 80; x < 160; ++x)

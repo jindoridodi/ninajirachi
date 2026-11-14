@@ -41,7 +41,8 @@ int main(int argc, char** argv) {
   }
   const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
       std::chrono::steady_clock::now() - start).count();
-  if (repetitions == 1 && hash != 13765937945867782897ULL) return 1;
+
+  if (repetitions == 1 && hash != 14833825985166619602ULL) return 1;
   std::printf("%d renders: %lld us; hash %llu\n", repetitions * 54,
               static_cast<long long>(elapsed), static_cast<unsigned long long>(hash));
 }

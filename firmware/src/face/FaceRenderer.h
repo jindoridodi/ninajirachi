@@ -21,7 +21,7 @@ class FaceRenderer {
     const auto& m = preset.metrics;
     const auto& c = preset.colors;
     surface.fillRect(0, 0, width, height, c.background);
-    fillFace(surface, ox, oy, c.face);
+    fillFace(surface, ox, oy, c.face, c.background);
     if (kFaceOutlineWidth != 1)
       for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i)
         stroke(surface, kFaceOutline[i-1], kFaceOutline[i], ox, oy, kFaceOutlineWidth, c.face);
@@ -34,40 +34,45 @@ class FaceRenderer {
     drawMouth(surface, preset, ox, oy, width, height);
   }
 
-  static void fillFace(DrawSurface& surface, int ox, int oy, Color color) {
+  static void fillFace(DrawSurface& surface, int ox, int oy, Color color, Color background) {
     struct Spans {
-      int16_t left[240], right[240];
+      float left[240][4], right[240][4];
       Spans() {
-        for (int y = 0; y < 240; ++y) {
-          left[y] = 240; right[y] = -1;
+        for (int y = 0; y < 240; ++y) for (int sample = 0; sample < 4; ++sample) {
+          const float py = y + (sample + 0.5f) / 4;
+          left[y][sample] = 240; right[y][sample] = 0;
           for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i) {
             const FacePoint a = kFaceOutline[i-1], b = kFaceOutline[i];
-            if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) {
-              const int x = a.x + (y-a.y)*(b.x-a.x)/(b.y-a.y);
-              left[y] = std::min(int(left[y]), x); right[y] = std::max(int(right[y]), x);
-            }
-          }
-        }
-        if (kFaceOutlineWidth == 1) {
-          for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i) {
-            const FacePoint a = kFaceOutline[i-1], b = kFaceOutline[i];
-            const int steps = std::max(1, std::max(abs(b.x-a.x), abs(b.y-a.y)));
-            for (int step = 0; step <= steps; ++step) {
-              const int x = a.x + (b.x-a.x)*step/steps;
-              const int y = a.y + (b.y-a.y)*step/steps;
-              if (y >= 0 && y < 240) {
-                left[y] = std::min(int(left[y]), x);
-                right[y] = std::max(int(right[y]), x);
-              }
+            if ((a.y <= py && b.y > py) || (b.y <= py && a.y > py)) {
+              const float x = a.x + (py-a.y)*(b.x-a.x)/(b.y-a.y);
+              left[y][sample] = std::min(left[y][sample], x);
+              right[y][sample] = std::max(right[y][sample], x);
             }
           }
         }
       }
     };
     static const Spans spans;
-    for (int y = 0; y < 240; ++y)
-      if (spans.right[y] >= spans.left[y])
-        surface.fillRect(ox + spans.left[y], oy + y, spans.right[y]-spans.left[y]+1, 1, color);
+    for (int y = 0; y < 240; ++y) {
+      int first = 240, last = 0, solidLeft = 0, solidRight = 240;
+      for (int sample = 0; sample < 4; ++sample) {
+        first = std::min(first, int(floorf(spans.left[y][sample])));
+        last = std::max(last, int(ceilf(spans.right[y][sample])));
+        solidLeft = std::max(solidLeft, int(ceilf(spans.left[y][sample])));
+        solidRight = std::min(solidRight, int(floorf(spans.right[y][sample])));
+      }
+      if (first >= last) continue;
+      if (solidRight > solidLeft)
+        surface.fillRect(ox + solidLeft, oy + y, solidRight - solidLeft, 1, color);
+      for (int x = first; x < last; ++x) {
+        if (x >= solidLeft && x < solidRight) continue;
+        float alpha = 0;
+        for (int sample = 0; sample < 4; ++sample)
+          alpha += std::max(0.0f, std::min(float(x+1), spans.right[y][sample]) -
+                                   std::max(float(x), spans.left[y][sample])) / 4;
+        if (alpha > 0) surface.fillRect(ox + x, oy + y, 1, 1, blend(color, background, alpha));
+      }
+    }
   }
 
  private:
@@ -166,10 +171,10 @@ class FaceRenderer {
 
   static void stroke(DrawSurface& s, FacePoint a, FacePoint b, int ox, int oy,
                      int width, Color c) {
-    const int steps = std::max(1, std::max(abs(b.x-a.x), abs(b.y-a.y)));
+    const int steps = std::max(1, int(ceilf(std::max(fabsf(b.x-a.x), fabsf(b.y-a.y)))));
     for (int step = 0; step <= steps; ++step) {
-      const int x = ox + a.x + (b.x-a.x)*step/steps;
-      const int y = oy + a.y + (b.y-a.y)*step/steps;
+      const int x = ox + int(roundf(a.x + (b.x-a.x)*step/steps));
+      const int y = oy + int(roundf(a.y + (b.y-a.y)*step/steps));
       if (width == 1) { s.fillRect(x, y, 1, 1, c); continue; }
       const float r = width / 2.0f;
       for (int row = 0; row < width; ++row) {

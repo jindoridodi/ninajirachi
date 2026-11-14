@@ -58,6 +58,14 @@ class FaceGeometryTest(unittest.TestCase):
         self.assertGreater(max(y for x, y in g["mouth"]), g["mouth"][0][1],
                            "mouth lobes curve down")
 
+    def test_diagonal_sides_are_straight(self):
+        points = display_geometry()["outline"]
+        for start, end in ((48, 72), (96, 120)):
+            ax, ay = points[start]
+            bx, by = points[end]
+            for x, y in points[start + 1:end]:
+                self.assertAlmostEqual((x-ax)*(by-ay), (y-ay)*(bx-ax), delta=0.001)
+
     def test_face_fits_inside_round_display(self):
         g = display_geometry()
         self.assertLessEqual(max(math.hypot(x - 119.5, y - 119.5)
