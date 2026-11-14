@@ -147,7 +147,7 @@ struct SleepBoard {
     return cause == ESP_SLEEP_WAKEUP_TIMER ? 1 : cause == ESP_SLEEP_WAKEUP_EXT0 ? 2 : 0;
   }
   void beginTouch() { Wire.begin(6, 7); }
-  bool touchDown() { return nina::touchIsDown(); }
+  int touchReading() { return nina::touchReading(); }
   bool touchIrqLow() { return digitalRead(5) == LOW; }
   void darken() { digitalWrite(2, LOW); pinMode(2, OUTPUT); }
   void holdBacklight() { gpio_hold_en(GPIO_NUM_2); gpio_deep_sleep_hold_en(); }
@@ -270,6 +270,7 @@ struct RuntimeBoard {
 void loop() {
   runtime.update([]() {
     serialCommands();
+    discovery.update(millis());
     static RuntimeBoard board;
     runtimeSchedule.run(board);
     delay(1);

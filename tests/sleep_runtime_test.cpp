@@ -8,11 +8,12 @@ struct Fake {
   uint32_t time = 0, releaseAt = UINT32_MAX;
   nina::WearableBehavior behavior;
   bool touch = false, irqLow = false;
+  uint32_t errorFrom = UINT32_MAX, errorUntil = UINT32_MAX;
   int cause = 0;
   void prepareWake() { calls += "P"; }
   int wakeCause() { return cause; }
   void beginTouch() { calls += "B"; }
-  bool touchDown() { return touch && time < releaseAt; }
+  int touchReading() { return time >= errorFrom && time < errorUntil ? -1 : int(touch && time < releaseAt); }
   bool touchIrqLow() { return irqLow; }
   void darken() { calls += "D"; }
   void holdBacklight() { calls += "H"; }
@@ -44,6 +45,12 @@ int main() {
   f = Fake{}; f.cause = 2; f.touch = true;
   assert(nina::wakeRuntime(f, waiting, 7000));
   assert(!waiting && f.time == 7000 && f.calls == "PDBIR");
+  f = Fake{}; f.cause = 2; f.touch = true; f.errorFrom = 100; f.errorUntil = 200;
+  assert(nina::wakeRuntime(f, waiting, 7000));
+  f = Fake{}; f.cause = 2; f.touch = true; f.errorFrom = 100; f.errorUntil = 1000;
+  assert(!nina::wakeRuntime(f, waiting, 7000));
+  f = Fake{}; f.cause = 2; f.touch = true;
+  assert(nina::wakeRuntime(f, waiting, 7000));
   nina::WearableInput held(15000, true, nina::ExpressionName::Idle, {});
   assert(!f.behavior.update(held, nullptr, 0).sleepRequested);
   held.touchDown = false; f.behavior.update(held, nullptr, 0);
