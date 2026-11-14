@@ -10,13 +10,15 @@ if [[ $# -ne 0 ]]; then
   exit 2
 fi
 
+if ! port_list=$(arduino-cli board list --format json |
+  jq -r '.detected_ports[] | select(.port.protocol_label == "Serial Port (USB)" and .port.properties.vid == "0x1A86" and .port.properties.pid == "0x55D3") | .port.address'); then
+  echo "Failed to discover USB ports; check arduino-cli and jq." >&2
+  exit 1
+fi
 ports=()
 while IFS= read -r port; do
-  ports+=("$port")
-done < <(
-  arduino-cli board list --format json |
-    jq -r '.detected_ports[] | select(.port.protocol_label == "Serial Port (USB)" and .port.properties.vid == "0x1A86" and .port.properties.pid == "0x55D3") | .port.address'
-)
+  [[ -z $port ]] || ports+=("$port")
+done <<< "$port_list"
 
 if [[ ${#ports[@]} -ne 2 ]]; then
   echo "Expected exactly 2 Waveshare ESP32 USB ports; found ${#ports[@]}." >&2
