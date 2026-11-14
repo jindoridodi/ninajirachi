@@ -191,6 +191,9 @@ void setup() {
 }
 
 struct InputBoard {
+  bool touchDown = false;
+  bool touchReadFailed = false;
+  uint32_t lastTouchReadMs = 0;
   nina::MotionSampler& motionSampler = ::motionSampler;
   nina::CompassService& compass = ::compass;
   nina::HeadingHistory& headingHistory = ::headingHistory;
@@ -205,7 +208,7 @@ struct InputBoard {
   nina::WearableOutput& latestOutput = ::latestOutput;
   bool& latestHeadingValid = ::latestHeadingValid;
   uint32_t now() { return millis(); }
-  bool touch() { return nina::touchIsDown(); }
+  int touch() { return nina::touchReading(); }
   nina::BatterySnapshot battery(uint32_t time) {
     return {nina::batteryMillivolts(time), false, false, 0, deviceId, true, false, "prototype-13-14"};
   }

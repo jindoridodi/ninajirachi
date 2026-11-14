@@ -13,8 +13,6 @@ inline int touchReading() {
   return value < 0 ? -1 : (value & 0x0f) != 0;
 }
 
-inline bool touchIsDown() { return touchReading() == 1; }
-
 inline void resetTouch() {
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);

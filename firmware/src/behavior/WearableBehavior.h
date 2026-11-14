@@ -30,6 +30,7 @@ struct WearableInput {
         localId(identity) {}
   uint32_t elapsedMs;
   bool touchDown;
+  bool touchValid = true;
   ExpressionName expression;
   BatterySnapshot battery;
   uint64_t localId;
@@ -57,6 +58,7 @@ struct WearableOutput {
 class WearableBehavior {
  public:
   void ignoreTouchUntilRelease() { ignoringTouch_ = true; }
+  void cancelTouch() { wasTouchDown_ = false; tapCount_ = 0; ignoringTouch_ = true; }
 
   void triggerJump(uint32_t nowMs) { movement_.triggerJump(nowMs); }
 
@@ -74,9 +76,9 @@ class WearableBehavior {
 
   WearableOutput update(const WearableInput& input, const DiscoveryObservation* observations, size_t count,
                         const DirectionObservation* directions = nullptr, size_t directionCount = 0) {
-    if (ignoringTouch_ && !input.touchDown) ignoringTouch_ = false;
+    if (ignoringTouch_ && input.touchValid && !input.touchDown) ignoringTouch_ = false;
     const bool touchDown = input.touchDown && !ignoringTouch_;
-    updateScreen(input.elapsedMs, touchDown);
+    updateScreen(input.elapsedMs, touchDown, input.touchValid);
     const auto nearby = nearby_.update(input.elapsedMs, input.localId, observations, count,
                                        input.headingValid, input.headingDegrees, directions, directionCount);
     const Gaze gaze = nearby.gaze;
@@ -112,7 +114,7 @@ class WearableBehavior {
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid,
         input.accelerationValid, input.accelerationMagnitudeG);
     return {screen_, motion.preset, input.battery, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive, nearby.relativeDirection,
-            touchDown && input.elapsedMs - touchStartMs_ >= kSleepHoldMs};
+            input.touchValid && touchDown && input.elapsedMs - touchStartMs_ >= kSleepHoldMs};
   }
 
  private:
@@ -135,7 +137,7 @@ class WearableBehavior {
        value(x.mouthHeight, y.mouthHeight), value(x.tongueOut, y.tongueOut)}};
   }
 
-  void updateScreen(uint32_t elapsedMs, bool touchDown) {
+  void updateScreen(uint32_t elapsedMs, bool touchDown, bool touchValid) {
     if (touchDown && !wasTouchDown_) {
       touchStartMs_ = elapsedMs;
       if (tapCount_ && elapsedMs - lastTouchMs_ > kTapGapMs) tapCount_ = 0;
@@ -150,7 +152,7 @@ class WearableBehavior {
         tapCount_ = 0;
       }
       lastTouchMs_ = elapsedMs;
-    } else if (touchDown && screen_ != ScreenName::Face &&
+    } else if (touchValid && touchDown && screen_ != ScreenName::Face &&
                elapsedMs - touchStartMs_ >= kDebugExitHoldMs) {
       screen_ = ScreenName::Face;
       tapCount_ = 0;

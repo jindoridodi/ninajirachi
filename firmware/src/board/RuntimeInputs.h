@@ -13,7 +13,18 @@ void updateRuntimeInputs(Board& board, uint32_t now) {
     board.headingHistory.record(sampled ? sampledHeading.sampledAtMs : now, sampledHeading.valid, sampledHeading.degrees);
   board.logCompass(now, sampled);
 
-  WearableInput input(now, board.touch(), board.expression, board.battery(now), board.localIdentity);
+  const int touch = board.touch();
+  if ((touch < 0 || board.touchReadFailed) && now - board.lastTouchReadMs > 200) {
+    board.touchDown = false;
+    board.behavior.cancelTouch();
+  }
+  board.touchReadFailed = touch < 0;
+  if (touch >= 0) {
+    board.touchDown = touch == 1;
+    board.lastTouchReadMs = now;
+  }
+  WearableInput input(now, board.touchDown, board.expression, board.battery(now), board.localIdentity);
+  input.touchValid = touch >= 0;
   input.motionValid = motion.motionValid;
   input.accelerationValid = motion.fresh;
   input.accelerationMagnitudeG = sqrtf(motion.acceleration[0] * motion.acceleration[0] +

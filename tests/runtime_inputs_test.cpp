@@ -37,6 +37,7 @@ struct RadioSource {
 struct Behavior {
   nina::WearableBehavior actual;
   std::vector<nina::DirectionObservation> received;
+  void cancelTouch() { actual.cancelTouch(); }
   nina::WearableOutput update(const nina::WearableInput& in, const nina::DiscoveryObservation* peers,
                               size_t count, const nina::DirectionObservation* dirs, size_t directions) {
     received.insert(received.end(), dirs, dirs + directions);
@@ -45,7 +46,9 @@ struct Behavior {
 };
 struct Board {
   uint32_t time = 0, renderCost = 0, lastRadioAttemptMs = 0;
-  bool radioReady = true, settingsVisible = false, latestHeadingValid = false, touching = false;
+  bool radioReady = true, settingsVisible = false, latestHeadingValid = false, touchDown = false, touchReadFailed = false;
+  int touching = 0;
+  uint32_t lastTouchReadMs = 0;
   uint64_t localIdentity = 1;
   nina::ExpressionName expression = nina::ExpressionName::Idle;
   nina::CompassService compass;
@@ -56,7 +59,7 @@ struct Board {
   Behavior behavior;
   nina::WearableOutput latestOutput{};
   uint32_t now() const { return time; }
-  bool touch() { return touching; }
+  int touch() { return touching; }
   nina::BatterySnapshot battery(uint32_t) { return {}; }
   uint16_t refreshBattery(uint32_t) { return 4000; }
   void sleep() { assert(false); }
@@ -68,6 +71,44 @@ struct Board {
 };
 
 int main() {
+  {
+    Board touchBoard;
+    touchBoard.radioReady = false;
+    touchBoard.time = 100; touchBoard.touching = 1; touchBoard.update(100);
+    touchBoard.time = 150; touchBoard.touching = -1; touchBoard.update(150);
+    touchBoard.time = 400; touchBoard.touching = 1; touchBoard.update(400);
+    touchBoard.time = 450; touchBoard.touching = 0; touchBoard.update(450);
+    for (int i = 0; i < 4; ++i) {
+      touchBoard.time += 50; touchBoard.touching = 1; touchBoard.update(touchBoard.time);
+      touchBoard.time += 50; touchBoard.touching = 0; touchBoard.update(touchBoard.time);
+    }
+    assert(touchBoard.latestOutput.screen == nina::ScreenName::Face);
+  }
+  {
+    Board touchBoard;
+    touchBoard.radioReady = false;
+    touchBoard.time = 100; touchBoard.touching = 1; touchBoard.update(100);
+    touchBoard.time = 150; touchBoard.touching = -1; touchBoard.update(150);
+    assert(touchBoard.touchDown);
+    touchBoard.time = 180; touchBoard.touching = 1; touchBoard.update(180);
+    touchBoard.time = 400; touchBoard.touching = -1; touchBoard.update(400);
+    assert(!touchBoard.touchDown && !touchBoard.latestOutput.sleepRequested);
+    touchBoard.time = 410; touchBoard.touching = 1; touchBoard.update(410);
+    touchBoard.time = 420; touchBoard.touching = 0; touchBoard.update(420);
+    for (int i = 0; i < 4; ++i) {
+      touchBoard.time += 50; touchBoard.touching = 1; touchBoard.update(touchBoard.time);
+      touchBoard.time += 50; touchBoard.touching = 0; touchBoard.update(touchBoard.time);
+    }
+    assert(touchBoard.latestOutput.screen == nina::ScreenName::Face);
+  }
+  {
+    Board touchBoard;
+    touchBoard.radioReady = false;
+    touchBoard.time = 100; touchBoard.touching = 1; touchBoard.update(100);
+    touchBoard.time = 7090; touchBoard.update(7090);
+    touchBoard.time = 7100; touchBoard.touching = -1; touchBoard.update(7100);
+    assert(!touchBoard.latestOutput.sleepRequested);
+  }
   TwoWire bus; bus.registers[0] = 0x80;
   Board b;
   assert(b.compass.begin(bus, {true, 0x2c}));
