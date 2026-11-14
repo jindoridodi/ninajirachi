@@ -3,9 +3,13 @@
 #include <driver/rtc_io.h>
 #include "src/board/WaveshareSurface.h"
 #include "src/board/BoardInputs.h"
+#include "src/board/SleepRuntime.h"
+#include "src/board/RuntimeSchedule.h"
+#include "src/board/RuntimeInputs.h"
+#include "src/board/Runtime.h"
 #include "src/behavior/WearableBehavior.h"
 #include "src/behavior/HeadingHistory.h"
-#include "src/face/SettingsBatteryRenderer.h"
+#include "src/face/FramePresenter.h"
 #include "src/compass/CompassService.h"
 #include "src/board/MotionSampler.h"
 #include "src/discovery/BleDiscovery.h"
@@ -26,16 +30,17 @@ nina::HeadingHistory headingHistory;
 nina::MotionSampler motionSampler(Wire);
 TwoWire compassBus(1);
 nina::ExpressionName expression = nina::ExpressionName::Idle;
-bool displayReady = false;
+nina::Runtime runtime;
 bool settingsVisible = false;
 bool showRaw = false;
 bool showJumpDebug = false;
 bool scanned = false;
-uint32_t lastFrameMs = 0;
+nina::RuntimeSchedule runtimeSchedule;
+nina::WearableOutput latestOutput{};
+bool latestHeadingValid = false;
 uint32_t lastLogMs = 0;
 char deviceId[13];
 RTC_DATA_ATTR bool waitingForSleepRelease = false;
-constexpr uint32_t kFramePeriodMs = 33;
 constexpr uint8_t kCompassAddress = 0x2C;
 constexpr uint8_t kCompassSdaPin = 16;
 constexpr uint8_t kCompassSclPin = 15;
@@ -51,12 +56,12 @@ void renderSettings(const nina::SettingsBatteryLines& text) {
     Paint_DrawString_EN(32, 50 + line * 20, text.lines[line], &Font12, BLACK, WHITE);
 }
 
-void renderDirection(const nina::WearableOutput& output, bool headingValid) {
+void renderDirection(const nina::WearableOutput& output, bool headingValid, const char* calibrationLabel) {
   surface.fillRect(0, 0, 240, 240, {0});
   Paint_DrawString_EN(79, 35, "PEER TEST", &Font12, BLACK, WHITE);
   Paint_DrawString_EN(102, 60, "FRONT", &Font12, BLACK, WHITE);
   Paint_DrawString_EN(75, 195,
-      nina::calibrationStatusLabel(compass.calibrationAvailability()),
+      calibrationLabel,
       &Font12, BLACK, WHITE);
   surface.fillRect(116, 116, 8, 8, {0xffffff});
   if (isfinite(output.relativeDirection)) {
@@ -132,87 +137,85 @@ void serialCommands() {
 
 }  // namespace
 
-void enterDeepSleep(bool waitForRelease) {
-  digitalWrite(2, LOW);
-  pinMode(2, OUTPUT);
-  gpio_hold_en(GPIO_NUM_2);
-  gpio_deep_sleep_hold_en();
-  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-  waitingForSleepRelease = waitForRelease;
-  if (waitForRelease) {
-    // The IRQ can pulse during a hold, so check release before arming touch wake.
-    esp_sleep_enable_timer_wakeup(250000);
-  } else {
-    rtc_gpio_pullup_en(GPIO_NUM_5);
-    rtc_gpio_pulldown_dis(GPIO_NUM_5);
+struct SleepBoard {
+  void prepareWake() {
+    gpio_deep_sleep_hold_dis(); gpio_hold_dis(GPIO_NUM_2);
+    rtc_gpio_deinit(GPIO_NUM_5); pinMode(5, INPUT_PULLUP);
+  }
+  int wakeCause() {
+    const auto cause = esp_sleep_get_wakeup_cause();
+    return cause == ESP_SLEEP_WAKEUP_TIMER ? 1 : cause == ESP_SLEEP_WAKEUP_EXT0 ? 2 : 0;
+  }
+  void beginTouch() { Wire.begin(6, 7); }
+  bool touchDown() { return nina::touchIsDown(); }
+  bool touchIrqLow() { return digitalRead(5) == LOW; }
+  void darken() { digitalWrite(2, LOW); pinMode(2, OUTPUT); }
+  void holdBacklight() { gpio_hold_en(GPIO_NUM_2); gpio_deep_sleep_hold_en(); }
+  void disableWake() { esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL); }
+  void timerWake() { esp_sleep_enable_timer_wakeup(250000); }
+  void touchWake() {
+    rtc_gpio_pullup_en(GPIO_NUM_5); rtc_gpio_pulldown_dis(GPIO_NUM_5);
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_5, 0);
   }
-  esp_deep_sleep_start();
-}
+  void deepSleep() { esp_deep_sleep_start(); }
+  uint32_t now() { return millis(); }
+  void wait() { delay(20); }
+  void suppressTouch() { behavior.ignoreTouchUntilRelease(); }
+  void restoreTouchPower() { digitalWrite(13, HIGH); pinMode(13, OUTPUT); }
+};
+SleepBoard sleepBoard;
 
+void enterDeepSleep(bool waitForRelease) {
+  nina::enterSleep(sleepBoard, waitingForSleepRelease, waitForRelease);
+}
 void setup() {
   Serial.begin(115200);
-  gpio_deep_sleep_hold_dis();
-  gpio_hold_dis(GPIO_NUM_2);
-  rtc_gpio_deinit(GPIO_NUM_5);
-  pinMode(5, INPUT_PULLUP);
   const auto wakeCause = esp_sleep_get_wakeup_cause();
-  if (wakeCause == ESP_SLEEP_WAKEUP_TIMER && waitingForSleepRelease) {
-    Wire.begin(6, 7);
-    enterDeepSleep(nina::touchIsDown() || digitalRead(5) == LOW);
-  }
-  waitingForSleepRelease = false;
-  if (wakeCause == ESP_SLEEP_WAKEUP_EXT0) {
-    pinMode(2, OUTPUT);
-    digitalWrite(2, LOW);
-    Wire.begin(6, 7);
-    const uint32_t started = millis();
-    while (millis() - started < nina::kSleepHoldMs) {
-      if (!nina::touchIsDown()) enterDeepSleep(true);
-      delay(20);
-    }
-    behavior.ignoreTouchUntilRelease();
-    digitalWrite(13, HIGH);
-    pinMode(13, OUTPUT);
-  }
-  if (!surface.begin()) {
-    Serial.println("Display initialization failed");
-    return;
-  }
-  displayReady = true;
-  compassBus.begin(kCompassSdaPin, kCompassSclPin, 400000);
-  if (wakeCause != ESP_SLEEP_WAKEUP_EXT0) nina::resetTouch();
-  analogReadResolution(12);
-  analogSetPinAttenuation(1, ADC_11db);
-  if (!motionSampler.begin()) Serial.println("QMI8658 motion initialization failed");
-  restoreCompass();
-  const uint64_t identity = ESP.getEfuseMac();
-  localIdentity = identity & 0xffffffffffffULL;
-  if (!discovery.begin(localIdentity)) Serial.println("BLE discovery initialization failed");
-  snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
-           unsigned(identity));
-  Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; b settings; 0 idle; 1 curious; 2 excited");
-  renderer.render(surface, nina::idlePreset(), 240, 240);
-  surface.present();
+  if (!nina::wakeRuntime(sleepBoard, waitingForSleepRelease, nina::kSleepHoldMs)) return;
+  if (!runtime.start(surface, [&]() {
+    compassBus.begin(kCompassSdaPin, kCompassSclPin, 400000);
+    if (wakeCause != ESP_SLEEP_WAKEUP_EXT0) nina::resetTouch();
+    analogReadResolution(12);
+    analogSetPinAttenuation(1, ADC_11db);
+    if (!motionSampler.begin()) Serial.println("QMI8658 motion initialization failed");
+    restoreCompass();
+    const uint64_t identity = ESP.getEfuseMac();
+    localIdentity = identity & 0xffffffffffffULL;
+    if (!discovery.begin(localIdentity)) Serial.println("BLE discovery initialization failed");
+    snprintf(deviceId, sizeof(deviceId), "%04X%08X", unsigned(identity >> 32) & 0xffff,
+             unsigned(identity));
+    Serial.println("s scan; v verify/enable compass; u forget verification; c calibrate; w save; x cancel; r raw; d peer direction; t test jump; j jump debug; b settings; 0 idle; 1 curious; 2 excited");
+    renderer.render(surface, nina::idlePreset(), 240, 240);
+    surface.present();
+  })) Serial.println("Display initialization failed");
 }
 
-void loop() {
-  serialCommands();
-  const uint32_t now = millis();
-  if (now - lastFrameMs < kFramePeriodMs) { delay(1); return; }
-  lastFrameMs = now;
-  const auto motion = motionSampler.update(now);
-  const auto& gravity = motion.gravity;
-  const auto& acceleration = motion.acceleration;
-  const auto& gyro = motion.gyro;
-  const auto timestamp = motion.timestamp;
-  const auto fresh = motion.fresh;
-  const bool sampled = compass.update(now, gravity);
-  const auto sampledHeading = compass.heading(now);
-  headingHistory.record(now, sampledHeading.valid, sampledHeading.degrees);
-  static bool sampledSinceLog = false;
-  sampledSinceLog = sampledSinceLog || sampled;
-  if (showRaw && now - lastLogMs >= 250) {
+struct InputBoard {
+  nina::MotionSampler& motionSampler = ::motionSampler;
+  nina::CompassService& compass = ::compass;
+  nina::HeadingHistory& headingHistory = ::headingHistory;
+  nina::BleDiscovery& discovery = ::discovery;
+  nina::EspNowDiscovery& radio = ::radio;
+  nina::WearableBehavior& behavior = ::behavior;
+  nina::ExpressionName& expression = ::expression;
+  uint64_t& localIdentity = ::localIdentity;
+  uint32_t& lastRadioAttemptMs = ::lastRadioAttemptMs;
+  bool& radioReady = ::radioReady;
+  bool& settingsVisible = ::settingsVisible;
+  nina::WearableOutput& latestOutput = ::latestOutput;
+  bool& latestHeadingValid = ::latestHeadingValid;
+  uint32_t now() { return millis(); }
+  bool touch() { return nina::touchIsDown(); }
+  nina::BatterySnapshot battery(uint32_t time) {
+    return {nina::batteryMillivolts(time), false, false, 0, deviceId, true, false, "prototype-13-14"};
+  }
+  uint16_t refreshBattery(uint32_t time) { return nina::batteryMillivolts(time, true); }
+  void sleep() { enterDeepSleep(true); }
+  void radioFailure() { Serial.println("ESP-NOW initialization failed; will retry"); }
+  void logCompass(uint32_t now, bool sampled) {
+    static bool sampledSinceLog = false;
+    sampledSinceLog = sampledSinceLog || sampled;
+    if (!showRaw || now - lastLogMs < 250) return;
     lastLogMs = now;
     if (!sampledSinceLog) {
       const auto status = compass.readStatus();
@@ -221,73 +224,54 @@ void loop() {
                     status == nina::CompassReadStatus::Overflow ? "overflow" :
                     status == nina::CompassReadStatus::NoData ? "no new data" : "invalid sample");
     } else {
-    const auto raw = compass.raw();
-    const auto heading = compass.heading(now);
-    Serial.printf("mag %d %d %d heading %s %.1f samples %u\n", raw.x, raw.y, raw.z,
-                  heading.valid ? "valid" : "unavailable", heading.degrees,
-                  unsigned(compass.calibrationSamples()));
+      const auto raw = compass.raw();
+      const auto heading = compass.heading(now);
+      Serial.printf("mag %d %d %d heading %s %.1f samples %u\n", raw.x, raw.y, raw.z,
+                    heading.valid ? "valid" : "unavailable", heading.degrees,
+                    unsigned(compass.calibrationSamples()));
     }
     sampledSinceLog = false;
   }
-  nina::WearableInput input(now, nina::touchIsDown(), expression,
-      nina::BatterySnapshot(nina::batteryMillivolts(now), false, false, 0, deviceId,
-                            true, false, "prototype-13-14"), localIdentity);
-  input.motionValid = motion.motionValid;
-  input.accelerationValid = fresh;
-  input.accelerationMagnitudeG = sqrtf(acceleration[0] * acceleration[0] +
-      acceleration[1] * acceleration[1] + acceleration[2] * acceleration[2]) / 1000.0f;
-  input.rollDegrees = motion.rollDegrees;
-  input.verticalAccelerationG = motion.verticalAccelerationG;
-  nina::DiscoveryObservation observations[8];
-  size_t count = 0;
-  while (count < 8 && discovery.receive(observations[count])) ++count;
-  nina::DirectionObservation directions[8];
-  size_t directionCount = 0;
-  if (radioReady) {
-    radio.update(millis());
-    nina::RadioPacket packet;
-    while (directionCount < 8 && radio.receive(packet)) {
-      if (headingHistory.associate(packet, millis(), directions[directionCount])) ++directionCount;
-    }
-  }
-  input.elapsedMs = millis();
-  const auto heading = compass.heading(input.elapsedMs);
-  input.headingValid = heading.valid;
-  input.headingDegrees = heading.degrees;
-  auto output = behavior.update(input, observations, count, directions, directionCount);
-  if (output.sleepRequested) enterDeepSleep(true);
-  if (output.screen == nina::ScreenName::SettingsBattery && !settingsVisible)
-    output.battery.millivolts = nina::batteryMillivolts(input.elapsedMs, true);
-  settingsVisible = output.screen == nina::ScreenName::SettingsBattery;
-  if (output.peerCount && !radioReady &&
-      (lastRadioAttemptMs == 0 || input.elapsedMs - lastRadioAttemptMs >= 3000)) {
-    lastRadioAttemptMs = input.elapsedMs ? input.elapsedMs : 1;
-    radioReady = radio.begin(localIdentity);
-    if (!radioReady) Serial.println("ESP-NOW initialization failed; will retry");
-  } else if (!output.peerCount) {
-    if (radioReady) radio.end();
-    radioReady = false;
-    lastRadioAttemptMs = 0;
-  }
-  if (showJumpDebug) {
+  void logMovement(uint32_t now, const nina::WearableInput& input, const nina::MotionSample& motion,
+                   const nina::WearableOutput& output) {
+    if (!showJumpDebug) return;
     Serial.printf("[DEBUG-jump] %lu %lu %lu %d %d %.3f %.1f %.1f %.1f %.1f %.1f %.1f %d\n",
-                  (unsigned long)now, (unsigned long)input.elapsedMs, (unsigned long)timestamp,
-                  fresh, input.motionValid, input.verticalAccelerationG,
-                  acceleration[0], acceleration[1], acceleration[2], gyro[0], gyro[1], gyro[2],
-                  output.jumpOverlayActive);
+                  (unsigned long)now, (unsigned long)input.elapsedMs, (unsigned long)motion.timestamp,
+                  motion.fresh, input.motionValid, input.verticalAccelerationG,
+                  motion.acceleration[0], motion.acceleration[1], motion.acceleration[2],
+                  motion.gyro[0], motion.gyro[1], motion.gyro[2], output.jumpOverlayActive);
   }
-  if (!displayReady) return;
-  static nina::SettingsBatteryRefresh settingsRefresh;
-  if (output.screen == nina::ScreenName::PeerDirection) {
-    settingsRefresh.invalidate();
-    renderDirection(output, input.headingValid);
-  } else if (output.screen == nina::ScreenName::Face) {
-    settingsRefresh.invalidate();
-    renderer.render(surface, output.face, 240, 240);
-  } else {
-    const auto lines = nina::settingsBatteryLines(output.battery);
-    if (!settingsRefresh.changed(lines)) return;
-    renderSettings(lines);
+};
+struct DisplayBoard {
+  void draw(const nina::WearableOutput& output, bool headingValid, const char* calibrationLabel) {
+    if (output.screen == nina::ScreenName::PeerDirection)
+      renderDirection(output, headingValid, calibrationLabel);
+    else if (output.screen == nina::ScreenName::Face)
+      renderer.render(surface, output.face, 240, 240);
+    else
+      renderSettings(nina::settingsBatteryLines(output.battery));
   }
-  surface.present();
+  void present() { surface.present(); }
+};
+
+void renderFrame() {
+  static nina::FramePresenter presenter;
+  static DisplayBoard display;
+  presenter.present(display, latestOutput, latestHeadingValid,
+                    nina::calibrationStatusLabel(compass.calibrationAvailability()));
+}
+
+struct RuntimeBoard {
+  uint32_t now() const { return millis(); }
+  void update(uint32_t time) { static InputBoard inputs; nina::updateRuntimeInputs(inputs, time); }
+  void render() { renderFrame(); }
+};
+
+void loop() {
+  runtime.update([]() {
+    serialCommands();
+    static RuntimeBoard board;
+    runtimeSchedule.run(board);
+    delay(1);
+  }, []() { delay(100); });
 }

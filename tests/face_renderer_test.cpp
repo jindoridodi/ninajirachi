@@ -5,6 +5,7 @@
 
 struct Pixels final : nina::DrawSurface {
   uint32_t pixels[240][240] = {};
+  nina::Color pixel(int x, int y) const override { return {pixels[y][x]}; }
   void fillRect(int x, int y, int w, int h, nina::Color c) override {
     for (int row = std::max(0, y); row < std::min(240, y+h); ++row)
       for (int col = std::max(0, x); col < std::min(240, x+w); ++col)
@@ -12,12 +13,41 @@ struct Pixels final : nina::DrawSurface {
   }
 };
 
+void mouthUsesUnderlyingLayers() {
+  nina::FaceRenderer renderer;
+  auto reference = nina::idlePreset();
+  reference.metrics.mouthWidth = reference.metrics.mouthHeight = 1;
+  reference.colors.mouth = reference.colors.face;
+  Pixels base;
+  renderer.render(base, reference, 240, 240);
+  auto extreme = nina::idlePreset();
+  extreme.metrics.mouthWidth = extreme.metrics.mouthHeight = 100;
+  Pixels result;
+  renderer.render(result, extreme, 240, 240);
+  for (int y = 0; y < 240; ++y)
+    for (int x = 0; x < 240; ++x)
+      if (base.pixels[y][x] == 0) assert(result.pixels[y][x] == 0);
+
+  reference.colors.eye = extreme.colors.eye = {0xff0000};
+  reference.metrics.eyeOffsetY = extreme.metrics.eyeOffsetY = 60;
+  renderer.render(base, reference, 240, 240);
+  extreme.metrics.tongueOut = 20;
+  renderer.render(result, extreme, 240, 240);
+  bool overlapped = false;
+  for (int y = 0; y < 240; ++y)
+    for (int x = 0; x < 240; ++x)
+      if (base.pixels[y][x] == 0xff0000) {
+        assert((result.pixels[y][x] & 0x00ffff) == 0);
+        overlapped |= result.pixels[y][x] != 0xff0000;
+      }
+  assert(overlapped);
+}
 void preservesReferenceFrames() {
   // Captured from the original renderer before optimizing its geometry work.
   constexpr uint64_t expected[] = {
     13820374116385628818ULL, 15470676808309722200ULL, 9627484902246168821ULL,
-    12325516582070104337ULL, 5968290619142240653ULL, 3904333700595754622ULL,
-    7671733331946929656ULL,
+    12325516582070104337ULL, 15159256350060502617ULL, 249019282035727317ULL,
+    2778128891817469351ULL,
   };
   nina::FaceRenderer renderer;
   Pixels frame;
@@ -42,6 +72,7 @@ void preservesReferenceFrames() {
 }
 
 int main(int argc, char** argv) {
+  mouthUsesUnderlyingLayers();
   preservesReferenceFrames();
   nina::FaceRenderer renderer;
   auto preset = nina::idlePreset();

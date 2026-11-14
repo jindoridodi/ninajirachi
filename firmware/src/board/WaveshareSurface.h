@@ -10,12 +10,12 @@ namespace nina {
 class WaveshareSurface final : public DrawSurface {
  public:
   bool begin() {
-    if (DEV_Module_Init() != 0) return false;
+    if (DEV_Module_Init() != 0) return fail();
 
-    if (!psramInit()) return false;
+    if (!psramInit()) return fail();
 
     image_ = static_cast<UWORD*>(ps_malloc(LCD_1IN28_HEIGHT * LCD_1IN28_WIDTH * sizeof(UWORD)));
-    if (image_ == nullptr) return false;
+    if (image_ == nullptr) return fail();
 
     LCD_1IN28_Init(HORIZONTAL);
     Paint_NewImage(reinterpret_cast<UBYTE*>(image_), LCD_1IN28.WIDTH, LCD_1IN28.HEIGHT, 0, 0);
@@ -26,18 +26,39 @@ class WaveshareSurface final : public DrawSurface {
 
   void present() { LCD_1IN28_Display(image_); }
 
+  Color pixel(int x, int y) const override {
+    const int offset = (y * 240 + x) * 2;
+    const uint16_t value = uint16_t(Paint.Image[offset]) << 8 | Paint.Image[offset + 1];
+    const uint8_t r = (value >> 11) & 31, g = (value >> 5) & 63, b = value & 31;
+    return {uint32_t((r << 3) | (r >> 2)) << 16 | uint32_t((g << 2) | (g >> 4)) << 8 |
+            uint32_t((b << 3) | (b >> 2))};
+  }
+
   void fillRect(int x, int y, int width, int height, Color color) override {
     if (width <= 0 || height <= 0 || x >= 240 || y >= 240) return;
-    const int endX = min(239, x + width - 1);
-    const int endY = min(239, y + height - 1);
+    const int64_t right = int64_t(x) + width, bottom = int64_t(y) + height;
+    if (right <= 0 || bottom <= 0) return;
+    const int endX = right < 240 ? int(right) : 240;
+    const int endY = bottom < 240 ? int(bottom) : 240;
     x = max(0, x);
     y = max(0, y);
-    if (endX < x || endY < y) return;
-    // ClearWindows uses exclusive endpoints and avoids DrawPoint's one-pixel offset.
-    Paint_ClearWindows(x, y, endX + 1, endY + 1, rgb565(color));
+    const UWORD pixel = rgb565(color);
+    for (int row = y; row < endY; ++row) {
+      UBYTE* out = Paint.Image + (row * 240 + x) * 2;
+      for (int col = x; col < endX; ++col) {
+        *out++ = pixel >> 8;
+        *out++ = pixel & 0xff;
+      }
+    }
   }
 
  private:
+  static bool fail() {
+    digitalWrite(2, LOW);
+    pinMode(2, OUTPUT);
+    return false;
+  }
+
   static UWORD rgb565(Color color) {
     const uint8_t red = (color.rgb >> 16) & 0xFF;
     const uint8_t green = (color.rgb >> 8) & 0xFF;

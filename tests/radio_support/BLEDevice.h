@@ -5,12 +5,12 @@ using esp_gap_ble_cb_event_t = int;
 struct esp_ble_gap_cb_param_t { struct { int status; } adv_data_raw_cmpl, adv_start_cmpl; };
 struct esp_ble_adv_params_t { int adv_int_min, adv_int_max, adv_type, own_addr_type, channel_map, adv_filter_policy; };
 constexpr int ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT = 1, ESP_GAP_BLE_ADV_START_COMPLETE_EVT = 2;
-constexpr int ESP_BT_STATUS_SUCCESS = 0, ADV_TYPE_IND = 0, BLE_ADDR_TYPE_PUBLIC = 0, ADV_CHNL_ALL = 0, ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY = 0;
+constexpr int ESP_BT_STATUS_SUCCESS = 0, ADV_TYPE_IND = 0, ADV_TYPE_NONCONN_IND = 3, BLE_ADDR_TYPE_PUBLIC = 0, ADV_CHNL_ALL = 0, ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY = 0;
 struct BleStartup {
   void (*callback)(int, esp_ble_gap_cb_param_t*) = nullptr;
   std::string payload;
   int configResult = ESP_OK, startResult = ESP_OK, starts = 0;
-  int advMin = 0, advMax = 0;
+  int advMin = 0, advMax = 0, advType = -1;
 };
 extern BleStartup bleStartup;
 inline int esp_ble_gap_config_adv_data_raw(uint8_t* data, size_t size) {
@@ -18,7 +18,7 @@ inline int esp_ble_gap_config_adv_data_raw(uint8_t* data, size_t size) {
   return bleStartup.configResult;
 }
 inline int esp_ble_gap_start_advertising(esp_ble_adv_params_t* params) {
-  bleStartup.advMin = params->adv_int_min; bleStartup.advMax = params->adv_int_max;
+  bleStartup.advMin = params->adv_int_min; bleStartup.advMax = params->adv_int_max; bleStartup.advType = params->adv_type;
   ++bleStartup.starts;
   return bleStartup.startResult;
 }

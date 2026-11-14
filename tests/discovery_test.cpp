@@ -79,6 +79,7 @@ int main() {
   bleStartup.callback(ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT, &event);
   assert(bleStartup.starts == 2);
   assert(bleStartup.advMin == 0x100 && bleStartup.advMax == 0x120);
+  assert(bleStartup.advType == ADV_TYPE_NONCONN_IND);
   event.adv_start_cmpl.status = 1;
   logs = Serial.messages;
   bleStartup.callback(ESP_GAP_BLE_ADV_START_COMPLETE_EVT, &event);

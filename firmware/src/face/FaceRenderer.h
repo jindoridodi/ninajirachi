@@ -11,6 +11,7 @@ class DrawSurface {
  public:
   virtual ~DrawSurface() = default;
   virtual void fillRect(int x, int y, int width, int height, Color color) = 0;
+  virtual Color pixel(int x, int y) const = 0;
 };
 
 class FaceRenderer {
@@ -21,8 +22,9 @@ class FaceRenderer {
     const auto& c = preset.colors;
     surface.fillRect(0, 0, width, height, c.background);
     fillFace(surface, ox, oy, c.face);
-    for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i)
-      stroke(surface, kFaceOutline[i-1], kFaceOutline[i], ox, oy, kFaceOutlineWidth, c.face);
+    if (kFaceOutlineWidth != 1)
+      for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i)
+        stroke(surface, kFaceOutline[i-1], kFaceOutline[i], ox, oy, kFaceOutlineWidth, c.face);
 
     for (const auto& eye : kFaceEyes) {
       const auto layout = faceEye(eye, m);
@@ -43,6 +45,20 @@ class FaceRenderer {
             if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) {
               const int x = a.x + (y-a.y)*(b.x-a.x)/(b.y-a.y);
               left[y] = std::min(int(left[y]), x); right[y] = std::max(int(right[y]), x);
+            }
+          }
+        }
+        if (kFaceOutlineWidth == 1) {
+          for (unsigned i = 1; i < sizeof(kFaceOutline) / sizeof(kFaceOutline[0]); ++i) {
+            const FacePoint a = kFaceOutline[i-1], b = kFaceOutline[i];
+            const int steps = std::max(1, std::max(abs(b.x-a.x), abs(b.y-a.y)));
+            for (int step = 0; step <= steps; ++step) {
+              const int x = a.x + (b.x-a.x)*step/steps;
+              const int y = a.y + (b.y-a.y)*step/steps;
+              if (y >= 0 && y < 240) {
+                left[y] = std::min(int(left[y]), x);
+                right[y] = std::max(int(right[y]), x);
+              }
             }
           }
         }
@@ -77,6 +93,14 @@ class FaceRenderer {
       left = std::min(left, points[i].x); right = std::max(right, points[i].x);
       top = std::min(top, points[i].y); bottom = std::max(bottom, points[i].y);
     }
+    struct Segment { MouthPoint a; float dx, dy, lengthSquared, left, right; };
+    Segment segments[sizeof(points)/sizeof(points[0]) - 1];
+    for (unsigned i = 0; i < sizeof(segments)/sizeof(segments[0]); ++i) {
+      const auto a = points[i], b = points[i+1];
+      const float dx = b.x-a.x, dy = b.y-a.y;
+      segments[i] = {a, dx, dy, dx*dx + dy*dy,
+                     std::min(a.x, b.x), std::max(a.x, b.x)};
+    }
     const float radius = kFaceMouthWidth / 2.0f;
     left -= radius + 1; right += radius + 1;
     top -= radius + 1; bottom += radius + 1;
@@ -95,14 +119,18 @@ class FaceRenderer {
           break;
         }
       }
+      const Segment* active[sizeof(segments)/sizeof(segments[0])];
+      unsigned activeCount = 0;
+      for (const auto& segment : segments)
+        if (px >= segment.left - radius - 0.5f && px <= segment.right + radius + 0.5f)
+          active[activeCount++] = &segment;
       for (int y = std::max(int(floorf(top)), -oy); y < std::min(int(ceilf(bottom)), height-oy); ++y) {
         const float py = y + 0.5f;
         float distanceSquared = 1e9f;
-        for (unsigned i = 1; i < sizeof(points)/sizeof(points[0]); ++i) {
-          const auto a = points[i-1], b = points[i];
-          if (px < std::min(a.x, b.x) - radius - 0.5f ||
-              px > std::max(a.x, b.x) + radius + 0.5f) continue;
-          const float dx = b.x-a.x, dy = b.y-a.y, lengthSquared = dx*dx + dy*dy;
+        for (unsigned i = 0; i < activeCount; ++i) {
+          const auto& segment = *active[i];
+          const auto a = segment.a;
+          const float dx = segment.dx, dy = segment.dy, lengthSquared = segment.lengthSquared;
           const float t = lengthSquared > 0 ? std::max(0.0f, std::min(1.0f,
               ((px-a.x)*dx + (py-a.y)*dy)/lengthSquared)) : 0;
           const float ex = px-a.x-t*dx, ey = py-a.y-t*dy;
@@ -120,7 +148,7 @@ class FaceRenderer {
           tongueAlpha = std::min(coverage(distance), coverage(mouthY-py));
         }
         if (mouthAlpha > 0 || tongueAlpha > 0) {
-          const Color under = blend({0}, preset.colors.face, tongueAlpha);
+          const Color under = blend({0}, surface.pixel(ox+x, oy+y), tongueAlpha);
           surface.fillRect(ox+x, oy+y, 1, 1, blend(preset.colors.mouth, under, mouthAlpha));
         }
       }

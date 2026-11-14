@@ -10,6 +10,11 @@
 #define UDOUBLE uint32_t
 using std::min;
 using std::max;
-inline int DEV_Module_Init() { return 0; }
-inline bool psramInit() { return true; }
-inline void* ps_malloc(size_t size) { return std::malloc(size); }
+extern bool failPsram, failAllocation, backlight;
+#define LOW 0
+#define OUTPUT 1
+inline void digitalWrite(int, int value) { backlight = value != LOW; }
+inline void pinMode(int, int) {}
+inline int DEV_Module_Init() { backlight = true; return 0; }
+inline bool psramInit() { return !failPsram; }
+inline void* ps_malloc(size_t size) { return failAllocation ? nullptr : std::malloc(size); }
