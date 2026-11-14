@@ -17,9 +17,12 @@ class FramePresenter {
     if (output.screen == ScreenName::Face) {
       changed = changed || !sameFace(face_, output.face);
       face_ = output.face;
+      if (changed) display.drawFace(output.face);
     } else if (output.screen == ScreenName::SettingsBattery) {
       if (screenChanged) settings_.invalidate();
-      changed = settings_.changed(settingsBatteryLines(output.battery)) || changed;
+      const auto lines = settingsBatteryLines(output.battery);
+      changed = settings_.changed(lines) || changed;
+      if (changed) display.drawSettings(lines);
     } else {
       const bool directionValid = isfinite(output.relativeDirection);
       changed = changed || directionValid != directionValid_ ||
@@ -31,11 +34,11 @@ class FramePresenter {
       hasTarget_ = output.targetId != 0;
       headingValid_ = headingValid;
       calibrationLabel_ = calibrationLabel;
+      if (changed) display.drawDirection(output, headingValid, calibrationLabel);
     }
     screen_ = output.screen;
     valid_ = true;
     if (!changed) return false;
-    display.draw(output, headingValid, calibrationLabel);
     display.present();
     return true;
   }
