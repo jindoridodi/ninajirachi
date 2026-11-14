@@ -2,9 +2,9 @@
 #include "Arduino.h"
 #include <string>
 using esp_gap_ble_cb_event_t = int;
-struct esp_ble_gap_cb_param_t { struct { int status; } adv_data_raw_cmpl, adv_start_cmpl; };
+struct esp_ble_gap_cb_param_t { struct { int status; } adv_data_raw_cmpl, adv_start_cmpl, scan_start_cmpl; };
 struct esp_ble_adv_params_t { int adv_int_min, adv_int_max, adv_type, own_addr_type, channel_map, adv_filter_policy; };
-constexpr int ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT = 1, ESP_GAP_BLE_ADV_START_COMPLETE_EVT = 2;
+constexpr int ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT = 1, ESP_GAP_BLE_ADV_START_COMPLETE_EVT = 2, ESP_GAP_BLE_SCAN_START_COMPLETE_EVT = 3;
 constexpr int ESP_BT_STATUS_SUCCESS = 0, ADV_TYPE_IND = 0, ADV_TYPE_NONCONN_IND = 3, BLE_ADDR_TYPE_PUBLIC = 0, ADV_CHNL_ALL = 0, ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY = 0;
 struct BleStartup {
   void (*callback)(int, esp_ble_gap_cb_param_t*) = nullptr;
@@ -34,10 +34,12 @@ struct BLEAdvertisementData { std::string data; void setFlags(int) {} void setMa
 struct BLEScanResults {};
 struct BLEScan {
   BLEAdvertisedDeviceCallbacks* callback = nullptr;
-  int interval = 0, window = 0;
+  int interval = 0, window = 0, starts = 0, stops = 0;
+  bool startResult = true;
   void setAdvertisedDeviceCallbacks(BLEAdvertisedDeviceCallbacks* cb, bool) { callback = cb; }
   void setActiveScan(bool) {} void setInterval(int value) { interval = value; } void setWindow(int value) { window = value; }
-  bool start(int, void (*)(BLEScanResults), bool) { return true; }
+  bool start(int, void (*)(BLEScanResults), bool) { ++starts; return startResult; }
+  void stop() { ++stops; }
 };
 struct BLEDevice {
   static void init(const char*) {} static void setCustomGapHandler(void (*cb)(int, esp_ble_gap_cb_param_t*)) { bleStartup.callback = cb; }

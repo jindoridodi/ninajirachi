@@ -12,6 +12,10 @@ uint32_t analogReadMilliVolts(int pin) { assert(pin == 1); return adcMillivolts;
 #include "../firmware/src/board/BoardInputs.h"
 
 int main() {
+  Wire.registers[2] = 1; assert(nina::touchReading() == 1);
+  Wire.nack = true; assert(nina::touchReading() == -1);
+  Wire.nack = false; Wire.badRead = true; assert(nina::touchReading() == -1);
+  Wire.badRead = false; Wire.registers[2] = 0; assert(nina::touchReading() == 0);
   assert(nina::batteryMillivolts(0) == 3900);
   adcMillivolts = 1200;
   assert(nina::batteryMillivolts(999) == 3900);

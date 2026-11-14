@@ -89,6 +89,29 @@ int main() {
   bleStartup.callback(ESP_GAP_BLE_ADV_START_COMPLETE_EVT, &event);
   assert(Serial.messages == logs);
 
+  // Failed asynchronous advertising and scanning start are retried without reinitializing BLE.
+  event.adv_start_cmpl.status = 1;
+  bleStartup.callback(ESP_GAP_BLE_ADV_START_COMPLETE_EVT, &event);
+  event.scan_start_cmpl.status = 1;
+  bleStartup.callback(ESP_GAP_BLE_SCAN_START_COMPLETE_EVT, &event);
+  const int scanStarts = BLEDevice::getScan()->starts;
+  ble.update(3123);
+  assert(BLEDevice::getScan()->starts == scanStarts + 1 && BLEDevice::getScan()->stops == 1);
+  event.adv_data_raw_cmpl.status = ESP_BT_STATUS_SUCCESS;
+  bleStartup.callback(ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT, &event);
+  assert(bleStartup.starts == 3);
+  event.adv_start_cmpl.status = ESP_BT_STATUS_SUCCESS;
+  bleStartup.callback(ESP_GAP_BLE_ADV_START_COMPLETE_EVT, &event);
+
+  event.scan_start_cmpl.status = 1;
+  bleStartup.callback(ESP_GAP_BLE_SCAN_START_COMPLETE_EVT, &event);
+  BLEDevice::getScan()->startResult = false;
+  ble.update(6123);
+  const int failedScanStarts = BLEDevice::getScan()->starts;
+  BLEDevice::getScan()->startResult = true;
+  ble.update(9123);
+  assert(BLEDevice::getScan()->starts == failedScanStarts + 1);
+
   BLEAdvertisedDevice device;
   const char data[] = {char(0xff),char(0xff),'N','I','N','A',1,1,0,0,0,0,0,2};
   device.data.assign(data, sizeof(data));

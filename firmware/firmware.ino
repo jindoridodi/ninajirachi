@@ -22,22 +22,17 @@ nina::FaceRenderer renderer;
 nina::WearableBehavior behavior;
 nina::BleDiscovery discovery;
 nina::EspNowDiscovery radio;
-bool radioReady = false;
-uint32_t lastRadioAttemptMs = 0;
 uint64_t localIdentity = 0;
 nina::CompassService compass;
-nina::HeadingHistory headingHistory;
 nina::MotionSampler motionSampler(Wire);
 TwoWire compassBus(1);
 nina::ExpressionName expression = nina::ExpressionName::Idle;
 nina::Runtime runtime;
-bool settingsVisible = false;
 bool showRaw = false;
 bool showJumpDebug = false;
 bool scanned = false;
 nina::RuntimeSchedule runtimeSchedule;
-nina::WearableOutput latestOutput{};
-bool latestHeadingValid = false;
+nina::RuntimeInputs runtimeInputs;
 uint32_t lastLogMs = 0;
 char deviceId[13];
 RTC_DATA_ATTR bool waitingForSleepRelease = false;
@@ -147,7 +142,7 @@ struct SleepBoard {
     return cause == ESP_SLEEP_WAKEUP_TIMER ? 1 : cause == ESP_SLEEP_WAKEUP_EXT0 ? 2 : 0;
   }
   void beginTouch() { Wire.begin(6, 7); }
-  bool touchDown() { return nina::touchIsDown(); }
+  int touchReading() { return nina::touchReading(); }
   bool touchIrqLow() { return digitalRead(5) == LOW; }
   void darken() { digitalWrite(2, LOW); pinMode(2, OUTPUT); }
   void holdBacklight() { gpio_hold_en(GPIO_NUM_2); gpio_deep_sleep_hold_en(); }
@@ -193,19 +188,13 @@ void setup() {
 struct InputBoard {
   nina::MotionSampler& motionSampler = ::motionSampler;
   nina::CompassService& compass = ::compass;
-  nina::HeadingHistory& headingHistory = ::headingHistory;
   nina::BleDiscovery& discovery = ::discovery;
   nina::EspNowDiscovery& radio = ::radio;
   nina::WearableBehavior& behavior = ::behavior;
   nina::ExpressionName& expression = ::expression;
   uint64_t& localIdentity = ::localIdentity;
-  uint32_t& lastRadioAttemptMs = ::lastRadioAttemptMs;
-  bool& radioReady = ::radioReady;
-  bool& settingsVisible = ::settingsVisible;
-  nina::WearableOutput& latestOutput = ::latestOutput;
-  bool& latestHeadingValid = ::latestHeadingValid;
   uint32_t now() { return millis(); }
-  bool touch() { return nina::touchIsDown(); }
+  int touch() { return nina::touchReading(); }
   nina::BatterySnapshot battery(uint32_t time) {
     return {nina::batteryMillivolts(time), false, false, 0, deviceId, true, false, "prototype-13-14"};
   }
@@ -243,13 +232,10 @@ struct InputBoard {
   }
 };
 struct DisplayBoard {
-  void draw(const nina::WearableOutput& output, bool headingValid, const char* calibrationLabel) {
-    if (output.screen == nina::ScreenName::PeerDirection)
-      renderDirection(output, headingValid, calibrationLabel);
-    else if (output.screen == nina::ScreenName::Face)
-      renderer.render(surface, output.face, 240, 240);
-    else
-      renderSettings(nina::settingsBatteryLines(output.battery));
+  void drawFace(const nina::ExpressionPreset& face) { renderer.render(surface, face, 240, 240); }
+  void drawSettings(const nina::SettingsBatteryLines& lines) { renderSettings(lines); }
+  void drawDirection(const nina::WearableOutput& output, bool headingValid, const char* label) {
+    renderDirection(output, headingValid, label);
   }
   void present() { surface.present(); }
 };
@@ -257,19 +243,20 @@ struct DisplayBoard {
 void renderFrame() {
   static nina::FramePresenter presenter;
   static DisplayBoard display;
-  presenter.present(display, latestOutput, latestHeadingValid,
+  presenter.present(display, runtimeInputs.output(), runtimeInputs.headingValid(),
                     nina::calibrationStatusLabel(compass.calibrationAvailability()));
 }
 
 struct RuntimeBoard {
   uint32_t now() const { return millis(); }
-  void update(uint32_t time) { static InputBoard inputs; nina::updateRuntimeInputs(inputs, time); }
+  void update(uint32_t time) { static InputBoard inputs; runtimeInputs.update(inputs, time); }
   void render() { renderFrame(); }
 };
 
 void loop() {
   runtime.update([]() {
     serialCommands();
+    discovery.update(millis());
     static RuntimeBoard board;
     runtimeSchedule.run(board);
     delay(1);

@@ -5,11 +5,12 @@
 namespace nina {
 
 // Read the touch count directly to detect presses and releases.
-inline bool touchIsDown() {
+inline int touchReading() {
   Wire.beginTransmission(0x15);
   Wire.write(0x02);
-  if (Wire.endTransmission(false) != 0 || Wire.requestFrom(0x15, 1) != 1) return false;
-  return (Wire.read() & 0x0f) != 0;
+  if (Wire.endTransmission(false) != 0 || Wire.requestFrom(0x15, 1) != 1) return -1;
+  const int value = Wire.read();
+  return value < 0 ? -1 : (value & 0x0f) != 0;
 }
 
 inline void resetTouch() {

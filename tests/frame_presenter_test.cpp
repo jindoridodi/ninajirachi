@@ -5,8 +5,10 @@
 #include <cstdio>
 
 struct Display {
-  int draws = 0, presents = 0;
-  void draw(const nina::WearableOutput&, bool, const char*) { ++draws; }
+  int draws = 0, presents = 0, screen = -1;
+  void drawFace(const nina::ExpressionPreset&) { ++draws; screen = 0; }
+  void drawSettings(const nina::SettingsBatteryLines&) { ++draws; screen = 1; }
+  void drawDirection(const nina::WearableOutput&, bool, const char*) { ++draws; screen = 2; }
   void present() { ++presents; }
 };
 
@@ -34,7 +36,7 @@ int main() {
   o.screen = nina::ScreenName::Face;
   o.face = nina::idlePreset();
   auto show = [&]() { return presenter.present(display, o, true, "CAL SAVED"); };
-  assert(show()); assert(!show());
+  assert(show() && display.screen == 0); assert(!show());
   o.face.colors.background.rgb ^= 1; assert(show());
   o.face.colors.face.rgb ^= 1; assert(show());
   o.face.colors.eye.rgb ^= 1; assert(show());
@@ -46,10 +48,10 @@ int main() {
   ++o.face.metrics.mouthWidth; assert(show());
   ++o.face.metrics.mouthHeight; assert(show());
   ++o.face.metrics.tongueOut; assert(show()); assert(!show());
-  o.screen = nina::ScreenName::SettingsBattery; assert(show()); assert(!show());
+  o.screen = nina::ScreenName::SettingsBattery; assert(show() && display.screen == 1); assert(!show());
   o.battery.millivolts = 4000; assert(show()); assert(!show());
   o.screen = nina::ScreenName::PeerDirection;
-  o.relativeDirection = NAN; assert(show()); assert(!show());
+  o.relativeDirection = NAN; assert(show() && display.screen == 2); assert(!show());
   o.targetId = 2; assert(show()); assert(!show());
   assert(presenter.present(display, o, false, "CAL SAVED"));
   assert(presenter.present(display, o, false, "CAL INVALID"));

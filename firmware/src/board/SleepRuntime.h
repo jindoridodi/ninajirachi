@@ -21,7 +21,7 @@ bool wakeRuntime(Board& board, bool& waitingForRelease, uint32_t holdMs) {
   const int cause = board.wakeCause();
   if (cause == 1 && waitingForRelease) {
     board.beginTouch();
-    enterSleep(board, waitingForRelease, board.touchDown() || board.touchIrqLow());
+    enterSleep(board, waitingForRelease, board.touchReading() != 0 || board.touchIrqLow());
     return false;
   }
   waitingForRelease = false;
@@ -29,11 +29,15 @@ bool wakeRuntime(Board& board, bool& waitingForRelease, uint32_t holdMs) {
     board.darken();
     board.beginTouch();
     const uint32_t started = board.now();
-    while (uint32_t(board.now() - started) < holdMs) {
-      if (!board.touchDown()) {
+    uint32_t lastValid = started;
+    while (true) {
+      const int touch = board.touchReading();
+      if (touch == 1) lastValid = board.now();
+      if (touch == 0 || uint32_t(board.now() - lastValid) > 200) {
         enterSleep(board, waitingForRelease, true);
         return false;
       }
+      if (touch == 1 && uint32_t(board.now() - started) >= holdMs) break;
       board.wait();
     }
     board.suppressTouch();
