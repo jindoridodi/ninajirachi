@@ -36,13 +36,7 @@ Use Arduino C++ and upload through USB-C.
 
 The [official Waveshare ESP32-S3-Touch-LCD-1.28 documentation](https://docs.waveshare.com/ESP32-S3-Touch-LCD-1.28) is the source of truth for the board schematic, Arduino examples, pinout, display/touch/IMU details, battery measurement, and flashing procedure. Check it before changing board-specific code.
 
-1. Install the ESP32 Arduino board package.
-2. Select `ESP32S3 Dev Module` as the board target.
-3. Select the connected USB-C port.
-4. Add the display, touch, QMI8658, and QMC5883P libraries required by the board and sensor examples.
-5. Start from the Waveshare display and QMI8658 examples to verify the board before combining features.
-
-The first firmware milestone should render a static face and print sensor readings before adding wireless interaction.
+Follow the [firmware setup instructions](firmware/README.md) for the board package, configuration, vendor drivers, and upload commands.
 
 During bench testing, USB charging/testing is acceptable. Treat the wearable as disconnected from USB while worn.
 
