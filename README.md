@@ -1,4 +1,4 @@
-# Wearable Ninajirachi Icon
+# Ninajirachi Hairclip/Accessory
 
 This project is a battery-powered, wearable digital Ninajirachi icon. Each unit can be worn as a necklace or hairclip, animates a face on a round display, detects wearer movement, and interacts with nearby Ninajirachi units.
 
