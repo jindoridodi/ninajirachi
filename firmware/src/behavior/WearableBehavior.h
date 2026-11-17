@@ -21,7 +21,7 @@ constexpr uint32_t kBlinkDurationMs = 200;
 constexpr uint32_t kDebugExitHoldMs = 3000;
 constexpr uint32_t kSleepHoldMs = 7000;
 
-enum class ScreenName { Face, SettingsBattery, PeerDirection };
+enum class ScreenName { Face, SettingsBattery, PeerDirection, CompassCalibration };
 
 struct WearableInput {
   WearableInput(uint32_t time, bool touch, ExpressionName requested, BatterySnapshot power,
@@ -31,6 +31,7 @@ struct WearableInput {
   uint32_t elapsedMs;
   bool touchDown;
   bool touchValid = true;
+  bool calibrating = false;
   ExpressionName expression;
   BatterySnapshot battery;
   uint64_t localId;
@@ -53,6 +54,7 @@ struct WearableOutput {
   bool jumpOverlayActive;
   float relativeDirection;
   bool sleepRequested;
+  bool calibrationRequested;
 };
 
 class WearableBehavior {
@@ -78,7 +80,7 @@ class WearableBehavior {
                         const DirectionObservation* directions = nullptr, size_t directionCount = 0) {
     if (ignoringTouch_ && input.touchValid && !input.touchDown) ignoringTouch_ = false;
     const bool touchDown = input.touchDown && !ignoringTouch_;
-    updateScreen(input.elapsedMs, touchDown, input.touchValid);
+    const bool calibrationRequested = updateScreen(input.elapsedMs, touchDown, input.touchValid, input.calibrating);
     const auto nearby = nearby_.update(input.elapsedMs, input.localId, observations, count,
                                        input.headingValid, input.headingDegrees, directions, directionCount);
     const Gaze gaze = nearby.gaze;
@@ -114,7 +116,7 @@ class WearableBehavior {
         input.motionValid ? input.verticalAccelerationG : 0}, visible, input.elapsedMs, input.motionValid,
         input.accelerationValid, input.accelerationMagnitudeG);
     return {screen_, motion.preset, input.battery, nearby.peerCount, nearby.targetId, gaze, motion.jumpOverlayActive, nearby.relativeDirection,
-            input.touchValid && touchDown && input.elapsedMs - touchStartMs_ >= kSleepHoldMs};
+            input.touchValid && touchDown && input.elapsedMs - touchStartMs_ >= kSleepHoldMs, calibrationRequested};
   }
 
  private:
@@ -137,7 +139,8 @@ class WearableBehavior {
        value(x.mouthHeight, y.mouthHeight), value(x.tongueOut, y.tongueOut)}};
   }
 
-  void updateScreen(uint32_t elapsedMs, bool touchDown, bool touchValid) {
+  bool updateScreen(uint32_t elapsedMs, bool touchDown, bool touchValid, bool calibrating) {
+    bool requested = false;
     if (touchDown && !wasTouchDown_) {
       touchStartMs_ = elapsedMs;
       if (tapCount_ && elapsedMs - lastTouchMs_ > kTapGapMs) tapCount_ = 0;
@@ -146,9 +149,12 @@ class WearableBehavior {
         if (screen_ == ScreenName::Face) {
           if (++tapCount_ >= 5) { screen_ = ScreenName::SettingsBattery; tapCount_ = 0; }
         } else {
-          screen_ = screen_ == ScreenName::SettingsBattery ? ScreenName::PeerDirection : ScreenName::SettingsBattery;
+          screen_ = screen_ == ScreenName::SettingsBattery ? ScreenName::PeerDirection :
+                    screen_ == ScreenName::PeerDirection ? ScreenName::CompassCalibration : ScreenName::SettingsBattery;
         }
       } else {
+        requested = touchValid && screen_ == ScreenName::CompassCalibration &&
+                    elapsedMs - touchStartMs_ >= 2000 && elapsedMs - touchStartMs_ < kDebugExitHoldMs;
         tapCount_ = 0;
       }
       lastTouchMs_ = elapsedMs;
@@ -157,11 +163,13 @@ class WearableBehavior {
       screen_ = ScreenName::Face;
       tapCount_ = 0;
     } else if (!touchDown && screen_ != ScreenName::Face &&
+               !(screen_ == ScreenName::CompassCalibration && calibrating) &&
                elapsedMs - lastTouchMs_ >= kSettingsInactivityMs) {
       screen_ = ScreenName::Face;
       tapCount_ = 0;
     }
     wasTouchDown_ = touchDown;
+    return requested;
   }
 
   static int16_t idleEyeMotion(uint32_t elapsedMs) {

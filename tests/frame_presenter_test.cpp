@@ -9,6 +9,7 @@ struct Display {
   void drawFace(const nina::ExpressionPreset&) { ++draws; screen = 0; }
   void drawSettings(const nina::SettingsBatteryLines&) { ++draws; screen = 1; }
   void drawDirection(const nina::WearableOutput&, bool, const char*) { ++draws; screen = 2; }
+  void drawCalibration(const char*, bool) { ++draws; screen = 3; }
   void present() { ++presents; }
 };
 

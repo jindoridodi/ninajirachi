@@ -11,7 +11,7 @@ class FramePresenter {
  public:
   template <typename Display>
   bool present(Display& display, const WearableOutput& output, bool headingValid,
-               const char* calibrationLabel) {
+               const char* calibrationLabel, const char* calibrationMessage = "HOLD TO START", bool collecting = false) {
     const bool screenChanged = !valid_ || screen_ != output.screen;
     bool changed = screenChanged;
     if (output.screen == ScreenName::Face) {
@@ -23,6 +23,11 @@ class FramePresenter {
       const auto lines = settingsBatteryLines(output.battery);
       changed = settings_.changed(lines) || changed;
       if (changed) display.drawSettings(lines);
+    } else if (output.screen == ScreenName::CompassCalibration) {
+      changed = changed || !calibrationMessage_ || strcmp(calibrationMessage_, calibrationMessage) != 0 || collecting_ != collecting;
+      calibrationMessage_ = calibrationMessage;
+      collecting_ = collecting;
+      if (changed) display.drawCalibration(calibrationMessage, collecting);
     } else {
       const bool directionValid = isfinite(output.relativeDirection);
       changed = changed || directionValid != directionValid_ ||
@@ -57,6 +62,8 @@ class FramePresenter {
   ExpressionPreset face_{};
   ScreenName screen_ = ScreenName::Face;
   const char* calibrationLabel_ = nullptr;
+  const char* calibrationMessage_ = nullptr;
+  bool collecting_ = false;
   float direction_ = 0;
   bool valid_ = false, directionValid_ = false, hasTarget_ = false, headingValid_ = false;
 };

@@ -106,6 +106,28 @@ int main() {
     touchBoard.time = 7100; touchBoard.touching = -1; touchBoard.update(7100);
     assert(!touchBoard.inputs.output().sleepRequested);
   }
+  {
+    TwoWire calibrationBus; calibrationBus.registers[0] = 0x80;
+    Board c; assert(c.compass.begin(calibrationBus, {true, 0x2c}));
+    c.behavior.actual.showSettings(0);
+    auto touch = [&](uint32_t t, int down) { c.time = t; c.touching = down; c.update(t); };
+    touch(100, 1); touch(150, 0); touch(200, 1); touch(250, 0);
+    assert(c.inputs.output().screen == nina::ScreenName::CompassCalibration);
+    touch(300, 1); touch(2299, 0); assert(!c.compass.collecting());
+    touch(2400, 1); touch(4400, 0); assert(c.compass.collecting());
+    touch(4500, 1); touch(6500, 0); assert(c.compass.collecting());
+    assert(std::strcmp(c.inputs.calibrationMessage(), "ROTATE MORE") == 0);
+    for (unsigned i = 0; i < 120; ++i) {
+      calibrationBus.sample(i & 1 ? 1000 : -1000, i & 2 ? 1000 : -1000, i & 4 ? 1000 : -1000);
+      touch(6520 + i * 20, 0);
+    }
+    touch(9000, 1); touch(11000, 0);
+    assert(!c.compass.collecting() && c.compass.calibrated());
+    assert(std::strcmp(c.inputs.calibrationMessage(), "CAL SAVED") == 0);
+    touch(11100, 1); touch(13100, 0); assert(c.compass.collecting());
+    touch(13200, 1); touch(13250, 0);
+    assert(!c.compass.collecting() && c.compass.calibrated());
+  }
   TwoWire bus; bus.registers[0] = 0x80;
   Board b;
   assert(b.compass.begin(bus, {true, 0x2c}));

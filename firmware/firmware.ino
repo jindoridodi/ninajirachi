@@ -70,6 +70,16 @@ void renderDirection(const nina::WearableOutput& output, bool headingValid, cons
   }
 }
 
+void renderCalibration(const char* message, bool collecting) {
+  surface.fillRect(0, 0, 240, 240, {0});
+  Paint_DrawString_EN(55, 50, "COMPASS CAL", &Font12, BLACK, WHITE);
+  Paint_DrawString_EN(40, 80, message, &Font12, BLACK, WHITE);
+  surface.fillRect(40, 108, 160, 44, {0x333333});
+  Paint_DrawString_EN(55, 123, "HOLD SCREEN", &Font12, BLACK, WHITE);
+  Paint_DrawString_EN(55, 155, collecting ? "2S TO SAVE" : "2S TO START", &Font12, BLACK, WHITE);
+  Paint_DrawString_EN(35, 185, "TAP NEXT / HOLD 3S EXIT", &Font12, BLACK, WHITE);
+}
+
 void serialCommands() {
   if (!Serial.available()) return;
   const char command = Serial.read();
@@ -237,6 +247,7 @@ struct DisplayBoard {
   void drawDirection(const nina::WearableOutput& output, bool headingValid, const char* label) {
     renderDirection(output, headingValid, label);
   }
+  void drawCalibration(const char* message, bool collecting) { renderCalibration(message, collecting); }
   void present() { surface.present(); }
 };
 
@@ -244,7 +255,8 @@ void renderFrame() {
   static nina::FramePresenter presenter;
   static DisplayBoard display;
   presenter.present(display, runtimeInputs.output(), runtimeInputs.headingValid(),
-                    nina::calibrationStatusLabel(compass.calibrationAvailability()));
+                    nina::calibrationStatusLabel(compass.calibrationAvailability()),
+                    runtimeInputs.calibrationMessage(), compass.collecting());
 }
 
 struct RuntimeBoard {

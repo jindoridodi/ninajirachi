@@ -71,11 +71,14 @@ The animation loop should keep input sampling, peer tracking, state selection, a
 
 Blink periodically, but let jump and excited reactions temporarily override the idle blink schedule. Keep animation timing non-blocking so sensor and wireless updates continue while frames are drawn.
 
-The touch display has three screen modes:
+The touch display has four screen modes:
 
 - `face`: the normal animated Ninajirachi screen
-- `settings/battery`: opened by 5 quick taps; one tap cycles to peer direction; a 3-second hold returns to the face. Each tap and the gap between taps must be no longer than 500 ms.
-- `peer direction`: one tap cycles back to settings/battery; a 3-second hold returns to the face. Seven seconds without touch on either screen returns to the face.
+- `settings/battery`: opened by 5 quick taps; one tap cycles through peer direction and compass calibration; a 3-second hold returns to the face. Each tap and the gap between taps must be no longer than 500 ms.
+- `peer direction`: one tap cycles to compass calibration; a 3-second hold returns to the face.
+- `compass calibration`: hold the screen for 2 seconds and release to start, rotate the assembled wearable through all axes, then hold and release again to save. A tap cycles back to settings/battery; a 3-second hold exits. Leaving cancels an unfinished calibration and preserves the previous one. Failed saves can be retried.
+
+Seven seconds without touch returns to the face, except while calibration is collecting.
 
 Hold the touchscreen for 7 seconds to enter deep sleep without releasing. After releasing it, hold it for 7 seconds again to wake. A shorter wake touch returns to sleep.
 

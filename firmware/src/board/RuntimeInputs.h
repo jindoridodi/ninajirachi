@@ -27,6 +27,7 @@ class RuntimeInputs {
     }
     WearableInput input(now, touchDown_, board.expression, board.battery(now), board.localIdentity);
     input.touchValid = touch >= 0;
+    input.calibrating = board.compass.collecting();
     input.motionValid = motion.motionValid;
     input.accelerationValid = motion.fresh;
     input.accelerationMagnitudeG = sqrtf(motion.acceleration[0] * motion.acceleration[0] +
@@ -50,6 +51,22 @@ class RuntimeInputs {
     input.headingValid = heading.valid;
     input.headingDegrees = heading.degrees;
     auto output = board.behavior.update(input, observations, count, directions, directionCount);
+    if (calibrationVisible_ && board.compass.collecting() != wasCollecting_)
+      calibrationMessage_ = board.compass.collecting() ? "ROTATE ALL AXES" : "HOLD TO START";
+    if (!calibrationVisible_ && output.screen == ScreenName::CompassCalibration)
+      calibrationMessage_ = board.compass.collecting() ? "ROTATE ALL AXES" : "HOLD TO START";
+    if (calibrationVisible_ && output.screen != ScreenName::CompassCalibration && board.compass.collecting())
+      board.compass.cancelCalibration();
+    if (output.calibrationRequested) {
+      if (board.compass.collecting()) {
+        if (board.compass.saveCalibration()) calibrationMessage_ = "CAL SAVED";
+        else calibrationMessage_ = board.compass.saveStatus() == CalibrationSaveStatus::Storage ? "SAVE FAILED" : "ROTATE MORE";
+      } else {
+        calibrationMessage_ = board.compass.startCalibration() ? "ROTATE ALL AXES" : "COMPASS NOT READY";
+      }
+    }
+    calibrationVisible_ = output.screen == ScreenName::CompassCalibration;
+    wasCollecting_ = board.compass.collecting();
     if (output.sleepRequested) board.sleep();
     if (output.screen == ScreenName::SettingsBattery && !settingsVisible_)
       output.battery.millivolts = board.refreshBattery(input.elapsedMs);
@@ -70,12 +87,14 @@ class RuntimeInputs {
   }
   const WearableOutput& output() const { return latestOutput_; }
   bool headingValid() const { return latestHeadingValid_; }
+  const char* calibrationMessage() const { return calibrationMessage_; }
 
  private:
   HeadingHistory headingHistory_;
   WearableOutput latestOutput_{};
   uint32_t lastTouchReadMs_ = 0, lastRadioAttemptMs_ = 0;
   bool touchDown_ = false, touchReadFailed_ = false, radioReady_ = false;
-  bool settingsVisible_ = false, latestHeadingValid_ = false;
+  bool settingsVisible_ = false, latestHeadingValid_ = false, calibrationVisible_ = false, wasCollecting_ = false;
+  const char* calibrationMessage_ = "HOLD TO START";
 };
 }

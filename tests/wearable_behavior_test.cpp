@@ -113,16 +113,21 @@ bool cyclesDebugScreensAndRequestsSleep() {
   for (int i = 0; i < 5; ++i) tap(behavior, i * 200, battery);
   if (!expect(tap(behavior, 1200, battery).screen == nina::ScreenName::PeerDirection,
               "one tap opens peer direction")) return false;
-  if (!expect(tap(behavior, 1400, battery).screen == nina::ScreenName::SettingsBattery,
-              "another tap returns to battery")) return false;
-  behavior.update({2000, true, nina::ExpressionName::Idle, battery});
-  if (!expect(!behavior.update({8999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+  if (!expect(tap(behavior, 1400, battery).screen == nina::ScreenName::CompassCalibration,
+              "another tap opens calibration")) return false;
+  behavior.update({1600, true, nina::ExpressionName::Idle, battery});
+  if (!expect(!behavior.update({3599, false, nina::ExpressionName::Idle, battery}).calibrationRequested, "short hold cannot calibrate")) return false;
+  behavior.update({3700, true, nina::ExpressionName::Idle, battery});
+  if (!expect(behavior.update({5700, false, nina::ExpressionName::Idle, battery}).calibrationRequested, "deliberate hold requests calibration")) return false;
+  if (!expect(tap(behavior, 5900, battery).screen == nina::ScreenName::SettingsBattery, "tap returns to battery")) return false;
+  behavior.update({6200, true, nina::ExpressionName::Idle, battery});
+  if (!expect(!behavior.update({13199, true, nina::ExpressionName::Idle, battery}).sleepRequested,
               "short hold does not sleep")) return false;
-  if (!expect(behavior.update({9000, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+  if (!expect(behavior.update({13200, true, nina::ExpressionName::Idle, battery}).sleepRequested,
               "seven second hold requests sleep")) return false;
-  behavior.update({9001, false, nina::ExpressionName::Idle, battery});
-  behavior.update({10000, true, nina::ExpressionName::Idle, battery});
-  return expect(!behavior.update({16999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
+  behavior.update({13201, false, nina::ExpressionName::Idle, battery});
+  behavior.update({14000, true, nina::ExpressionName::Idle, battery});
+  return expect(!behavior.update({20999, true, nina::ExpressionName::Idle, battery}).sleepRequested,
                 "a new hold starts its own timer");
 }
 
