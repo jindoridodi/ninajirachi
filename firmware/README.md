@@ -49,7 +49,7 @@ The external compass starts disabled until verified. The compass uses a separate
 
 The IMU and magnetometer gravity vectors must use the same axes. Confirm the external module mounting before enabling; a rotated mounting needs an explicit axis transform. Invalid or stale headings stay unavailable. See `../docs/compass-bench.md` for the calibration limits and acceptance checklist.
 
-The gravity estimate rejects rotation that changes tilt above 10°/s, but permits rotation around gravity so a steady turn can supply direction evidence. Acceleration magnitude, direction stability, freshness, and the 250 ms settling window still gate validity. Turns that do not cover enough headings within the five-second evidence window keep the centered-eye fallback. Verify this distinction while worn; synthetic turn tests do not establish physical heading accuracy.
+The gravity estimate first requires 250 ms of quiet motion, then uses the gyroscope to follow tilt and corrects it with consistent acceleration. It rejects invalid acceleration, stale samples, excessive tilt between samples, or more than 250 ms without an acceleration correction. Gyro drift and acceleration can still distort it, so verify heading while worn. Turns that do not cover enough headings within the five-second evidence window keep the centered-eye fallback.
 
 ## Compass bench setup
 
