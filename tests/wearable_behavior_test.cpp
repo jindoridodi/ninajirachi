@@ -165,14 +165,26 @@ bool wakeHoldIsIgnoredUntilReleased() {
                 "a new hold after release can request sleep");
 }
 
-bool serialDirectionTimesOut() {
+bool serialDirectionStaysOpen() {
   TestBehavior behavior;
   nina::BatterySnapshot battery;
   behavior.toggleDirection(100);
   if (!expect(behavior.update({7099, false, nina::ExpressionName::Idle, battery}).screen ==
               nina::ScreenName::PeerDirection, "serial peer display stays open before timeout")) return false;
-  return expect(behavior.update({7100, false, nina::ExpressionName::Idle, battery}).screen ==
-                nina::ScreenName::Face, "serial peer display returns to face after seven seconds");
+  if (!expect(behavior.update({60000, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::PeerDirection, "serial peer display stays open after inactivity")) return false;
+  behavior.toggleDirection(60100);
+  if (!expect(behavior.update({60100, false, nina::ExpressionName::Idle, battery}).screen ==
+              nina::ScreenName::Face, "serial command closes peer display")) return false;
+  behavior.toggleDirection(60200);
+  if (!expect(tap(behavior, 60300, battery).screen == nina::ScreenName::CompassCalibration,
+              "touch leaves serial peer display")) return false;
+  if (!expect(tap(behavior, 60500, battery).screen == nina::ScreenName::SettingsBattery,
+              "touch cycles to settings")) return false;
+  if (!expect(tap(behavior, 60700, battery).screen == nina::ScreenName::PeerDirection,
+              "touch cycles back to peer direction")) return false;
+  return expect(behavior.update({67750, false, nina::ExpressionName::Idle, battery}).screen ==
+                nina::ScreenName::Face, "touch-opened peer display times out");
 }
 
 bool opensSettingsFromSerialCommand() {
@@ -414,7 +426,7 @@ int main() {
               "fresh low acceleration followed by impact reacts without a gravity estimate")) return 1;
   if (!wakeHoldIsIgnoredUntilReleased()) return 1;
   if (!holdClosesEitherDebugScreen()) return 1;
-  if (!serialDirectionTimesOut()) return 1;
+  if (!serialDirectionStaysOpen()) return 1;
   if (!fiveTapsOpenSettings()) return 1;
   if (!jumpOverridesBlink()) return 1;
   if (!tiltAndFocusedAnimation()) return 1;

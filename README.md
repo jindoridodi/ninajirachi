@@ -78,7 +78,7 @@ The touch display has four screen modes:
 - `peer direction`: one tap cycles to compass calibration; a 3-second hold returns to the face.
 - `compass calibration`: hold the screen for 2 seconds and release to start, rotate the assembled wearable through all axes, then hold and release again to save. A tap cycles back to settings/battery; a 3-second hold exits. Leaving cancels an unfinished calibration and preserves the previous one. Failed saves can be retried.
 
-Seven seconds without touch returns to the face, except while calibration is collecting.
+Seven seconds without touch returns to the face, except while calibration is collecting or the peer direction screen was opened through serial.
 
 Hold the touchscreen for 7 seconds to enter deep sleep without releasing. After releasing it, hold it for 7 seconds again to wake. A shorter wake touch returns to sleep.
 

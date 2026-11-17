@@ -66,12 +66,14 @@ class WearableBehavior {
 
   void showSettings(uint32_t nowMs) {
     screen_ = ScreenName::SettingsBattery;
+    serialDirection_ = false;
     tapCount_ = 0;
     lastTouchMs_ = nowMs;
   }
 
   void toggleDirection(uint32_t nowMs) {
     screen_ = screen_ == ScreenName::PeerDirection ? ScreenName::Face : ScreenName::PeerDirection;
+    serialDirection_ = screen_ == ScreenName::PeerDirection;
     lastTouchMs_ = nowMs;
     tapCount_ = 0;
   }
@@ -151,6 +153,7 @@ class WearableBehavior {
         } else {
           screen_ = screen_ == ScreenName::SettingsBattery ? ScreenName::PeerDirection :
                     screen_ == ScreenName::PeerDirection ? ScreenName::CompassCalibration : ScreenName::SettingsBattery;
+          serialDirection_ = false;
         }
       } else {
         requested = touchValid && screen_ == ScreenName::CompassCalibration &&
@@ -163,6 +166,7 @@ class WearableBehavior {
       screen_ = ScreenName::Face;
       tapCount_ = 0;
     } else if (!touchDown && screen_ != ScreenName::Face &&
+               !(screen_ == ScreenName::PeerDirection && serialDirection_) &&
                !(screen_ == ScreenName::CompassCalibration && calibrating) &&
                elapsedMs - lastTouchMs_ >= kSettingsInactivityMs) {
       screen_ = ScreenName::Face;
@@ -200,6 +204,7 @@ class WearableBehavior {
   float gazeOffset_ = 0;
   uint32_t gazeUpdatedMs_ = 0;
   ScreenName screen_ = ScreenName::Face;
+  bool serialDirection_ = false;
   uint32_t touchStartMs_ = 0;
   uint32_t lastTouchMs_ = 0;
   bool wasTouchDown_ = false;
