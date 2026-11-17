@@ -1,5 +1,13 @@
 # Implementation handoff
 
+## Compass and direction follow-up, 2026-11-17
+
+Both wearables now run the uncommitted compass-axis correction and retain their saved calibrations. With the screens flat, clockwise quarter turns on COM5 changed heading by approximately 93, 83, 98, and 94 degrees; COM4 also tracked the four turns. Captures are `docs/handoff/2026-11-17-com5-fixed-turn.txt` and `docs/handoff/2026-11-17-com4-fixed-turn.txt`. The mapping is specific to these two mounts and the current display orientation. Verify tilt and compass behavior while worn.
+
+The peer marker remains unreliable. With the stationary peer directly ahead, `docs/handoff/2026-11-17-com4-direction-ground-truth.txt` recorded a selected bearing of 225 degrees against an initial heading of about 28 degrees. With the peer to the left, `docs/handoff/2026-11-17-com4-direction-left.txt` recorded 135 degrees against an expected bearing of roughly 16 degrees. The winning bucket contained only two RSSI samples in each case. These observations do not establish a fixed offset; investigate repeatability, antenna/environment effects, and direction evidence before changing the confidence gate. Temporary direction logging was removed by restoring normal firmware to COM4.
+
+Free hand movement still produced a prolonged `NO HEADING` period. Extracting `[DEBUG-jump]` lines from `docs/handoff/2026-11-17-com4-free-motion.txt` into the `tools/replay_gravity_trace.cpp` input format yielded 723 unavailable gravity frames out of 2257; frequent acceleration magnitude violations and fast rotation coincided with dropout. A temporary bounded gyro-only prediction experiment recovered only 20 frames and was not applied. Distinguish reliable gravity prediction from merely reporting a heading during motion.
+
 ## Compass verification, 2026-11-17
 
 Further two-wearable testing found that ESP-NOW packets arrive and can be paired with headings. During an unrestricted turn, gyro-based gravity was unavailable for long periods; during a level turn, headings remained mostly valid, but direction confidence appeared only briefly. The user's compass breakout is mounted vertically on its edge while the display faces up. Current firmware assumes magnetometer and IMU axes are aligned, so the physical axis mapping must be established before relying on tilt compensation or direction. The temporary diagnostic firmware was replaced with the normal build. Signal contrast also often fell below the existing 6 dB confidence gate; do not relax it without checking direction accuracy.

@@ -17,6 +17,37 @@ static void expectLabel(nina::CompassService& compass, bool enabled, const char*
 
 int main() {
   {
+    TwoWire capturedBus;
+    capturedBus.registers[0] = 0x80;
+    nina::CompassService captured;
+    assert(captured.begin(capturedBus, {true, 0x2c}));
+    assert(captured.startCalibration());
+    for (unsigned i = 0; i < 120; ++i) {
+      capturedBus.sample(i & 1 ? 618 : -1531, i & 1 ? 1057 : -1455, i & 1 ? 1919 : -498);
+      assert(captured.update(i, {-.01f, .097f, -.991f}));
+    }
+    assert(captured.saveCalibration());
+    const nina::MagneticSample turns[] = {{-774, -509, -212}, {-786, 739, 495},
+        {-853, -71, 1637}, {-840, -1130, 912}, {-762, -425, -239}};
+    float previous = 0;
+    float initial = 0;
+    for (unsigned i = 0; i < 5; ++i) {
+      capturedBus.sample(turns[i].x, turns[i].y, turns[i].z);
+      assert(captured.update(200 + i, {-.01f, .097f, -.991f}));
+      const float heading = captured.heading(200 + i).degrees;
+      if (!i) initial = heading;
+      if (i) {
+        const float change = std::fmod(heading - previous + 540, 360) - 180;
+        assert(change > 40 && change < 140);
+      }
+      previous = heading;
+    }
+    capturedBus.sample(-174, -462, -236);
+    assert(captured.update(210, {.630f, .095f, -.782f}));
+    assert(std::fabs(std::fmod(captured.heading(210).degrees - initial + 540, 360) - 180) < 15);
+    Preferences::bytes.clear();
+  }
+  {
     TwoWire replacementBus;
     replacementBus.registers[0] = 0x80;
     nina::CompassService lifecycle;
@@ -67,6 +98,14 @@ int main() {
   assert(restored.begin(bus, {true, 0x2c}));
   expectLabel(restored, true, "CAL SAVED");
   expectLabel(restored, false, "CAL UNKNOWN");
+  const nina::MagneticSample cardinals[] = {{0, 0, -1000}, {0, -1000, 0},
+                                            {0, 0, 1000}, {0, 1000, 0}};
+  const float expected[] = {0, 270, 180, 90};
+  for (unsigned i = 0; i < 4; ++i) {
+    bus.sample(cardinals[i].x, cardinals[i].y, cardinals[i].z);
+    assert(restored.update(250 + i, {0, 0, -1}));
+    assert(std::fabs(restored.heading(250 + i).degrees - expected[i]) < .01f);
+  }
   bus.sample(1000, 1000, 0);
   assert(restored.update(300, {0, 0, 1}));
   assert(restored.heading(300).valid);
@@ -75,7 +114,7 @@ int main() {
   assert(!restored.startCalibration());
   assert(restored.begin(bus, {true, 0x2c}));
   assert(restored.update(300, {0, 0, 1}));
-  assert(std::fabs(restored.heading(300).degrees - 315) < 0.01f);
+  assert(std::fabs(restored.heading(300).degrees - 270) < 0.01f);
   bus.registers[9] = 0;
   assert(!restored.update(320, {0, 0, 1}));
   assert(restored.readStatus() == nina::CompassReadStatus::NoData);
@@ -93,7 +132,7 @@ int main() {
   assert(!restored.update(302, {0, 0, 1}));
   bus.sample(32767, 1, 1);
   assert(!restored.update(303, {0, 0, 1}));
-  bus.sample(1000, 0, 0);
+  bus.sample(0, 0, -1000);
   bus.shortRead = true;
   assert(!restored.update(304, {0, 0, 1}));
   assert(restored.readStatus() == nina::CompassReadStatus::Communication);
@@ -129,7 +168,7 @@ int main() {
   expectLabel(restored, true, "CAL SAVED");
   bus.sample(1000, 1000, 0);
   assert(restored.update(600, {0, 0, 1}));
-  assert(std::fabs(restored.heading(600).degrees - 315) < 0.01f); // Old calibration survives failure/cancel.
+  assert(std::fabs(restored.heading(600).degrees - 270) < 0.01f); // Old calibration survives failure/cancel.
 
   assert(restored.startCalibration());
   for (unsigned i = 0; i < 120; ++i) {

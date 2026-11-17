@@ -1,0 +1,940 @@
+1794919363183 mag 247 -460 -697 heading valid 105.2 samples 0
+1794919363195 mag 241 -464 -681 heading valid 106.9 samples 0
+1794919363424 mag 240 -465 -690 heading valid 106.1 samples 0
+1794919363718 mag 242 -457 -694 heading valid 105.4 samples 0
+1794919363987 [DEBUG-direction-obs] 130947 105.3 -60
+1794919364127 [DEBUG-direction] 130956 1 105.3 nan
+1794919364127 mag 241 -468 -702 heading valid 105.2 samples 0
+1794919364274 [DEBUG-direction-obs] 131241 106.1 -58
+1794919364415 [DEBUG-direction] 131244 1 106.1 nan
+1794919364416 mag 237 -457 -685 heading valid 105.8 samples 0
+1794919364535 mag 239 -460 -703 heading valid 104.9 samples 0
+1794919364800 [DEBUG-direction-obs] 131745 105.1 -60
+1794919364919 [DEBUG-direction] 131748 1 105.1 nan
+1794919364919 mag 242 -462 -689 heading valid 106.1 samples 0
+1794919365099 mag 241 -466 -699 heading valid 105.6 samples 0
+1794919365388 [DEBUG-direction-obs] 132253 106.1 -58
+1794919365429 [DEBUG-direction] 132259 1 106.1 nan
+1794919365430 mag 241 -453 -685 heading valid 106.1 samples 0
+1794919365646 mag 240 -469 -696 heading valid 105.6 samples 0
+1794919365909 mag 238 -458 -689 heading valid 105.8 samples 0
+1794919366169 mag 235 -458 -693 heading valid 105.6 samples 0
+1794919366437 mag 239 -458 -702 heading valid 104.8 samples 0
+1794919366702 [DEBUG-direction-obs] 133468 105.0 -59
+1794919366706 [DEBUG-direction] 133531 1 104.8 nan
+1794919366707 [DEBUG-direction-obs] 133740 105.5 -57
+1794919366921 [DEBUG-direction] 133750 1 105.5 nan
+1794919366922 mag 235 -465 -695 heading valid 105.8 samples 0
+1794919366958 mag 242 -465 -704 heading valid 105.0 samples 0
+1794919367222 mag 239 -467 -693 heading valid 106.0 samples 0
+1794919367486 [DEBUG-direction-obs] 134547 105.9 -63
+1794919367718 [DEBUG-direction] 134548 1 105.9 nan
+1794919367720 mag 233 -465 -695 heading valid 105.9 samples 0
+1794919367768 mag 240 -464 -686 heading valid 106.2 samples 0
+1794919368028 [DEBUG-direction-obs] 134847 106.2 -63
+1794919368033 [DEBUG-direction] 134858 1 106.2 nan
+1794919368033 mag 241 -452 -694 heading valid 105.4 samples 0
+1794919368294 [DEBUG-direction-obs] 135346 104.5 -65
+1794919368535 [DEBUG-direction] 135363 1 104.3 nan
+1794919368536 mag 235 -445 -702 heading valid 104.4 samples 0
+1794919368553 mag 240 -455 -687 heading valid 106.2 samples 0
+1794919368821 [DEBUG-direction-obs] 135873 104.9 -57
+1794919369060 [DEBUG-direction] 135888 1 104.6 nan
+1794919369061 mag 243 -454 -701 heading valid 104.9 samples 0
+1794919369116 mag 236 -456 -689 heading valid 106.2 samples 0
+1794919369374 [DEBUG-direction-obs] 136143 105.2 -60
+1794919369380 [DEBUG-direction] 136204 1 106.2 nan
+1794919369380 mag 243 -450 -691 heading valid 105.6 samples 0
+1794919369626 [DEBUG-direction-obs] 136442 105.6 -58
+1794919369632 [DEBUG-direction] 136456 1 105.6 nan
+1794919369632 mag 244 -452 -703 heading valid 104.8 samples 0
+1794919369897 [DEBUG-direction-obs] 136947 104.7 -59
+1794919370136 [DEBUG-direction] 136964 1 104.1 nan
+1794919370136 mag 243 -454 -711 heading valid 104.2 samples 0
+1794919370198 mag 237 -456 -709 heading valid 104.2 samples 0
+1794919370449 [DEBUG-direction-obs] 137444 104.9 -59
+1794919370662 [DEBUG-direction] 137492 1 104.5 nan
+1794919370663 mag 245 -456 -705 heading valid 104.8 samples 0
+1794919370714 mag 237 -456 -700 heading valid 104.8 samples 0
+1794919370983 [DEBUG-direction-obs] 137951 104.9 -60
+1794919371143 [DEBUG-direction] 137971 1 104.9 nan
+1794919371143 mag 236 -460 -692 heading valid 106.1 samples 0
+1794919371271 [DEBUG-direction-obs] 138243 105.9 -64
+1794919371431 [DEBUG-direction] 138261 1 105.6 nan
+1794919371432 mag 245 -457 -692 heading valid 105.5 samples 0
+1794919371530 [DEBUG-direction-obs] 138479 104.9 -59
+1794919371654 [DEBUG-direction] 138479 1 104.9 nan
+1794919371656 mag 241 -459 -695 heading valid 105.6 samples 0
+1794919371798 [DEBUG-direction-obs] 138743 105.5 -58
+1794919371915 [DEBUG-direction] 138745 1 105.5 nan
+1794919371916 mag 250 -454 -695 heading valid 105.2 samples 0
+1794919372054 [DEBUG-direction-obs] 139038 106.0 -65
+1794919372219 [DEBUG-direction] 139047 1 106.0 nan
+1794919372220 mag 248 -451 -692 heading valid 105.7 samples 0
+1794919372321 mag 237 -452 -698 heading valid 105.4 samples 0
+1794919372604 mag 242 -451 -706 heading valid 104.4 samples 0
+1794919372890 [DEBUG-direction-obs] 139865 105.1 -61
+1794919373049 [DEBUG-direction] 139879 1 105.4 nan
+1794919373050 mag 244 -463 -700 heading valid 105.1 samples 0
+1794919373145 [DEBUG-direction-obs] 140143 104.8 -62
+1794919373325 [DEBUG-direction] 140153 1 104.8 nan
+1794919373325 mag 244 -452 -698 heading valid 105.1 samples 0
+1794919373402 [DEBUG-direction-obs] 140444 104.6 -64
+1794919373622 [DEBUG-direction] 140451 1 104.6 nan
+1794919373623 mag 243 -455 -693 heading valid 105.8 samples 0
+1794919373706 [DEBUG-direction-obs] 140745 104.6 -62
+1794919373936 [DEBUG-direction] 140764 1 104.6 nan
+1794919373936 mag 245 -452 -706 heading valid 104.6 samples 0
+1794919373990 [DEBUG-direction-obs] 141047 106.2 -65
+1794919374229 [DEBUG-direction] 141057 1 106.2 nan
+1794919374229 mag 241 -456 -703 heading valid 105.1 samples 0
+1794919374279 [DEBUG-direction-obs] 141272 104.3 -62
+1794919374461 [DEBUG-direction] 141289 1 104.6 nan
+1794919374461 mag 245 -454 -704 heading valid 104.5 samples 0
+1794919374539 [DEBUG-direction-obs] 141547 106.3 -63
+1794919374724 [DEBUG-direction] 141553 1 106.3 nan
+1794919374725 mag 239 -457 -680 heading valid 106.8 samples 0
+1794919374806 mag 235 -453 -693 heading valid 105.3 samples 0
+1794919375070 mag 250 -455 -681 heading valid 106.9 samples 0
+1794919375377 [DEBUG-direction-obs] 142356 105.2 -63
+1794919375538 [DEBUG-direction] 142367 1 105.2 nan
+1794919375538 mag 241 -452 -699 heading valid 104.9 samples 0
+1794919375634 mag 241 -457 -700 heading valid 105.3 samples 0
+1794919375886 [DEBUG-direction-obs] 142859 105.3 -61
+1794919376048 [DEBUG-direction] 142878 1 105.1 nan
+1794919376048 mag 244 -451 -699 heading valid 104.8 samples 0
+1794919376136 [DEBUG-direction-obs] 143162 104.7 -61
+1794919376359 [DEBUG-direction] 143190 1 104.7 nan
+1794919376360 mag 250 -457 -705 heading valid 104.7 samples 0
+1794919376397 [DEBUG-direction-obs] 143460 104.8 -65
+1794919376631 [DEBUG-direction] 143461 1 104.8 nan
+1794919376632 mag 242 -458 -699 heading valid 105.1 samples 0
+1794919376695 mag 248 -454 -712 heading valid 103.9 samples 0
+1794919376961 mag 247 -460 -700 heading valid 105.2 samples 0
+1794919377217 [DEBUG-direction-obs] 144271 105.1 -60
+1794919377447 [DEBUG-direction] 144277 1 105.1 nan
+1794919377448 mag 244 -455 -692 heading valid 105.6 samples 0
+1794919377466 mag 250 -457 -701 heading valid 105.0 samples 0
+1794919377722 [DEBUG-direction-obs] 144572 105.0 -59
+1794919377775 [DEBUG-direction] 144604 1 105.3 nan
+1794919377776 mag 240 -462 -711 heading valid 104.1 samples 0
+1794919377991 [DEBUG-direction-obs] 144802 104.3 -60
+1794919377996 [DEBUG-direction] 144821 1 104.1 nan
+1794919377996 mag 248 -447 -695 heading valid 105.4 samples 0
+1794919378281 [DEBUG-direction-obs] 145091 105.4 -61
+1794919378286 [DEBUG-direction] 145111 1 105.4 nan
+1794919378287 mag 237 -455 -704 heading valid 104.5 samples 0
+1794919378538 [DEBUG-direction-obs] 145376 104.5 -62
+1794919378560 [DEBUG-direction] 145389 1 104.8 nan
+1794919378561 [DEBUG-direction-obs] 145601 106.6 -61
+1794919378786 [DEBUG-direction] 145615 1 106.6 nan
+1794919378787 mag 235 -454 -688 heading valid 106.2 samples 0
+1794919378804 mag 245 -457 -702 heading valid 104.8 samples 0
+1794919379087 [DEBUG-direction-obs] 145873 105.4 -59
+1794919379093 [DEBUG-direction] 145917 1 104.8 nan
+1794919379093 mag 241 -462 -707 heading valid 104.8 samples 0
+1794919379361 mag 237 -458 -694 heading valid 105.5 samples 0
+1794919379643 mag 247 -457 -701 heading valid 105.0 samples 0
+1794919379900 [DEBUG-direction-obs] 146706 105.0 -59
+1794919379905 [DEBUG-direction] 146731 1 105.0 nan
+1794919379905 mag 246 -453 -709 heading valid 104.5 samples 0
+1794919380201 [DEBUG-direction-obs] 147007 104.5 -62
+1794919380206 [DEBUG-direction] 147032 1 104.5 nan
+1794919380206 mag 246 -456 -705 heading valid 104.8 samples 0
+1794919380452 [DEBUG-direction-obs] 147297 105.0 -61
+1794919380473 [DEBUG-direction] 147303 1 105.0 nan
+1794919380474 mag 245 -461 -703 heading valid 105.0 samples 0
+1794919380709 [DEBUG-direction-obs] 147584 104.5 -63
+1794919380794 [DEBUG-direction] 147624 1 105.0 nan
+1794919380795 mag 235 -456 -698 heading valid 105.4 samples 0
+1794919380969 [DEBUG-direction-obs] 147882 104.3 -63
+1794919381117 [DEBUG-direction] 147945 1 104.6 nan
+1794919381118 mag 245 -451 -709 heading valid 104.4 samples 0
+1794919381284 [DEBUG-direction-obs] 148104 104.4 -66
+1794919381290 [DEBUG-direction] 148115 1 104.4 nan
+1794919381290 mag 242 -451 -701 heading valid 104.8 samples 0
+1794919381536 [DEBUG-direction-obs] 148378 104.9 -64
+1794919381558 [DEBUG-direction] 148388 1 104.9 nan
+1794919381558 mag 243 -462 -703 heading valid 105.2 samples 0
+1794919381799 mag 241 -462 -707 heading valid 104.5 samples 0
+1794919382054 mag 238 -454 -701 heading valid 105.0 samples 0
+1794919382321 [DEBUG-direction-obs] 149203 105.4 -60
+1794919382387 [DEBUG-direction] 149216 1 105.4 nan
+1794919382388 mag 239 -457 -697 heading valid 105.5 samples 0
+1794919382592 [DEBUG-direction-obs] 149482 105.7 -58
+1794919382712 [DEBUG-direction] 149540 1 105.8 nan
+1794919382712 mag 242 -459 -694 heading valid 106.0 samples 0
+1794919382877 mag 241 -446 -693 heading valid 105.2 samples 0
+1794919383135 [DEBUG-direction-obs] 150008 105.3 -59
+1794919383212 [DEBUG-direction] 150042 1 105.7 nan
+1794919383213 mag 237 -451 -694 heading valid 105.5 samples 0
+1794919383404 [DEBUG-direction-obs] 150288 104.8 -58
+1794919383465 [DEBUG-direction] 150294 1 104.8 nan
+1794919383466 mag 245 -460 -694 heading valid 105.7 samples 0
+1794919383686 mag 243 -457 -703 heading valid 104.9 samples 0
+1794919383953 [DEBUG-direction-obs] 150801 104.7 -55
+1794919383976 [DEBUG-direction] 150804 1 104.7 nan
+1794919383977 mag 232 -453 -686 heading valid 106.3 samples 0
+1794919384210 [DEBUG-direction-obs] 151088 105.8 -57
+1794919384264 [DEBUG-direction] 151092 1 105.8 nan
+1794919384264 mag 233 -459 -688 heading valid 106.1 samples 0
+1794919384461 mag 239 -456 -688 heading valid 106.2 samples 0
+1794919384724 mag 236 -455 -697 heading valid 105.1 samples 0
+1794919384990 [DEBUG-direction-obs] 151915 104.6 -56
+1794919385125 [DEBUG-direction] 151954 1 105.9 nan
+1794919385125 mag 237 -453 -685 heading valid 106.5 samples 0
+1794919385293 [DEBUG-direction-obs] 152204 106.3 -55
+1794919385380 [DEBUG-direction] 152209 1 106.3 nan
+1794919385380 mag 244 -456 -680 heading valid 106.8 samples 0
+1794919385597 [DEBUG-direction-obs] 152508 106.2 -58
+1794919385715 [DEBUG-direction] 152545 1 106.4 nan
+1794919385716 mag 237 -457 -687 heading valid 106.3 samples 0
+1794919385882 [DEBUG-direction-obs] 152798 106.8 -61
+1794919385984 [DEBUG-direction] 152813 1 106.7 nan
+1794919385984 mag 240 -456 -701 heading valid 104.8 samples 0
+1794919386140 mag 241 -451 -698 heading valid 105.2 samples 0
+1794919386407 [DEBUG-direction-obs] 153298 106.3 -59
+1794919386508 [DEBUG-direction] 153338 1 106.5 nan
+1794919386509 mag 236 -453 -688 heading valid 106.2 samples 0
+1794919386711 [DEBUG-direction-obs] 153599 105.9 -57
+1794919386785 [DEBUG-direction] 153614 1 106.0 nan
+1794919386786 mag 233 -458 -689 heading valid 105.8 samples 0
+1794919386978 [DEBUG-direction-obs] 153908 104.9 -61
+1794919387118 [DEBUG-direction] 153946 1 105.1 nan
+1794919387118 mag 243 -460 -685 heading valid 106.7 samples 0
+1794919387285 [DEBUG-direction-obs] 154121 106.7 -58
+1794919387308 [DEBUG-direction] 154137 1 106.2 nan
+1794919387308 mag 236 -444 -706 heading valid 104.2 samples 0
+1794919387552 [DEBUG-direction-obs] 154418 104.7 -59
+1794919387612 [DEBUG-direction] 154440 1 104.7 nan
+1794919387612 mag 241 -455 -687 heading valid 106.2 samples 0
+1794919387819 [DEBUG-direction-obs] 154703 107.0 -59
+1794919387897 [DEBUG-direction] 154725 1 107.0 nan
+1794919387897 mag 236 -461 -688 heading valid 106.1 samples 0
+1794919388072 [DEBUG-direction-obs] 154997 105.8 -59
+1794919388215 [DEBUG-direction] 155044 1 105.4 nan
+1794919388216 mag 241 -458 -691 heading valid 105.8 samples 0
+1794919388325 [DEBUG-direction-obs] 155227 106.1 -59
+1794919388406 [DEBUG-direction] 155234 1 106.1 nan
+1794919388406 mag 235 -451 -686 heading valid 106.1 samples 0
+1794919388602 [DEBUG-direction-obs] 155510 106.7 -62
+1794919388722 [DEBUG-direction] 155551 1 106.7 nan
+1794919388723 mag 239 -457 -692 heading valid 105.9 samples 0
+1794919388888 mag 232 -464 -686 heading valid 106.3 samples 0
+1794919389144 mag 230 -444 -696 heading valid 105.1 samples 0
+1794919389411 mag 241 -461 -679 heading valid 107.0 samples 0
+1794919389694 [DEBUG-direction-obs] 156531 107.0 -62
+1794919389716 [DEBUG-direction] 156545 1 107.1 nan
+1794919389716 mag 242 -466 -700 heading valid 105.2 samples 0
+1794919389961 [DEBUG-direction-obs] 156799 105.2 -60
+1794919389982 [DEBUG-direction] 156812 1 105.3 nan
+1794919389983 mag 231 -447 -703 heading valid 104.8 samples 0
+1794919390217 [DEBUG-direction-obs] 157101 105.2 -62
+1794919390291 [DEBUG-direction] 157120 1 105.5 nan
+1794919390292 mag 251 -456 -682 heading valid 106.4 samples 0
+1794919390468 mag 244 -456 -686 heading valid 106.2 samples 0
+1794919390724 [DEBUG-direction-obs] 157610 106.0 -59
+1794919390830 [DEBUG-direction] 157658 1 106.4 nan
+1794919390830 mag 237 -453 -681 heading valid 106.5 samples 0
+1794919390979 [DEBUG-direction-obs] 157896 106.1 -59
+1794919391098 [DEBUG-direction] 157927 1 106.1 nan
+1794919391099 mag 240 -451 -685 heading valid 106.3 samples 0
+1794919391267 [DEBUG-direction-obs] 158135 106.0 -55
+1794919391308 [DEBUG-direction] 158137 1 106.0 nan
+1794919391309 mag 244 -456 -691 heading valid 105.6 samples 0
+1794919391527 [DEBUG-direction-obs] 158433 104.9 -59
+1794919391606 [DEBUG-direction] 158435 1 104.9 nan
+1794919391607 mag 239 -457 -693 heading valid 105.7 samples 0
+1794919391794 [DEBUG-direction-obs] 158707 104.6 -60
+1794919391894 [DEBUG-direction] 158722 1 104.6 nan
+1794919391895 mag 245 -447 -703 heading valid 104.1 samples 0
+1794919392051 mag 240 -451 -684 heading valid 106.3 samples 0
+1794919392318 [DEBUG-direction-obs] 159230 105.3 -60
+1794919392419 [DEBUG-direction] 159247 1 105.0 nan
+1794919392419 mag 244 -452 -703 heading valid 104.7 samples 0
+1794919392614 [DEBUG-direction-obs] 159508 105.3 -61
+1794919392701 [DEBUG-direction] 159530 1 105.3 nan
+1794919392701 mag 243 -450 -690 heading valid 106.2 samples 0
+1794919392868 [DEBUG-direction-obs] 159741 105.3 -59
+1794919392929 [DEBUG-direction] 159759 1 105.5 nan
+1794919392930 mag 236 -462 -690 heading valid 106.3 samples 0
+1794919393136 [DEBUG-direction-obs] 160009 105.5 -59
+1794919393191 [DEBUG-direction] 160021 1 105.5 nan
+1794919393192 mag 243 -447 -683 heading valid 106.4 samples 0
+1794919393395 [DEBUG-direction-obs] 160307 106.0 -59
+1794919393496 [DEBUG-direction] 160326 1 106.0 nan
+1794919393497 mag 246 -458 -687 heading valid 106.2 samples 0
+1794919393699 [DEBUG-direction-obs] 160528 106.2 -59
+1794919393704 [DEBUG-direction] 160530 1 106.2 nan
+1794919393704 mag 247 -456 -692 heading valid 105.5 samples 0
+1794919393948 [DEBUG-direction-obs] 160822 105.8 -61
+1794919394010 [DEBUG-direction] 160839 1 105.4 nan
+1794919394010 mag 243 -467 -691 heading valid 106.0 samples 0
+1794919394204 [DEBUG-direction-obs] 161121 105.9 -60
+1794919394311 [DEBUG-direction] 161140 1 105.6 nan
+1794919394312 mag 235 -456 -694 heading valid 105.3 samples 0
+1794919394455 [DEBUG-direction-obs] 161341 105.4 -61
+1794919394517 [DEBUG-direction] 161346 1 105.4 nan
+1794919394518 mag 241 -454 -689 heading valid 105.8 samples 0
+1794919394710 [DEBUG-direction-obs] 161621 106.0 -59
+1794919394804 [DEBUG-direction] 161633 1 106.0 nan
+1794919394805 mag 238 -464 -695 heading valid 105.2 samples 0
+1794919394979 mag 238 -452 -700 heading valid 105.0 samples 0
+1794919395267 [DEBUG-direction-obs] 162127 105.0 -59
+1794919395310 [DEBUG-direction] 162138 1 105.0 nan
+1794919395310 mag 237 -462 -684 heading valid 106.5 samples 0
+1794919395521 mag 250 -455 -690 heading valid 105.9 samples 0
+1794919395782 [DEBUG-direction-obs] 162630 106.1 -59
+1794919395804 [DEBUG-direction] 162633 1 106.1 nan
+1794919395804 mag 245 -458 -697 heading valid 105.0 samples 0
+1794919396040 mag 241 -453 -702 heading valid 104.6 samples 0
+1794919396306 [DEBUG-direction-obs] 163139 104.6 -59
+1794919396328 [DEBUG-direction] 163158 1 104.2 nan
+1794919396329 mag 252 -452 -696 heading valid 105.2 samples 0
+1794919396605 [DEBUG-direction-obs] 163425 105.2 -61
+1794919396610 [DEBUG-direction] 163436 1 105.2 nan
+1794919396610 mag 239 -459 -704 heading valid 104.9 samples 0
+1794919396892 [DEBUG-direction-obs] 163723 104.9 -60
+1794919396913 [DEBUG-direction] 163743 1 104.7 nan
+1794919396914 mag 239 -451 -692 heading valid 105.5 samples 0
+1794919397148 [DEBUG-direction-obs] 164226 106.1 -61
+1794919397399 [DEBUG-direction] 164227 1 106.1 nan
+1794919397400 mag 244 -451 -687 heading valid 106.1 samples 0
+1794919397416 mag 244 -453 -711 heading valid 104.2 samples 0
+1794919397665 [DEBUG-direction-obs] 164532 104.0 -59
+1794919397720 [DEBUG-direction] 164551 1 104.0 nan
+1794919397721 mag 241 -456 -700 heading valid 105.1 samples 0
+1794919397928 mag 238 -450 -679 heading valid 106.8 samples 0
+1794919398224 [DEBUG-direction-obs] 165032 106.8 -59
+1794919398229 [DEBUG-direction] 165055 1 106.8 nan
+1794919398229 mag 246 -459 -703 heading valid 104.7 samples 0
+1794919398474 [DEBUG-direction-obs] 165536 105.6 -61
+1794919398718 [DEBUG-direction] 165547 1 105.6 nan
+1794919398718 mag 238 -455 -690 heading valid 106.0 samples 0
+1794919398769 mag 241 -458 -692 heading valid 105.5 samples 0
+1794919399026 mag 239 -453 -687 heading valid 105.9 samples 0
+1794919399292 [DEBUG-direction-obs] 166337 105.5 -60
+1794919399512 [DEBUG-direction] 166343 1 105.5 nan
+1794919399513 mag 235 -460 -694 heading valid 105.5 samples 0
+1794919399550 mag 249 -454 -702 heading valid 104.8 samples 0
+1794919399819 [DEBUG-direction-obs] 166639 104.8 -61
+1794919399824 [DEBUG-direction] 166650 1 104.8 nan
+1794919399824 [DEBUG-direction-obs] 166858 105.2 -61
+1794919400037 [DEBUG-direction] 166867 1 105.2 nan
+1794919400038 mag 246 -459 -700 heading valid 105.1 samples 0
+1794919400112 [DEBUG-direction-obs] 167136 106.3 -61
+1794919400323 [DEBUG-direction] 167153 1 106.2 nan
+1794919400324 mag 238 -453 -691 heading valid 105.8 samples 0
+1794919400401 [DEBUG-direction-obs] 167434 106.8 -59
+1794919400607 [DEBUG-direction] 167437 1 106.8 nan
+1794919400608 mag 241 -457 -689 heading valid 105.9 samples 0
+1794919400667 [DEBUG-direction-obs] 167735 106.1 -59
+1794919400914 [DEBUG-direction] 167744 1 106.1 nan
+1794919400915 mag 235 -458 -688 heading valid 106.3 samples 0
+1794919400932 [DEBUG-direction-obs] 167961 104.9 -59
+1794919401147 [DEBUG-direction] 167977 1 105.2 nan
+1794919401148 mag 235 -453 -684 heading valid 106.7 samples 0
+1794919401211 mag 247 -458 -684 heading valid 106.6 samples 0
+1794919401469 [DEBUG-direction-obs] 168236 106.4 -62
+1794919401474 [DEBUG-direction] 168300 1 106.6 nan
+1794919401474 mag 236 -460 -702 heading valid 105.0 samples 0
+1794919401724 [DEBUG-direction-obs] 168738 105.6 -61
+1794919401914 [DEBUG-direction] 168745 1 105.6 nan
+1794919401915 mag 247 -456 -678 heading valid 106.9 samples 0
+1794919401989 [DEBUG-direction-obs] 169036 104.9 -60
+1794919402226 [DEBUG-direction] 169057 1 104.9 nan
+1794919402227 mag 240 -456 -696 heading valid 105.6 samples 0
+1794919402278 mag 243 -456 -699 heading valid 104.8 samples 0
+1794919402539 [DEBUG-direction-obs] 169539 106.4 -62
+1794919402724 [DEBUG-direction] 169552 1 106.4 nan
+1794919402724 mag 242 -452 -683 heading valid 106.4 samples 0
+1794919402805 [DEBUG-direction-obs] 169838 105.5 -59
+1794919403012 [DEBUG-direction] 169840 1 105.5 nan
+1794919403012 mag 238 -456 -691 heading valid 105.5 samples 0
+1794919403070 mag 248 -452 -682 heading valid 106.7 samples 0
+1794919403375 [DEBUG-direction-obs] 170342 105.6 -61
+1794919403517 [DEBUG-direction] 170348 1 105.6 nan
+1794919403518 mag 244 -458 -688 heading valid 106.0 samples 0
+1794919403633 mag 252 -455 -696 heading valid 105.4 samples 0
+1794919403886 [DEBUG-direction-obs] 170859 104.3 -59
+1794919404047 [DEBUG-direction] 170877 1 104.7 nan
+1794919404048 mag 246 -451 -696 heading valid 105.3 samples 0
+1794919404137 [DEBUG-direction-obs] 171146 105.4 -62
+1794919404362 [DEBUG-direction] 171191 1 106.2 nan
+1794919404363 mag 241 -455 -692 heading valid 105.9 samples 0
+1794919404400 [DEBUG-direction-obs] 171447 105.6 -62
+1794919404634 [DEBUG-direction] 171462 1 105.7 nan
+1794919404635 mag 239 -459 -694 heading valid 105.7 samples 0
+1794919404697 mag 242 -451 -703 heading valid 104.7 samples 0
+1794919404964 mag 235 -449 -695 heading valid 105.4 samples 0
+1794919405220 [DEBUG-direction-obs] 172270 105.6 -61
+1794919405454 [DEBUG-direction] 172284 1 105.7 nan
+1794919405455 mag 239 -450 -687 heading valid 105.7 samples 0
+1794919405473 mag 247 -453 -681 heading valid 106.7 samples 0
+1794919405782 [DEBUG-direction-obs] 172550 106.2 -61
+1794919405786 [DEBUG-direction] 172612 1 106.7 nan
+1794919405787 mag 246 -450 -694 heading valid 105.3 samples 0
+1794919406082 mag 243 -453 -698 heading valid 105.4 samples 0
+1794919406389 [DEBUG-direction-obs] 173348 106.0 -62
+1794919406532 [DEBUG-direction] 173360 1 106.0 nan
+1794919406532 mag 234 -459 -698 heading valid 104.9 samples 0
+1794919406648 mag 237 -456 -697 heading valid 105.4 samples 0
+1794919406914 [DEBUG-direction-obs] 173854 105.1 -62
+1794919407079 [DEBUG-direction] 173909 1 105.3 nan
+1794919407080 mag 248 -462 -693 heading valid 105.9 samples 0
+1794919407181 [DEBUG-direction-obs] 174152 106.4 -62
+1794919407389 [DEBUG-direction] 174217 1 107.1 nan
+1794919407389 mag 248 -458 -690 heading valid 105.8 samples 0
+1794919407447 [DEBUG-direction-obs] 174451 105.1 -62
+1794919407625 [DEBUG-direction] 174455 1 105.1 nan
+1794919407626 mag 242 -455 -691 heading valid 105.8 samples 0
+1794919407722 mag 250 -458 -696 heading valid 105.2 samples 0
+1794919407990 [DEBUG-direction-obs] 174958 107.0 -63
+1794919408130 [DEBUG-direction] 174960 1 107.0 nan
+1794919408131 mag 246 -459 -683 heading valid 106.7 samples 0
+1794919408278 [DEBUG-direction-obs] 175252 105.1 -61
+1794919408440 [DEBUG-direction] 175270 1 105.0 nan
+1794919408441 mag 236 -454 -694 heading valid 105.4 samples 0
+1794919408538 [DEBUG-direction-obs] 175494 105.2 -61
+1794919408702 [DEBUG-direction] 175533 1 105.1 nan
+1794919408703 mag 234 -462 -700 heading valid 105.1 samples 0
+1794919408805 [DEBUG-direction-obs] 175755 105.6 -62
+1794919408941 [DEBUG-direction] 175771 1 105.4 nan
+1794919408942 mag 236 -453 -698 heading valid 105.0 samples 0
+1794919409103 [DEBUG-direction-obs] 176049 105.2 -61
+1794919409223 [DEBUG-direction] 176053 1 105.2 nan
+1794919409224 mag 239 -459 -694 heading valid 105.7 samples 0
+1794919409392 [DEBUG-direction-obs] 176304 105.5 -61
+1794919409488 [DEBUG-direction] 176319 1 105.7 nan
+1794919409489 mag 239 -455 -697 heading valid 105.1 samples 0
+1794919409658 [DEBUG-direction-obs] 176591 104.6 -60
+1794919409769 [DEBUG-direction] 176599 1 104.6 nan
+1794919409770 mag 245 -462 -693 heading valid 105.6 samples 0
+1794919409924 [DEBUG-direction-obs] 176857 105.0 -62
+1794919410046 [DEBUG-direction] 176876 1 105.5 nan
+1794919410047 mag 243 -446 -689 heading valid 105.6 samples 0
+1794919410220 mag 238 -456 -699 heading valid 104.8 samples 0
+1794919410470 [DEBUG-direction-obs] 177459 105.7 -62
+1794919410630 [DEBUG-direction] 177460 1 105.7 nan
+1794919410631 mag 242 -456 -690 heading valid 106.0 samples 0
+1794919410777 [DEBUG-direction-obs] 177701 106.3 -63
+1794919410896 [DEBUG-direction] 177726 1 106.3 nan
+1794919410897 mag 251 -462 -689 heading valid 105.7 samples 0
+1794919411034 [DEBUG-direction-obs] 177963 106.0 -61
+1794919411197 [DEBUG-direction] 178027 1 105.5 nan
+1794919411199 mag 241 -454 -695 heading valid 105.4 samples 0
+1794919411301 [DEBUG-direction-obs] 178261 105.0 -62
+1794919411441 [DEBUG-direction] 178272 1 105.0 nan
+1794919411442 mag 244 -458 -694 heading valid 105.3 samples 0
+1794919411559 mag 246 -456 -700 heading valid 105.3 samples 0
+1794919411813 [DEBUG-direction-obs] 178776 104.7 -61
+1794919411950 [DEBUG-direction] 178781 1 104.7 nan
+1794919411951 mag 245 -455 -711 heading valid 104.0 samples 0
+1794919412106 [DEBUG-direction-obs] 179079 105.4 -62
+1794919412279 [DEBUG-direction] 179108 1 105.7 nan
+1794919412280 mag 238 -449 -701 heading valid 105.0 samples 0
+1794919412396 [DEBUG-direction-obs] 179283 105.2 -61
+1794919412458 [DEBUG-direction] 179287 1 105.2 nan
+1794919412459 mag 235 -460 -699 heading valid 105.3 samples 0
+1794919412665 [DEBUG-direction-obs] 179563 105.0 -62
+1794919412773 [DEBUG-direction] 179602 1 105.2 nan
+1794919412774 mag 252 -452 -691 heading valid 105.5 samples 0
+1794919412928 [DEBUG-direction-obs] 179807 105.7 -62
+1794919412991 [DEBUG-direction] 179820 1 105.3 nan
+1794919412991 mag 245 -459 -689 heading valid 106.1 samples 0
+1794919413191 [DEBUG-direction-obs] 180095 106.0 -62
+1794919413297 [DEBUG-direction] 180127 1 105.6 nan
+1794919413298 mag 236 -456 -700 heading valid 105.0 samples 0
+1794919413443 [DEBUG-direction-obs] 180361 105.0 -61
+1794919413543 [DEBUG-direction] 180374 1 105.0 nan
+1794919413544 mag 239 -453 -689 heading valid 105.9 samples 0
+1794919413718 [DEBUG-direction-obs] 180659 104.7 -61
+1794919413831 [DEBUG-direction] 180662 1 104.7 nan
+1794919413832 mag 241 -450 -700 heading valid 104.7 samples 0
+1794919413986 [DEBUG-direction-obs] 180901 105.8 -61
+1794919414106 [DEBUG-direction] 180936 1 106.4 nan
+1794919414107 mag 238 -454 -689 heading valid 106.1 samples 0
+1794919414275 [DEBUG-direction-obs] 181208 105.8 -61
+1794919414395 [DEBUG-direction] 181225 1 105.8 nan
+1794919414396 mag 247 -453 -687 heading valid 106.0 samples 0
+1794919414541 [DEBUG-direction-obs] 181509 105.8 -62
+1794919414717 [DEBUG-direction] 181548 1 105.4 nan
+1794919414718 mag 242 -455 -700 heading valid 105.0 samples 0
+1794919414808 [DEBUG-direction-obs] 181771 105.3 -61
+1794919414946 [DEBUG-direction] 181776 1 105.3 nan
+1794919414947 mag 249 -456 -695 heading valid 105.2 samples 0
+1794919415060 mag 240 -457 -694 heading valid 105.9 samples 0
+1794919415373 [DEBUG-direction-obs] 182283 106.1 -59
+1794919415494 [DEBUG-direction] 182323 1 106.1 nan
+1794919415494 mag 237 -449 -689 heading valid 105.8 samples 0
+1794919415629 [DEBUG-direction-obs] 182586 106.6 -62
+1794919415779 [DEBUG-direction] 182609 1 106.6 nan
+1794919415780 mag 238 -449 -704 heading valid 104.7 samples 0
+1794919415896 [DEBUG-direction-obs] 182807 104.7 -61
+1794919416014 [DEBUG-direction] 182843 1 106.2 nan
+1794919416015 mag 239 -451 -684 heading valid 106.4 samples 0
+1794919416183 [DEBUG-direction-obs] 183095 105.9 -63
+1794919416303 [DEBUG-direction] 183132 1 105.8 nan
+1794919416304 mag 242 -453 -696 heading valid 105.3 samples 0
+1794919416446 [DEBUG-direction-obs] 183387 105.4 -63
+1794919416606 [DEBUG-direction] 183436 1 105.7 nan
+1794919416607 mag 237 -454 -696 heading valid 105.4 samples 0
+1794919416722 [DEBUG-direction-obs] 183622 105.3 -65
+1794919416797 [DEBUG-direction] 183628 1 105.3 nan
+1794919416798 mag 241 -457 -686 heading valid 106.0 samples 0
+1794919416991 [DEBUG-direction-obs] 183921 105.6 -62
+1794919417111 [DEBUG-direction] 183941 1 105.6 nan
+1794919417112 mag 241 -452 -704 heading valid 104.9 samples 0
+1794919417280 [DEBUG-direction-obs] 184210 105.9 -68
+1794919417401 [DEBUG-direction] 184230 1 105.9 nan
+1794919417402 mag 235 -459 -691 heading valid 105.7 samples 0
+1794919417539 [DEBUG-direction-obs] 184483 105.5 -68
+1794919417704 [DEBUG-direction] 184532 1 106.5 nan
+1794919417704 mag 240 -463 -694 heading valid 106.1 samples 0
+1794919417837 mag 237 -458 -703 heading valid 104.9 samples 0
+1794919418106 mag 242 -455 -701 heading valid 105.2 samples 0
+1794919418394 [DEBUG-direction-obs] 185290 105.1 -61
+1794919418475 [DEBUG-direction] 185305 1 105.1 nan
+1794919418476 mag 245 -456 -696 heading valid 105.5 samples 0
+1794919418697 [DEBUG-direction-obs] 185595 104.8 -60
+1794919418784 [DEBUG-direction] 185612 1 104.8 nan
+1794919418784 mag 242 -448 -687 heading valid 105.7 samples 0
+1794919418965 [DEBUG-direction-obs] 185886 105.2 -60
+1794919419103 [DEBUG-direction] 185933 1 106.0 nan
+1794919419104 mag 241 -458 -688 heading valid 106.2 samples 0
+1794919419219 [DEBUG-direction-obs] 186120 106.1 -64
+1794919419294 [DEBUG-direction] 186124 1 106.1 nan
+1794919419295 mag 243 -443 -687 heading valid 105.9 samples 0
+1794919419473 [DEBUG-direction-obs] 186385 105.2 -60
+1794919419613 [DEBUG-direction] 186441 1 105.9 nan
+1794919419613 mag 244 -462 -678 heading valid 107.1 samples 0
+1794919419780 [DEBUG-direction-obs] 186686 107.1 -61
+1794919419898 [DEBUG-direction] 186728 1 107.1 nan
+1794919419899 mag 241 -455 -699 heading valid 105.3 samples 0
+1794919420081 [DEBUG-direction-obs] 186928 105.3 -62
+1794919420135 [DEBUG-direction] 186966 1 105.9 nan
+1794919420136 mag 242 -449 -688 heading valid 105.6 samples 0
+1794919420357 [DEBUG-direction-obs] 187190 105.6 -64
+1794919420379 [DEBUG-direction] 187208 1 104.7 nan
+1794919420380 mag 241 -454 -693 heading valid 105.2 samples 0
+1794919420610 mag 235 -455 -678 heading valid 107.2 samples 0
+1794919420895 [DEBUG-direction-obs] 187735 107.0 -64
+1794919420916 [DEBUG-direction] 187747 1 107.0 nan
+1794919420917 mag 242 -456 -685 heading valid 105.2 samples 0
+1794919421157 [DEBUG-direction-obs] 188030 104.8 -64
+1794919421216 [DEBUG-direction] 188046 1 104.8 nan
+1794919421217 mag 242 -453 -684 heading valid 106.0 samples 0
+1794919421426 mag 237 -460 -687 heading valid 106.5 samples 0
+1794919421724 [DEBUG-direction-obs] 188537 106.5 -62
+1794919421729 [DEBUG-direction] 188554 1 106.5 nan
+1794919421729 mag 238 -466 -703 heading valid 105.2 samples 0
+1794919421992 [DEBUG-direction-obs] 188806 104.9 -61
+1794919421997 [DEBUG-direction] 188824 1 105.2 nan
+1794919421997 mag 244 -454 -685 heading valid 106.6 samples 0
+1794919422281 [DEBUG-direction-obs] 189093 106.6 -61
+1794919422286 [DEBUG-direction] 189111 1 106.6 nan
+1794919422287 mag 246 -460 -697 heading valid 105.4 samples 0
+1794919422538 [DEBUG-direction-obs] 189387 104.8 -61
+1794919422561 [DEBUG-direction] 189390 1 104.8 nan
+1794919422561 mag 240 -464 -685 heading valid 106.7 samples 0
+1794919422805 [DEBUG-direction-obs] 189623 106.7 -63
+1794919422810 [DEBUG-direction] 189635 1 106.7 nan
+1794919422811 mag 237 -446 -683 heading valid 106.3 samples 0
+1794919423103 mag 236 -455 -688 heading valid 106.2 samples 0
+1794919423392 mag 245 -451 -698 heading valid 104.9 samples 0
+1794919423657 [DEBUG-direction-obs] 190701 105.3 -61
+1794919423886 [DEBUG-direction] 190714 1 105.3 nan
+1794919423886 mag 244 -456 -702 heading valid 104.8 samples 0
+1794919423923 mag 240 -453 -689 heading valid 106.0 samples 0
+1794919424220 [DEBUG-direction-obs] 190995 105.0 -61
+1794919424225 [DEBUG-direction] 191050 1 106.0 nan
+1794919424226 [DEBUG-direction-obs] 191225 106.0 -62
+1794919424413 [DEBUG-direction] 191242 1 105.9 nan
+1794919424414 mag 246 -457 -682 heading valid 106.3 samples 0
+1794919424472 [DEBUG-direction-obs] 191508 104.9 -61
+1794919424695 [DEBUG-direction] 191524 1 104.9 nan
+1794919424696 mag 244 -451 -697 heading valid 105.4 samples 0
+1794919424780 [DEBUG-direction-obs] 191796 105.3 -63
+1794919424979 [DEBUG-direction] 191809 1 105.3 nan
+1794919424979 mag 242 -450 -690 heading valid 105.5 samples 0
+1794919425037 [DEBUG-direction-obs] 192032 105.9 -62
+1794919425220 [DEBUG-direction] 192049 1 105.9 nan
+1794919425221 mag 237 -451 -691 heading valid 105.8 samples 0
+1794919425305 [DEBUG-direction-obs] 192298 105.8 -62
+1794919425470 [DEBUG-direction] 192301 1 105.8 nan
+1794919425472 mag 243 -450 -695 heading valid 105.0 samples 0
+1794919425569 [DEBUG-direction-obs] 192539 106.4 -61
+1794919425729 [DEBUG-direction] 192559 1 106.4 nan
+1794919425730 mag 241 -455 -685 heading valid 106.5 samples 0
+1794919425820 [DEBUG-direction-obs] 192805 105.9 -61
+1794919425979 [DEBUG-direction] 192808 1 105.9 nan
+1794919425980 mag 242 -460 -686 heading valid 106.4 samples 0
+1794919426115 [DEBUG-direction-obs] 193099 106.7 -61
+1794919426306 [DEBUG-direction] 193134 1 107.2 nan
+1794919426307 mag 241 -453 -682 heading valid 107.0 samples 0
+1794919426391 mag 248 -459 -703 heading valid 104.7 samples 0
+1794919426662 mag 245 -457 -686 heading valid 106.2 samples 0
+1794919426923 [DEBUG-direction-obs] 193917 105.7 -62
+1794919427102 [DEBUG-direction] 193931 1 105.7 nan
+1794919427102 mag 243 -458 -699 heading valid 105.1 samples 0
+1794919427217 [DEBUG-direction-obs] 194206 105.7 -60
+1794919427391 [DEBUG-direction] 194220 1 105.7 nan
+1794919427392 mag 241 -447 -694 heading valid 105.0 samples 0
+1794919427470 mag 240 -459 -693 heading valid 105.7 samples 0
+1794919427726 [DEBUG-direction-obs] 194518 105.9 -62
+1794919427731 [DEBUG-direction] 194557 1 105.7 nan
+1794919427732 mag 244 -453 -695 heading valid 105.2 samples 0
+1794919427975 [DEBUG-direction-obs] 195036 106.0 -62
+1794919428219 [DEBUG-direction] 195048 1 106.0 nan
+1794919428220 mag 241 -451 -682 heading valid 106.7 samples 0
+1794919428283 [DEBUG-direction-obs] 195316 105.7 -64
+1794919428489 [DEBUG-direction] 195319 1 105.7 nan
+1794919428490 mag 222 -470 -703 heading valid 106.2 samples 0
+1794919428549 [DEBUG-direction-obs] 195617 108.6 -61
+1794919428796 [DEBUG-direction] 195626 1 108.6 nan
+1794919428797 mag 197 -503 -680 heading valid 108.6 samples 0
+1794919428815 mag 188 -506 -684 heading valid 107.8 samples 0
+1794919429069 [DEBUG-direction-obs] 195915 107.8 -60
+1794919429129 [DEBUG-direction] 195958 1 108.5 nan
+1794919429130 mag 209 -499 -700 heading valid 105.5 samples 0
+1794919429323 [DEBUG-direction-obs] 196213 105.2 -63
+1794919429404 [DEBUG-direction] 196233 1 104.7 nan
+1794919429405 mag 228 -482 -716 heading valid 104.3 samples 0
+1794919429620 [DEBUG-direction-obs] 196453 104.3 -58
+1794919429642 [DEBUG-direction] 196471 1 104.0 nan
+1794919429642 mag 214 -481 -704 heading valid 105.9 samples 0
+1794919429874 [DEBUG-direction-obs] 196720 105.8 -59
+1794919429896 [DEBUG-direction] 196725 1 105.8 nan
+1794919429896 mag 220 -485 -708 heading valid 105.2 samples 0
+1794919430130 [DEBUG-direction-obs] 197030 105.4 -64
+1794919430216 [DEBUG-direction] 197045 1 105.5 nan
+1794919430216 mag 212 -482 -704 heading valid 105.6 samples 0
+1794919430397 [DEBUG-direction-obs] 197244 105.2 -72
+1794919430419 [DEBUG-direction] 197248 1 105.2 nan
+1794919430420 mag 221 -489 -715 heading valid 105.1 samples 0
+1794919430703 [DEBUG-direction-obs] 197511 105.1 -73
+1794919430707 [DEBUG-direction] 197532 1 105.1 nan
+1794919430708 mag 226 -490 -728 heading valid 103.4 samples 0
+1794919430951 mag 221 -488 -722 heading valid 104.0 samples 0
+1794919431209 [DEBUG-direction-obs] 198030 104.0 -70
+1794919431214 [DEBUG-direction] 198039 1 104.0 nan
+1794919431215 mag 226 -492 -708 heading valid 105.2 samples 0
+1794919431460 [DEBUG-direction-obs] 198317 105.6 -70
+1794919431502 [DEBUG-direction] 198330 1 105.1 nan
+1794919431502 mag 233 -487 -727 heading valid 103.3 samples 0
+1794919431717 [DEBUG-direction-obs] 198537 103.3 -71
+1794919431722 [DEBUG-direction] 198547 1 103.3 nan
+1794919431722 mag 229 -488 -717 heading valid 104.2 samples 0
+1794919431971 [DEBUG-direction-obs] 198814 104.4 -69
+1794919431996 [DEBUG-direction] 198822 1 104.4 nan
+1794919431996 mag 227 -484 -715 heading valid 104.8 samples 0
+1794919432259 [DEBUG-direction-obs] 199118 105.2 -69
+1794919432314 [DEBUG-direction] 199143 1 105.2 nan
+1794919432315 mag 223 -492 -713 heading valid 104.4 samples 0
+1794919432527 [DEBUG-direction-obs] 199337 104.5 -68
+1794919432532 [DEBUG-direction] 199357 1 104.4 nan
+1794919432533 mag 225 -479 -718 heading valid 104.5 samples 0
+1794919432786 [DEBUG-direction-obs] 199860 103.4 -69
+1794919433033 [DEBUG-direction] 199861 1 103.4 nan
+1794919433033 mag 212 -488 -724 heading valid 103.5 samples 0
+1794919433051 mag 215 -483 -702 heading valid 105.7 samples 0
+1794919433318 [DEBUG-direction-obs] 200369 104.5 -69
+1794919433539 [DEBUG-direction] 200369 1 104.5 nan
+1794919433540 mag 213 -484 -714 heading valid 104.7 samples 0
+1794919433615 [DEBUG-direction-obs] 200623 104.7 -69
+1794919433808 [DEBUG-direction] 200637 1 104.7 nan
+1794919433809 mag 221 -483 -714 heading valid 104.9 samples 0
+1794919433870 mag 220 -481 -704 heading valid 105.6 samples 0
+1794919434138 mag 216 -475 -701 heading valid 105.8 samples 0
+1794919434394 mag 214 -489 -719 heading valid 104.5 samples 0
+1794919434699 [DEBUG-direction-obs] 201526 104.5 -69
+1794919434704 [DEBUG-direction] 201529 1 104.5 nan
+1794919434705 [DEBUG-direction-obs] 201738 105.5 -69
+1794919434921 [DEBUG-direction] 201750 1 105.5 nan
+1794919434922 mag 214 -491 -712 heading valid 104.9 samples 0
+1794919434960 mag 220 -479 -702 heading valid 105.6 samples 0
+1794919435223 [DEBUG-direction-obs] 202034 105.6 -70
+1794919435228 [DEBUG-direction] 202053 1 105.6 nan
+1794919435229 mag 231 -477 -714 heading valid 104.2 samples 0
+1794919435475 [DEBUG-direction-obs] 202324 104.2 -69
+1794919435497 [DEBUG-direction] 202326 1 104.2 nan
+1794919435497 mag 223 -488 -717 heading valid 104.4 samples 0
+1794919435783 [DEBUG-direction-obs] 202625 104.4 -66
+1794919435806 [DEBUG-direction] 202635 1 104.4 nan
+1794919435806 [DEBUG-direction-obs] 202849 104.7 -66
+1794919436032 [DEBUG-direction] 202860 1 104.7 nan
+1794919436032 mag 222 -477 -702 heading valid 105.2 samples 0
+1794919436049 mag 198 -488 -720 heading valid 104.9 samples 0
+1794919436314 [DEBUG-direction-obs] 203138 104.9 -66
+1794919436319 [DEBUG-direction] 203144 1 104.9 nan
+1794919436320 mag 53 -571 -741 heading valid 105.4 samples 0
+1794919436596 [DEBUG-direction-obs] 203436 106.7 -70
+1794919436617 [DEBUG-direction] 203447 1 106.7 nan
+1794919436618 mag -42 -619 -731 heading valid 109.7 samples 0
+1794919436883 [DEBUG-direction-obs] 203734 110.6 -61
+1794919436923 [DEBUG-direction] 203753 1 111.4 nan
+1794919436924 mag -172 -549 -676 heading valid 113.4 samples 0
+1794919437141 [DEBUG-direction-obs] 203955 112.7 -61
+1794919437145 [DEBUG-direction] 203971 1 113.4 nan
+1794919437146 mag -72 -511 -386 heading valid 132.9 samples 0
+1794919437391 [DEBUG-direction-obs] 204237 132.9 -61
+1794919437447 [DEBUG-direction] 204275 1 139.6 nan
+1794919437448 mag 81 -799 -114 heading valid 161.5 samples 0
+1794919437656 [DEBUG-direction-obs] 204538 164.2 -59
+1794919437715 [DEBUG-direction] 204545 1 164.2 nan
+1794919437716 mag 140 -1068 -49 heading valid 180.0 samples 0
+1794919437922 [DEBUG-direction-obs] 204836 188.0 -66
+1794919438025 [DEBUG-direction] 204853 1 190.1 -55.1
+1794919438025 mag 201 -1509 -138 heading valid 209.8 samples 0
+1794919438201 [DEBUG-direction-obs] 205086 215.3 -69
+1794919438291 [DEBUG-direction] 205120 1 215.3 -80.3
+1794919438291 mag 247 -1780 -314 heading valid 229.9 samples 0
+1794919438469 [DEBUG-direction-obs] 205344 234.0 -64
+1794919438551 [DEBUG-direction] 205358 1 236.2 -101.2
+1794919438552 mag 308 -2016 -697 heading unavailable nan samples 0
+1794919438751 mag 342 -2052 -986 heading unavailable nan samples 0
+1794919439004 mag 379 -2018 -1198 heading unavailable nan samples 0
+1794919439293 mag 407 -1930 -1386 heading unavailable nan samples 0
+1794919439597 mag 435 -1913 -1426 heading valid 304.2 samples 0
+1794919439888 mag 438 -1824 -1538 heading valid 312.0 samples 0
+1794919440145 [DEBUG-direction-obs] 206956 311.4 -64
+1794919440150 [DEBUG-direction] 206975 1 312.0 nan
+1794919440151 mag 459 -1766 -1596 heading valid 316.6 samples 0
+1794919440399 [DEBUG-direction-obs] 207242 316.4 -63
+1794919440421 [DEBUG-direction] 207249 1 316.4 nan
+1794919440421 mag 455 -1715 -1627 heading valid 320.9 samples 0
+1794919440648 [DEBUG-direction-obs] 207540 321.9 -63
+1794919440722 [DEBUG-direction] 207553 1 321.9 nan
+1794919440723 mag 450 -1658 -1670 heading valid 323.8 samples 0
+1794919440909 [DEBUG-direction-obs] 207772 325.3 -65
+1794919440949 [DEBUG-direction] 207779 1 325.3 nan
+1794919440950 mag 457 -1204 -1803 heading valid 348.9 samples 0
+1794919441204 [DEBUG-direction-obs] 208052 350.5 -60
+1794919441226 [DEBUG-direction] 208055 1 350.5 nan
+1794919441227 mag 439 -807 -1705 heading unavailable nan samples 0
+1794919441456 mag 410 -583 -1553 heading unavailable nan samples 0
+1794919441713 mag 368 -451 -1267 heading unavailable nan samples 0
+1794919441981 mag 62 -597 -829 heading unavailable nan samples 0
+1794919442269 mag -19 -632 -793 heading valid 98.9 samples 0
+1794919442526 [DEBUG-direction-obs] 209359 98.9 -57
+1794919442548 [DEBUG-direction] 209378 1 98.8 nan
+1794919442549 mag -17 -629 -798 heading valid 100.5 samples 0
+1794919442793 mag -27 -644 -784 heading valid 102.4 samples 0
+1794919443048 mag -32 -642 -771 heading valid 103.9 samples 0
+1794919443303 mag -186 -644 -752 heading valid 116.2 samples 0
+1794919443605 [DEBUG-direction-obs] 210471 114.8 -57
+1794919443645 [DEBUG-direction] 210475 1 114.8 nan
+1794919443645 mag -371 -416 -457 heading unavailable nan samples 0
+1794919443893 mag -34 -653 -95 heading unavailable nan samples 0
+1794919444148 mag 97 -983 -35 heading unavailable nan samples 0
+1794919444401 mag 166 -1282 -44 heading unavailable nan samples 0
+1794919444659 mag 198 -1500 -138 heading unavailable nan samples 0
+1794919444924 mag 218 -1641 -218 heading unavailable nan samples 0
+1794919445220 mag 242 -1780 -349 heading unavailable nan samples 0
+1794919445471 mag 277 -1918 -528 heading unavailable nan samples 0
+1794919445726 mag 334 -2023 -879 heading unavailable nan samples 0
+1794919445980 mag 384 -1971 -1244 heading unavailable nan samples 0
+1794919446267 mag 408 -1855 -1474 heading unavailable nan samples 0
+1794919446525 mag 425 -1630 -1666 heading unavailable nan samples 0
+1794919446823 mag 446 -1341 -1761 heading unavailable nan samples 0
+1794919447073 mag 450 -1007 -1750 heading unavailable nan samples 0
+1794919447381 mag 436 -820 -1698 heading unavailable nan samples 0
+1794919447639 mag 389 -526 -1430 heading unavailable nan samples 0
+1794919447904 mag 334 -358 -1102 heading unavailable nan samples 0
+1794919448160 mag 305 -381 -1012 heading unavailable nan samples 0
+1794919448429 mag 290 -371 -961 heading valid 82.7 samples 0
+1794919448724 [DEBUG-direction-obs] 215792 88.4 -61
+1794919448973 [DEBUG-direction] 215804 1 88.4 nan
+1794919448974 mag 263 -388 -886 heading valid 89.1 samples 0
+1794919448992 mag 215 -430 -818 heading valid 94.8 samples 0
+1794919449301 [DEBUG-direction-obs] 216089 94.9 -62
+1794919449306 [DEBUG-direction] 216131 1 94.8 nan
+1794919449306 mag 220 -423 -810 heading valid 95.2 samples 0
+1794919449605 [DEBUG-direction-obs] 216606 95.8 -60
+1794919449797 [DEBUG-direction] 216626 1 96.1 nan
+1794919449797 mag 209 -425 -802 heading valid 96.8 samples 0
+1794919449890 [DEBUG-direction-obs] 216902 99.0 -58
+1794919450108 [DEBUG-direction] 216939 1 99.8 nan
+1794919450109 mag 157 -455 -777 heading valid 99.5 samples 0
+1794919450146 mag 83 -479 -704 heading valid 108.3 samples 0
+1794919450416 [DEBUG-direction-obs] 217414 113.6 -58
+1794919450617 [DEBUG-direction] 217446 1 113.6 nan
+1794919450618 mag 7 -449 -566 heading valid 117.4 samples 0
+1794919450700 [DEBUG-direction-obs] 217711 122.9 -59
+1794919450924 [DEBUG-direction] 217752 1 123.6 nan
+1794919450925 mag 15 -457 -452 heading valid 124.1 samples 0
+1794919450961 mag 17 -465 -449 heading valid 124.1 samples 0
+1794919451224 [DEBUG-direction-obs] 218212 124.6 -59
+1794919451397 [DEBUG-direction] 218225 1 124.6 nan
+1794919451397 mag 8 -466 -445 heading valid 124.4 samples 0
+1794919451488 [DEBUG-direction-obs] 218512 123.6 -57
+1794919451718 [DEBUG-direction] 218547 1 125.0 nan
+1794919451719 mag 8 -468 -417 heading valid 126.6 samples 0
+1794919451769 [DEBUG-direction-obs] 218773 134.7 -58
+1794919451947 [DEBUG-direction] 218776 1 134.7 nan
+1794919451948 mag 52 -558 -264 heading valid 139.2 samples 0
+1794919452026 mag 87 -690 -140 heading valid 152.0 samples 0
+1794919452292 [DEBUG-direction-obs] 219317 164.9 -60
+1794919452492 [DEBUG-direction] 219321 1 164.9 nan
+1794919452493 mag 140 -951 -53 heading valid 168.7 samples 0
+1794919452550 [DEBUG-direction-obs] 219617 192.1 -61
+1794919452801 [DEBUG-direction] 219628 1 192.1 nan
+1794919452802 mag 171 -1298 -65 heading valid 195.7 samples 0
+1794919452817 mag 230 -1717 -305 heading unavailable nan samples 0
+1794919453110 mag 275 -1939 -636 heading unavailable nan samples 0
+1794919453399 mag 353 -1970 -1119 heading unavailable nan samples 0
+1794919453668 mag 410 -1850 -1414 heading unavailable nan samples 0
+1794919453928 mag 420 -1751 -1535 heading unavailable nan samples 0
+1794919454223 mag 431 -1748 -1564 heading unavailable nan samples 0
+1794919454473 mag 442 -1390 -1719 heading unavailable nan samples 0
+1794919454767 mag 435 -1017 -1737 heading unavailable nan samples 0
+1794919455025 mag 405 -749 -1608 heading unavailable nan samples 0
+1794919455290 mag 337 -590 -1435 heading unavailable nan samples 0
+1794919455549 mag 217 -489 -1116 heading unavailable nan samples 0
+1794919455815 mag -24 -590 -884 heading unavailable nan samples 0
+1794919456108 mag -46 -599 -877 heading valid 89.6 samples 0
+1794919456395 mag -54 -596 -864 heading valid 91.9 samples 0
+1794919456660 mag -54 -608 -866 heading valid 92.0 samples 0
+1794919456923 [DEBUG-direction-obs] 223931 91.6 -63
+1794919457120 [DEBUG-direction] 223950 1 91.6 nan
+1794919457121 mag -59 -607 -883 heading valid 90.6 samples 0
+1794919457203 mag -62 -603 -864 heading valid 92.6 samples 0
+1794919457492 mag -57 -597 -868 heading valid 92.2 samples 0
+1794919457779 mag -62 -602 -870 heading valid 91.4 samples 0
+1794919458034 mag -63 -609 -859 heading valid 93.1 samples 0
+1794919458301 [DEBUG-direction-obs] 225290 92.6 -63
+1794919458470 [DEBUG-direction] 225299 1 92.6 nan
+1794919458470 mag -64 -605 -864 heading valid 92.0 samples 0
+1794919458606 mag -62 -601 -864 heading valid 92.2 samples 0
+1794919458892 mag -55 -607 -872 heading valid 91.5 samples 0
+1794919459193 mag -63 -595 -872 heading valid 91.2 samples 0
+1794919459444 mag -65 -602 -851 heading valid 92.5 samples 0
+1794919459719 [DEBUG-direction-obs] 226678 92.3 -61
+1794919459875 [DEBUG-direction] 226705 1 92.3 nan
+1794919459875 mag -56 -594 -866 heading valid 91.7 samples 0
+1794919459974 mag -52 -602 -863 heading valid 92.6 samples 0
+1794919460261 mag -55 -593 -863 heading valid 92.0 samples 0
+1794919460529 mag -55 -602 -877 heading valid 91.2 samples 0
+1794919460791 mag -56 -592 -879 heading valid 90.3 samples 0
+1794919461054 [DEBUG-direction-obs] 227981 91.6 -61
+1794919461211 [DEBUG-direction] 228040 1 91.4 nan
+1794919461212 mag -51 -605 -874 heading valid 91.1 samples 0
+1794919461315 mag -53 -605 -867 heading valid 91.7 samples 0
+1794919461598 mag -63 -595 -856 heading valid 93.4 samples 0
+1794919461885 [DEBUG-direction-obs] 228800 91.7 -61
+1794919461986 [DEBUG-direction] 228816 1 91.8 nan
+1794919461986 mag -52 -599 -871 heading valid 91.2 samples 0
+1794919462143 [DEBUG-direction-obs] 229086 91.7 -61
+1794919462274 [DEBUG-direction] 229104 1 91.7 nan
+1794919462275 mag -57 -603 -872 heading valid 91.4 samples 0
+1794919462392 mag -56 -602 -867 heading valid 91.8 samples 0
+1794919462695 mag -60 -598 -856 heading valid 92.9 samples 0
+1794919462957 mag -58 -602 -867 heading valid 91.7 samples 0
+1794919463213 mag -52 -598 -856 heading valid 92.7 samples 0
+1794919463466 [DEBUG-direction-obs] 230437 91.0 -63
+1794919463626 [DEBUG-direction] 230456 1 91.0 nan
+1794919463626 mag -45 -599 -878 heading valid 90.5 samples 0
+1794919463721 [DEBUG-direction-obs] 230738 89.2 -63
+1794919463911 [DEBUG-direction] 230742 1 89.2 nan
+1794919463912 mag 28 -567 -915 heading valid 82.4 samples 0
+1794919463990 mag 394 -847 -1612 heading valid 11.2 samples 0
+1794919464277 mag 407 -1620 -1624 heading unavailable nan samples 0
+1794919464539 mag 395 -1653 -1604 heading unavailable nan samples 0
+1794919464805 mag 368 -1779 -1471 heading unavailable nan samples 0
+1794919465105 mag 302 -1977 -856 heading unavailable nan samples 0
+1794919465393 mag 218 -1647 -253 heading unavailable nan samples 0
+1794919465657 mag 216 -1483 -89 heading unavailable nan samples 0
+1794919465924 mag 222 -1310 -33 heading unavailable nan samples 0
+1794919466219 mag 246 -949 -6 heading unavailable nan samples 0
+1794919466469 mag 701 -743 183 heading unavailable nan samples 0
+1794919466724 mag 1401 -552 -18 heading unavailable nan samples 0
+1794919466993 mag 839 -316 -18 heading unavailable nan samples 0
+1794919467280 mag 610 -279 -197 heading unavailable nan samples 0
+1794919467538 mag 556 -246 -387 heading unavailable nan samples 0
+1794919467789 mag 594 -202 -433 heading unavailable nan samples 0
+1794919468045 mag 697 -104 -516 heading unavailable nan samples 0
+1794919468311 mag 902 -1 -591 heading unavailable nan samples 0
+1794919468609 mag 1291 -41 -669 heading unavailable nan samples 0
+1794919468883 mag 1392 -146 -1000 heading unavailable nan samples 0
+1794919469141 mag 1171 -419 -1671 heading unavailable nan samples 0
+1794919469410 mag 797 -1456 -1911 heading unavailable nan samples 0
+1794919469668 mag 1024 -1515 153 heading unavailable nan samples 0
+1794919469931 mag 1225 -678 122 heading unavailable nan samples 0
+1794919470193 mag 663 -210 -181 heading unavailable nan samples 0
+1794919470484 mag 202 -464 -581 heading unavailable nan samples 0
+1794919470772 mag 270 -391 -720 heading unavailable nan samples 0
+1794919471027 mag 275 -378 -749 heading unavailable nan samples 0
+1794919471294 mag 272 -373 -756 heading valid 100.6 samples 0
+1794919471545 mag 219 -390 -814 heading unavailable nan samples 0
+1794919471805 mag 164 -347 -888 heading unavailable nan samples 0
+1794919472103 mag 184 -336 -891 heading unavailable nan samples 0
+1794919472392 mag 172 -334 -891 heading valid 88.9 samples 0
+1794919472692 mag 182 -342 -908 heading valid 87.7 samples 0
+1794919472955 [DEBUG-direction-obs] 239775 87.7 -60
+1794919472960 [DEBUG-direction] 239787 1 87.7 nan
+1794919472960 mag 179 -336 -902 heading valid 88.3 samples 0
+1794919473218 [DEBUG-direction-obs] 240032 88.6 -63
+1794919473223 [DEBUG-direction] 240050 1 88.3 nan
+1794919473223 mag 178 -329 -888 heading valid 89.2 samples 0
+1794919473481 mag 176 -328 -894 heading valid 89.0 samples 0
+1794919473788 mag 177 -330 -903 heading valid 88.0 samples 0
+1794919474052 [DEBUG-direction-obs] 240882 88.0 -64
+1794919474057 [DEBUG-direction] 240884 1 88.0 nan
+1794919474057 mag 179 -333 -896 heading valid 88.7 samples 0
+1794919474318 [DEBUG-direction-obs] 241378 88.9 -64
+1794919474560 [DEBUG-direction] 241389 1 88.9 nan
+1794919474560 mag 181 -332 -889 heading valid 89.2 samples 0
+1794919474617 [DEBUG-direction-obs] 241624 87.9 -59
+1794919474841 [DEBUG-direction] 241670 1 87.7 nan
+1794919474842 mag 190 -333 -901 heading valid 88.5 samples 0
+1794919474891 mag 183 -331 -901 heading valid 88.3 samples 0
+1794919475194 mag 172 -333 -900 heading valid 88.3 samples 0
+1794919475459 mag 180 -336 -904 heading valid 88.1 samples 0
+1794919475721 mag 187 -340 -899 heading valid 88.2 samples 0
+1794919475989 mag 183 -344 -906 heading valid 87.8 samples 0
+1794919476248 mag 172 -331 -897 heading valid 88.4 samples 0
+1794919476500 [DEBUG-direction-obs] 243321 88.4 -66
+1794919476504 [DEBUG-direction] 243331 1 88.4 nan
+1794919476505 mag 187 -333 -900 heading valid 88.5 samples 0
+1794919476780 mag 175 -338 -908 heading valid 87.6 samples 0
+1794919477050 [DEBUG-direction-obs] 243834 87.9 -62
+1794919477056 [DEBUG-direction] 243881 1 87.6 nan
+1794919477056 mag 183 -340 -897 heading valid 88.4 samples 0
+1794919477310 [DEBUG-direction-obs] 244378 87.8 -66
+1794919477550 [DEBUG-direction] 244381 1 87.8 nan
+1794919477551 mag 185 -330 -904 heading valid 87.9 samples 0
+1794919477607 [DEBUG-direction-obs] 244626 88.4 -69
+1794919477797 [DEBUG-direction] 244628 1 88.4 nan
+1794919477798 mag 179 -338 -895 heading valid 88.7 samples 0
+1794919477898 [DEBUG-direction-obs] 244921 87.4 -59
+1794919478112 [DEBUG-direction] 244943 1 87.4 nan
+1794919478112 mag 184 -336 -901 heading valid 88.3 samples 0
+1794919478197 mag 179 -332 -893 heading valid 88.8 samples 0
+1794919478463 mag 185 -348 -898 heading valid 88.3 samples 0
+1794919478725 [DEBUG-direction-obs] 245742 89.2 -63
+1794919478927 [DEBUG-direction] 245755 1 89.2 nan
+1794919478928 mag 184 -338 -893 heading valid 88.7 samples 0
+1794919478984 [DEBUG-direction-obs] 246022 87.6 -62
+1794919479227 [DEBUG-direction] 246057 1 87.5 nan
+1794919479227 mag 188 -331 -902 heading valid 88.2 samples 0
+1794919479278 mag 184 -341 -896 heading valid 88.4 samples 0
+1794919479532 mag 184 -338 -896 heading valid 88.6 samples 0
+1794919479793 mag 183 -338 -907 heading valid 87.5 samples 0
+1794919480050 mag 175 -346 -897 heading valid 88.4 samples 0
+1794919480316 [DEBUG-direction-obs] 247349 88.3 -61
+1794919480537 [DEBUG-direction] 247367 1 88.0 nan
+1794919480538 mag 178 -346 -895 heading valid 88.5 samples 0
+1794919480613 mag 176 -338 -896 heading valid 88.7 samples 0
+1794919480899 mag 190 -333 -901 heading valid 88.2 samples 0
+1794919481200 mag 174 -341 -895 heading valid 88.5 samples 0
+1794919481451 [DEBUG-direction-obs] 248449 88.5 -61
+1794919481625 [DEBUG-direction] 248454 1 88.5 nan
+1794919481626 mag 186 -341 -897 heading valid 88.6 samples 0
+1794919481728 mag 180 -338 -896 heading valid 88.4 samples 0
+1794919481995 mag 177 -341 -895 heading valid 88.8 samples 0
+1794919482248 mag 183 -342 -888 heading valid 89.0 samples 0
+1794919482508 mag 178 -340 -902 heading valid 88.3 samples 0
+1794919482793 [DEBUG-direction-obs] 249863 88.6 -63
+1794919483040 [DEBUG-direction] 249870 1 88.6 nan
+1794919483040 mag 171 -332 -891 heading valid 88.8 samples 0
+1794919483095 mag 175 -334 -890 heading valid 89.1 samples 0

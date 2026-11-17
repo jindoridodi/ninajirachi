@@ -112,7 +112,7 @@ class CompassService {
     if (!enabled_) { valid_ = false; return false; }
     if (!sensor_.read(raw_)) {
       if (sensor_.status() != CompassReadStatus::NoData ||
-          !std::isfinite(calibration_.headingDegrees(raw_, gravityInG))) valid_ = false;
+          !std::isfinite(headingFor(raw_, gravityInG))) valid_ = false;
       return false;
     }
     valid_ = false;
@@ -122,7 +122,7 @@ class CompassService {
       if (samples_ < UINT32_MAX) ++samples_;
       return true;
     }
-    degrees_ = calibration_.headingDegrees(raw_, gravityInG);
+    degrees_ = headingFor(raw_, gravityInG);
     valid_ = std::isfinite(degrees_);
     return true;
   }
@@ -186,6 +186,12 @@ class CompassService {
   }
 
  private:
+  float headingFor(MagneticSample sample, MagneticVector gravity) const {
+    const MagneticVector field = calibration_.apply(sample);
+    // The fixed breakout and display use different axes from the onboard IMU.
+    return calibration_.headingFromField({-field.z, -field.y, -field.x},
+                                         {gravity.x, gravity.y, -gravity.z});
+  }
   static bool clearCalibration() {
     Preferences prefs;
     if (!prefs.begin("nina-compass", false)) return false;

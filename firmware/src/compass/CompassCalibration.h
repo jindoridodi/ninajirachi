@@ -54,10 +54,14 @@ class CompassCalibration {
   }
 
   float headingDegrees(MagneticSample sample, MagneticVector gravity = {0, 0, 1}) const {
+    return headingFromField(apply(sample), gravity);
+  }
+
+  float headingFromField(MagneticVector field, MagneticVector gravity) const {
     const float invalid = std::numeric_limits<float>::quiet_NaN();
     if (!ready()) return invalid;
     const float magnitude = std::sqrt(gravity.x * gravity.x + gravity.y * gravity.y + gravity.z * gravity.z);
-    // Gravity is in g, aligned to the magnetometer; acceleration during jumps is unreliable.
+    // Gravity is in g and shares the field's axes; acceleration during jumps is unreliable.
     if (!std::isfinite(magnitude) || magnitude < 0.8f || magnitude > 1.2f) return invalid;
     gravity = {gravity.x / magnitude, gravity.y / magnitude, gravity.z / magnitude};
     const float forwardLength = std::sqrt(gravity.y * gravity.y + gravity.z * gravity.z);
@@ -65,7 +69,6 @@ class CompassCalibration {
     const MagneticVector forward{forwardLength, -gravity.x * gravity.y / forwardLength,
                                  -gravity.x * gravity.z / forwardLength};
     const MagneticVector right{0, gravity.z / forwardLength, -gravity.y / forwardLength};
-    const MagneticVector field = apply(sample);
     const float x = field.x * forward.x + field.y * forward.y + field.z * forward.z;
     const float y = field.y * right.y + field.z * right.z;
     if (!std::isfinite(x) || !std::isfinite(y) || x * x + y * y < 1e-8f) return invalid;
