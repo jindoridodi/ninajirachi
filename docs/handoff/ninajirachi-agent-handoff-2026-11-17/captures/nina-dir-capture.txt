@@ -1,0 +1,54 @@
+[DEBUG-dir-obs] 41314 97.6 -59
+[DEBUG-dir-obs] 41601 96.9 -62
+[DEBUG-dir-obs] 41900 96.7 -57
+[DEBUG-dir] frames=42 head=37 gravity=5 read=0 packets=6 assoc=6 peer=1 target=1 dir=0
+[DEBUG-dir-obs] 42904 96.6 -59
+[DEBUG-dir-obs] 52621 97.0 -54
+[DEBUG-dir-obs] 53126 97.0 -55
+[DEBUG-dir-obs] 53418 96.2 -60
+[DEBUG-dir-obs] 53632 96.3 -59
+[DEBUG-dir-obs] 53922 97.2 -57
+[DEBUG-dir-obs] 54142 96.4 -55
+[DEBUG-dir] frames=66 head=66 gravity=0 read=0 packets=6 assoc=6 peer=1 target=1 dir=0
+[DEBUG-dir-obs] 54420 96.6 -55
+[DEBUG-dir-obs] 54647 96.7 -56
+[DEBUG-dir-obs] 54935 95.8 -57
+[DEBUG-dir-obs] 55230 96.5 -54
+[DEBUG-dir-obs] 55730 96.7 -57
+[DEBUG-dir-obs] 56246 96.7 -56
+[DEBUG-dir] frames=64 head=64 gravity=0 read=0 packets=6 assoc=6 peer=1 target=1 dir=0
+[DEBUG-dir-obs] 56836 96.4 -54
+[DEBUG-dir-obs] 57651 95.9 -55
+[DEBUG-dir-obs] 58151 96.6 -56
+[DEBUG-dir] frames=67 head=67 gravity=0 read=0 packets=3 assoc=3 peer=1 target=1 dir=0
+[DEBUG-dir-obs] 58960 97.0 -55
+[DEBUG-dir-obs] 59215 97.2 -55
+[DEBUG-dir] frames=67 head=58 gravity=9 read=0 packets=2 assoc=2 peer=1 target=1 dir=0
+[DEBUG-dir-obs] 60620 96.3 -55
+[DEBUG-dir-obs] 61421 96.7 -56
+[DEBUG-dir] frames=66 head=51 gravity=14 read=1 packets=3 assoc=2 peer=1 target=1 dir=0
+[DEBUG-dir] frames=64 head=0 gravity=64 read=0 packets=2 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=69 head=0 gravity=68 read=1 packets=3 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=69 head=0 gravity=68 read=1 packets=3 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=63 head=0 gravity=63 read=0 packets=0 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=64 head=0 gravity=64 read=0 packets=2 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=66 head=0 gravity=65 read=1 packets=3 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=70 head=0 gravity=68 read=2 packets=4 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=67 head=0 gravity=64 read=3 packets=4 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=65 head=0 gravity=63 read=2 packets=5 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=68 head=0 gravity=65 read=3 packets=4 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=62 head=0 gravity=61 read=1 packets=3 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=67 head=0 gravity=65 read=2 packets=5 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir] frames=66 head=0 gravity=66 read=0 packets=3 assoc=0 peer=1 target=1 dir=0
+[DEBUG-dir-obs] 89158 99.2 -58
+[DEBUG-dir-obs] 89445 99.5 -55
+[DEBUG-dir-obs] 89743 99.2 -55
+[DEBUG-dir-obs] 89957 98.7 -56
+[DEBUG-dir-obs] 90243 99.3 -55
+[DEBUG-dir] frames=67 head=56 gravity=11 read=0 packets=6 assoc=5 peer=1 target=1 dir=0
+[DEBUG-dir-obs] 91069 99.5 -54
+[DEBUG-dir-obs] 91372 98.5 -54
+[DEBUG-dir-obs] 91662 99.0 -57
+[DEBUG-dir-obs] 91949 98.7 -58
+[DEBUG-dir-obs] 92246 99.2 -58
+[DEBUG-dir] frames=68 head=68 gravity=0 read=0 packets=5 assoc=5
